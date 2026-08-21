@@ -1,0 +1,90 @@
+{
+  "nav": {
+    "home": "Home",
+    "timetable": "Timetable",
+    "staff": "The Staff",
+    "about": "About Us",
+    "tips": "Tips",
+    "releases": "Releases",
+    "help": "Help",
+    "login": "Login",
+    "register": "Sign up",
+    "dashboard": "My space",
+    "admin": "Administration",
+    "logout": "Log out"
+  },
+  "home": {
+    "title": "Welcome to Collège Pilote du Kef",
+    "subtitle": "The digital portal connecting parents, students, and administration.",
+    "cta": "Go to my space"
+  },
+  "auth": {
+    "loginTitle": "Login",
+    "registerTitle": "Create an account",
+    "methodCin": "ID number & password",
+    "methodEmail": "Email",
+    "cin": "National ID (CIN)",
+    "password": "Password",
+    "email": "Email",
+    "parentFirstName": "Parent's first name",
+    "parentLastName": "Parent's last name",
+    "childFirstName": "Child's first name",
+    "childClass": "Child's class",
+    "submitLogin": "Log in",
+    "submitRegister": "Create my account",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "pendingBanner": "Account not yet verified. Waiting for verification. To speed things up, call 99766801 or email us at contact@cpkef.tn.",
+    "validatedTitle": "Account verified!",
+    "validatedBody": "Your account has been verified by the administration. Social features (mutual help, comments) are now unlocked.",
+    "validatedClose": "Continue"
+  },
+  "timetable": {
+    "title": "Timetable",
+    "empty": "No timetable available yet.",
+    "absent": "Absent"
+  },
+  "staff": {
+    "title": "The Staff",
+    "empty": "Staff members will be shown here soon."
+  },
+  "about": {
+    "title": "About Us",
+    "story": "The story of the CPK platform is, above all, that of two technology enthusiasts, Melik Messaoudi and Edem Aifia. Noticing that communication between administration, parents, and students lacked a modern digital bridge, they decided to take matters into their own hands. Armed with their vision and lines of code, they built this space from scratch. Their goal? To prove that Tunisian youth can create professional, secure, tailor-made tools to modernize education."
+  },
+  "help": {
+    "title": "Help & Support",
+    "subject": "Subject",
+    "description": "Problem description",
+    "submit": "Send"
+  },
+  "releases": {
+    "title": "Releases",
+    "empty": "No update published yet."
+  },
+  "tips": {
+    "title": "Success tips",
+    "empty": "No tip published yet."
+  },
+  "dashboard": {
+    "title": "My space",
+    "myChildren": "My children",
+    "noChildren": "No child registered yet.",
+    "accountExists": "Account created"
+  },
+  "admin": {
+    "title": "Administration",
+    "accounts": "Accounts",
+    "accountsSubtitle": "Validate pending registrations.",
+    "accountsEmpty": "No account pending validation.",
+    "validate": "Validate",
+    "timetableTab": "Timetable",
+    "absencesTab": "Absences",
+    "selectClass": "Choose a class",
+    "noClasses": "No class yet. Add one from Supabase (classes table) to get started.",
+    "absencesEmpty": "No absence declared yet."
+  },
+  "footer": {
+    "rights": "All rights reserved."
+  }
+}

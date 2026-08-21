@@ -1,0 +1,90 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "timetable": "Emploi du temps",
+    "staff": "Le Staff",
+    "about": "Plus de nous",
+    "tips": "Tips",
+    "releases": "Nouveautés",
+    "help": "Aide",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "dashboard": "Mon espace",
+    "admin": "Administration",
+    "logout": "Déconnexion"
+  },
+  "home": {
+    "title": "Bienvenue au Collège Pilote du Kef",
+    "subtitle": "Le portail numérique qui connecte parents, élèves et administration.",
+    "cta": "Accéder à mon espace"
+  },
+  "auth": {
+    "loginTitle": "Connexion",
+    "registerTitle": "Créer un compte",
+    "methodCin": "CIN & mot de passe",
+    "methodEmail": "Email",
+    "cin": "Carte d'identité (CIN)",
+    "password": "Mot de passe",
+    "email": "Email",
+    "parentFirstName": "Prénom du parent",
+    "parentLastName": "Nom du parent",
+    "childFirstName": "Prénom de l'enfant",
+    "childClass": "Classe de l'enfant",
+    "submitLogin": "Se connecter",
+    "submitRegister": "Créer mon compte",
+    "noAccount": "Pas encore de compte ?",
+    "haveAccount": "Déjà un compte ?",
+    "pendingBanner": "Compte non validé. En attente de vérification. Pour accélérer le processus, appelez le 99766801 ou envoyez-nous un message sur contact@cpkef.tn.",
+    "validatedTitle": "Compte validé !",
+    "validatedBody": "Votre compte a été vérifié par l'administration. Les fonctionnalités sociales (entraide, commentaires) sont maintenant débloquées.",
+    "validatedClose": "Continuer"
+  },
+  "timetable": {
+    "title": "Emploi du temps",
+    "empty": "Aucun emploi du temps disponible pour le moment.",
+    "absent": "Absent(e)"
+  },
+  "staff": {
+    "title": "Le Staff",
+    "empty": "Les membres du staff seront bientôt affichés ici."
+  },
+  "about": {
+    "title": "Plus de nous",
+    "story": "L'histoire de la plateforme CPK, c'est avant tout celle de deux passionnés de technologies, Melik Messaoudi et Edem Aifia. Constatant que la communication entre l'administration, les parents et les élèves manquait d'un pont numérique moderne, ils ont décidé de prendre les choses en main. Armés de leur vision et de lignes de code, ils ont conçu cet espace de A à Z. Leur objectif ? Prouver que la jeunesse tunisienne peut créer des outils professionnels, sécurisés et sur-mesure pour moderniser l'éducation."
+  },
+  "help": {
+    "title": "Aide & Assistance",
+    "subject": "Objet",
+    "description": "Description du problème",
+    "submit": "Envoyer"
+  },
+  "releases": {
+    "title": "Nouveautés",
+    "empty": "Aucune mise à jour publiée pour le moment."
+  },
+  "tips": {
+    "title": "Conseils de réussite",
+    "empty": "Aucun conseil publié pour le moment."
+  },
+  "dashboard": {
+    "title": "Mon espace",
+    "myChildren": "Mes enfants",
+    "noChildren": "Aucun enfant enregistré.",
+    "accountExists": "Compte créé"
+  },
+  "admin": {
+    "title": "Administration",
+    "accounts": "Comptes",
+    "accountsSubtitle": "Valide les inscriptions en attente.",
+    "accountsEmpty": "Aucun compte en attente de validation.",
+    "validate": "Valider",
+    "timetableTab": "Emploi du temps",
+    "absencesTab": "Absences",
+    "selectClass": "Choisir une classe",
+    "noClasses": "Aucune classe. Ajoute-en depuis Supabase (table classes) pour commencer.",
+    "absencesEmpty": "Aucune absence déclarée."
+  },
+  "footer": {
+    "rights": "Tous droits réservés."
+  }
+}
