@@ -6,6 +6,23 @@
 create extension if not exists pgcrypto;
 
 -- ----------------------------------------------------------------------------
+-- profiles — one row per auth.users account (parent, student, admin, staff).
+-- Created before is_admin() below, which references it.
+-- ----------------------------------------------------------------------------
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  role text not null check (role in ('parent', 'student', 'admin', 'staff')),
+  status text not null default 'pending' check (status in ('pending', 'validated')),
+  registration_method text check (registration_method in ('manual', 'cin', 'email')),
+  cin text unique,
+  phone text,
+  parent_first_name text,
+  parent_last_name text,
+  validation_seen boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+-- ----------------------------------------------------------------------------
 -- Helper: is_admin() — security definer function used in RLS policies to
 -- check the caller's role without triggering recursive RLS on `profiles`.
 -- ----------------------------------------------------------------------------
@@ -21,22 +38,6 @@ as $$
     where id = auth.uid() and role = 'admin'
   );
 $$;
-
--- ----------------------------------------------------------------------------
--- profiles — one row per auth.users account (parent, student, admin, staff).
--- ----------------------------------------------------------------------------
-create table if not exists public.profiles (
-  id uuid primary key references auth.users (id) on delete cascade,
-  role text not null check (role in ('parent', 'student', 'admin', 'staff')),
-  status text not null default 'pending' check (status in ('pending', 'validated')),
-  registration_method text check (registration_method in ('manual', 'cin', 'email')),
-  cin text unique,
-  phone text,
-  parent_first_name text,
-  parent_last_name text,
-  validation_seen boolean not null default false,
-  created_at timestamptz not null default now()
-);
 
 alter table public.profiles enable row level security;
 
