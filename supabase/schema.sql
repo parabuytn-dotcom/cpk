@@ -553,6 +553,22 @@ create policy "Admins manage course resources"
   using (public.is_admin())
   with check (public.is_admin());
 
+drop policy if exists "Uploaders delete their own course resources" on public.course_resources;
+create policy "Uploaders delete their own course resources"
+  on public.course_resources for delete
+  using (auth.uid() = uploaded_by or public.is_admin());
+
+-- Atomic view counter, used when a student opens a resource — avoids the
+-- read-then-write race of a plain update from the client.
+create or replace function public.increment_resource_views(resource_id uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.course_resources set view_count = view_count + 1 where id = resource_id;
+$$;
+
 -- ----------------------------------------------------------------------------
 -- badges / user_badges — gamification (Bloc 5, schéma créé maintenant).
 -- ----------------------------------------------------------------------------
