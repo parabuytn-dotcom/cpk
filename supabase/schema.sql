@@ -1,6 +1,10 @@
 -- ============================================================================
--- CPK Learn — schéma Supabase (Phase 1)
+-- CPK Learn — schéma Supabase
 -- À exécuter dans le SQL Editor du projet Supabase (ou via `supabase db push`).
+-- Ce fichier est intégralement ré-exécutable : à chaque mise à jour du schéma,
+-- recopie-le en entier et relance-le, aucune erreur "already exists" ne
+-- devrait apparaître (tables/colonnes en `if not exists`, policies précédées
+-- d'un `drop policy if exists`).
 -- ============================================================================
 
 create extension if not exists pgcrypto;
@@ -41,18 +45,22 @@ $$;
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Users can view their own profile" on public.profiles;
 create policy "Users can view their own profile"
   on public.profiles for select
   using (auth.uid() = id or public.is_admin());
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
   on public.profiles for update
   using (auth.uid() = id or public.is_admin());
 
+drop policy if exists "Users can insert their own profile on signup" on public.profiles;
 create policy "Users can insert their own profile on signup"
   on public.profiles for insert
   with check (auth.uid() = id);
 
+drop policy if exists "Admins can update any profile (validation)" on public.profiles;
 create policy "Admins can update any profile (validation)"
   on public.profiles for update
   using (public.is_admin());
@@ -68,10 +76,12 @@ create table if not exists public.classes (
 
 alter table public.classes enable row level security;
 
+drop policy if exists "Anyone authenticated can read classes" on public.classes;
 create policy "Anyone authenticated can read classes"
   on public.classes for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Admins manage classes" on public.classes;
 create policy "Admins manage classes"
   on public.classes for all
   using (public.is_admin())
@@ -94,14 +104,17 @@ create table if not exists public.students (
 
 alter table public.students enable row level security;
 
+drop policy if exists "Parents view their own children" on public.students;
 create policy "Parents view their own children"
   on public.students for select
   using (auth.uid() = parent_id or auth.uid() = user_id or public.is_admin());
 
+drop policy if exists "Parents insert their own children" on public.students;
 create policy "Parents insert their own children"
   on public.students for insert
   with check (auth.uid() = parent_id);
 
+drop policy if exists "Admins manage students" on public.students;
 create policy "Admins manage students"
   on public.students for all
   using (public.is_admin())
@@ -121,10 +134,12 @@ create table if not exists public.teachers (
 
 alter table public.teachers enable row level security;
 
+drop policy if exists "Anyone authenticated can read teachers" on public.teachers;
 create policy "Anyone authenticated can read teachers"
   on public.teachers for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Admins manage teachers" on public.teachers;
 create policy "Admins manage teachers"
   on public.teachers for all
   using (public.is_admin())
@@ -150,10 +165,12 @@ create table if not exists public.timetable_entries (
 
 alter table public.timetable_entries enable row level security;
 
+drop policy if exists "Anyone authenticated can read timetable" on public.timetable_entries;
 create policy "Anyone authenticated can read timetable"
   on public.timetable_entries for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Admins manage timetable" on public.timetable_entries;
 create policy "Admins manage timetable"
   on public.timetable_entries for all
   using (public.is_admin())
@@ -175,10 +192,12 @@ create table if not exists public.teacher_absences (
 
 alter table public.teacher_absences enable row level security;
 
+drop policy if exists "Anyone authenticated can read teacher absences" on public.teacher_absences;
 create policy "Anyone authenticated can read teacher absences"
   on public.teacher_absences for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Admins manage teacher absences" on public.teacher_absences;
 create policy "Admins manage teacher absences"
   on public.teacher_absences for all
   using (public.is_admin())
@@ -198,10 +217,12 @@ create table if not exists public.staff_members (
 
 alter table public.staff_members enable row level security;
 
+drop policy if exists "Anyone can read staff members" on public.staff_members;
 create policy "Anyone can read staff members"
   on public.staff_members for select
   using (true);
 
+drop policy if exists "Admins manage staff members" on public.staff_members;
 create policy "Admins manage staff members"
   on public.staff_members for all
   using (public.is_admin())
@@ -221,14 +242,17 @@ create table if not exists public.help_requests (
 
 alter table public.help_requests enable row level security;
 
+drop policy if exists "Authors view their own help requests" on public.help_requests;
 create policy "Authors view their own help requests"
   on public.help_requests for select
   using (auth.uid() = author_id or public.is_admin());
 
+drop policy if exists "Authenticated users can submit a help request" on public.help_requests;
 create policy "Authenticated users can submit a help request"
   on public.help_requests for insert
   with check (auth.uid() = author_id);
 
+drop policy if exists "Admins manage help requests" on public.help_requests;
 create policy "Admins manage help requests"
   on public.help_requests for update
   using (public.is_admin())
@@ -247,10 +271,12 @@ create table if not exists public.releases (
 
 alter table public.releases enable row level security;
 
+drop policy if exists "Anyone can read releases" on public.releases;
 create policy "Anyone can read releases"
   on public.releases for select
   using (true);
 
+drop policy if exists "Admins manage releases" on public.releases;
 create policy "Admins manage releases"
   on public.releases for all
   using (public.is_admin())
@@ -269,10 +295,12 @@ create table if not exists public.tips (
 
 alter table public.tips enable row level security;
 
+drop policy if exists "Anyone can read published tips" on public.tips;
 create policy "Anyone can read published tips"
   on public.tips for select
   using (published = true or public.is_admin());
 
+drop policy if exists "Validated users can submit a tip" on public.tips;
 create policy "Validated users can submit a tip"
   on public.tips for insert
   with check (
@@ -283,6 +311,7 @@ create policy "Validated users can submit a tip"
     )
   );
 
+drop policy if exists "Admins manage tips" on public.tips;
 create policy "Admins manage tips"
   on public.tips for update
   using (public.is_admin())
@@ -303,10 +332,12 @@ create table if not exists public.sms_logs (
 
 alter table public.sms_logs enable row level security;
 
+drop policy if exists "Admins read sms logs" on public.sms_logs;
 create policy "Admins read sms logs"
   on public.sms_logs for select
   using (public.is_admin());
 
+drop policy if exists "Service role writes sms logs" on public.sms_logs;
 create policy "Service role writes sms logs"
   on public.sms_logs for insert
   with check (true);
@@ -356,10 +387,12 @@ create table if not exists public.homework (
 
 alter table public.homework enable row level security;
 
+drop policy if exists "Anyone authenticated can read homework" on public.homework;
 create policy "Anyone authenticated can read homework"
   on public.homework for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Teachers and admins manage homework" on public.homework;
 create policy "Teachers and admins manage homework"
   on public.homework for all
   using (public.is_admin() or auth.uid() = created_by)
@@ -375,6 +408,7 @@ create table if not exists public.homework_completions (
 
 alter table public.homework_completions enable row level security;
 
+drop policy if exists "Students manage their own completions" on public.homework_completions;
 create policy "Students manage their own completions"
   on public.homework_completions for all
   using (auth.uid() = student_id or public.is_admin())
@@ -394,10 +428,12 @@ create table if not exists public.feed_posts (
 
 alter table public.feed_posts enable row level security;
 
+drop policy if exists "Anyone authenticated can read the feed" on public.feed_posts;
 create policy "Anyone authenticated can read the feed"
   on public.feed_posts for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Publishers can post to the feed" on public.feed_posts;
 create policy "Publishers can post to the feed"
   on public.feed_posts for insert
   with check (
@@ -408,6 +444,7 @@ create policy "Publishers can post to the feed"
     )
   );
 
+drop policy if exists "Admins manage feed posts" on public.feed_posts;
 create policy "Admins manage feed posts"
   on public.feed_posts for all
   using (public.is_admin())
@@ -430,10 +467,12 @@ create table if not exists public.course_resources (
 
 alter table public.course_resources enable row level security;
 
+drop policy if exists "Anyone authenticated can read course resources" on public.course_resources;
 create policy "Anyone authenticated can read course resources"
   on public.course_resources for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Scribes can upload course resources" on public.course_resources;
 create policy "Scribes can upload course resources"
   on public.course_resources for insert
   with check (
@@ -444,6 +483,7 @@ create policy "Scribes can upload course resources"
     )
   );
 
+drop policy if exists "Admins manage course resources" on public.course_resources;
 create policy "Admins manage course resources"
   on public.course_resources for all
   using (public.is_admin())
@@ -462,10 +502,12 @@ create table if not exists public.badges (
 
 alter table public.badges enable row level security;
 
+drop policy if exists "Anyone can read badges" on public.badges;
 create policy "Anyone can read badges"
   on public.badges for select
   using (true);
 
+drop policy if exists "Admins manage badges" on public.badges;
 create policy "Admins manage badges"
   on public.badges for all
   using (public.is_admin())
@@ -490,10 +532,12 @@ create table if not exists public.user_badges (
 
 alter table public.user_badges enable row level security;
 
+drop policy if exists "Anyone can read user badges" on public.user_badges;
 create policy "Anyone can read user badges"
   on public.user_badges for select
   using (true);
 
+drop policy if exists "Admins manage user badges" on public.user_badges;
 create policy "Admins manage user badges"
   on public.user_badges for all
   using (public.is_admin())
@@ -510,19 +554,23 @@ insert into storage.buckets (id, name, public)
   values ('course-resources', 'course-resources', false)
   on conflict (id) do nothing;
 
+drop policy if exists "Public read staff photos" on storage.objects;
 create policy "Public read staff photos"
   on storage.objects for select
   using (bucket_id = 'staff-photos');
 
+drop policy if exists "Admins write staff photos" on storage.objects;
 create policy "Admins write staff photos"
   on storage.objects for all
   using (bucket_id = 'staff-photos' and public.is_admin())
   with check (bucket_id = 'staff-photos' and public.is_admin());
 
+drop policy if exists "Authenticated read course resources" on storage.objects;
 create policy "Authenticated read course resources"
   on storage.objects for select
   using (bucket_id = 'course-resources' and auth.role() = 'authenticated');
 
+drop policy if exists "Scribes write course resources" on storage.objects;
 create policy "Scribes write course resources"
   on storage.objects for insert
   with check (
