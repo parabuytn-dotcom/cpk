@@ -2,6 +2,7 @@
 
 import { getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "@/i18n/navigation";
 import {
   registerManualSchema,
@@ -44,7 +45,16 @@ async function createParentAccount({
     return { message: error?.message ?? "Impossible de créer le compte." };
   }
 
-  const { error: profileError } = await supabase.from("profiles").insert({
+  // Use the service-role client for these inserts: right after signUp() there
+  // may not be an active session yet (e.g. if email confirmation is required
+  // in the Supabase Auth settings), so auth.uid() would be null and the
+  // regular RLS insert policy (auth.uid() = id) would reject the row.
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { error: profileError } = await adminClient.from("profiles").insert({
     id: data.user.id,
     role: "parent",
     status: "pending",
@@ -58,7 +68,7 @@ async function createParentAccount({
     return { message: profileError.message };
   }
 
-  const { error: studentError } = await supabase.from("students").insert({
+  const { error: studentError } = await adminClient.from("students").insert({
     parent_id: data.user.id,
     first_name: childFirstName,
     class_name: childClass,
