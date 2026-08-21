@@ -13,7 +13,7 @@ export default async function HomePage({
   return (
     <div className="flex flex-col items-center gap-6 py-16 text-center">
       <span className="rounded-full bg-brand-500/10 px-4 py-1 text-sm font-medium text-brand-700 dark:text-brand-300">
-        cpklearn.cloud
+cpkef.tn
       </span>
       <h1 className="max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">
         {t("title")}

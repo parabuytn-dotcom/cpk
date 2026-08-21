@@ -1,4 +1,4 @@
-# CPK Learn — cpklearn.cloud
+# CPK Learn — cpkef.tn
 
 Portail numérique du Collège Pilote du Kef (parents, élèves, administration).
 Next.js (App Router) + Tailwind CSS v4 + Supabase + next-intl (FR/AR/EN).
@@ -56,7 +56,8 @@ npm run dev
   `lib/smsService.ts` aux parents des classes touchées.
 - Espace parent (`/dashboard`) — liste des enfants + création 1-clic du
   compte enfant (mot de passe généré, affiché à l'écran, email best-effort
-  via `lib/emailService.ts` / Brevo si `BREVO_API_KEY` est configuré et que
+  via `lib/emailService.ts` (SMTP générique — ex. la boîte contact@cpkef.tn
+  fournie par OVH) si `SMTP_HOST/PORT/USER/PASSWORD` sont configurés et que
   le parent a un email réel).
 
 ## Roadmap (phases suivantes)
