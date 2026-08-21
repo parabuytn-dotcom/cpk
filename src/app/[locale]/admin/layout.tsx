@@ -20,8 +20,13 @@ export default async function AdminLayout({
   const t = await getTranslations("admin");
   const tabs = [
     { href: "/admin/comptes", label: t("accounts") },
+    { href: "/admin/utilisateurs", label: t("usersTab") },
+    { href: "/admin/classes", label: t("classesTab") },
     { href: "/admin/emploi-du-temps", label: t("timetableTab") },
     { href: "/admin/absences", label: t("absencesTab") },
+    { href: "/admin/staff", label: t("staffTab") },
+    { href: "/admin/aide", label: t("helpTab") },
+    { href: "/admin/nouveautes", label: t("releasesTab") },
   ];
 
   return (

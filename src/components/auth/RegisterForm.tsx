@@ -51,6 +51,13 @@ export default function RegisterForm() {
           <Field label={t("email")} name="email" type="email" errors={state?.errors?.email} />
         )}
         <Field
+          label={t("phone")}
+          name="phone"
+          type="tel"
+          placeholder="99766801"
+          errors={state?.errors?.phone}
+        />
+        <Field
           label={t("password")}
           name="password"
           type="password"
@@ -90,6 +97,12 @@ export default function RegisterForm() {
         </button>
       </form>
 
+      <p className="mt-3 text-center text-xs text-foreground/50">
+        <Link href="/confidentialite" className="underline hover:text-foreground">
+          Voir ce que nous faisons de tes données
+        </Link>
+      </p>
+
       {state?.message && (
         <p className="mt-4 text-sm text-red-600 dark:text-red-400">{state.message}</p>
       )}
@@ -108,11 +121,13 @@ function Field({
   label,
   name,
   type = "text",
+  placeholder,
   errors,
 }: {
   label: string;
   name: string;
   type?: string;
+  placeholder?: string;
   errors?: string[];
 }) {
   return (
@@ -121,6 +136,7 @@ function Field({
       <input
         name={name}
         type={type}
+        placeholder={placeholder}
         required
         className="w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
       />

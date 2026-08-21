@@ -23,7 +23,9 @@
     "registerTitle": "Create an account",
     "methodCin": "ID number & password",
     "methodEmail": "Email",
+    "methodPhone": "Phone & password",
     "cin": "National ID (CIN)",
+    "phone": "Phone number",
     "password": "Password",
     "email": "Email",
     "parentFirstName": "Parent's first name",
@@ -81,10 +83,36 @@
     "timetableTab": "Timetable",
     "absencesTab": "Absences",
     "selectClass": "Choose a class",
-    "noClasses": "No class yet. Add one from Supabase (classes table) to get started.",
-    "absencesEmpty": "No absence declared yet."
+    "noClasses": "No class yet.",
+    "absencesEmpty": "No absence declared yet.",
+    "usersTab": "Users",
+    "usersSubtitle": "Everyone registered on the platform.",
+    "usersPrivacyNote": "This information (identity, phone, email, class) is used only for school administration and family communication. It is never shared with third parties. See the Privacy page for details.",
+    "classesTab": "Classes",
+    "classesEmpty": "No class yet.",
+    "addClass": "Add a class",
+    "staffTab": "Staff",
+    "addStaffMember": "Add a member",
+    "helpTab": "Help",
+    "helpEmpty": "No help request yet.",
+    "releasesTab": "Releases",
+    "publish": "Publish"
+  },
+  "privacy": {
+    "title": "Your data, privacy",
+    "intro": "This page explains, simply, what information Collège Pilote du Kef collects through this platform, and why.",
+    "collectedTitle": "What we store",
+    "collected1": "Identity: national ID (CIN), parent's first and last name, child's class.",
+    "collected2": "Contact: phone number and email, used to log in and to notify you of a teacher absence.",
+    "collected3": "Schooling: timetable, teacher absences, homework, and presence on community spaces.",
+    "collected4": "SMS history (content and delivery status), for technical follow-up.",
+    "purposeTitle": "Why",
+    "purpose": "This data is used solely for the school's administrative and educational management (account validation, communication, timetable tracking). It is never sold or shared with third parties.",
+    "contactTitle": "Any question?",
+    "contact": "Contact us at 99766801 or by email at contact@cpkef.tn."
   },
   "footer": {
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "privacy": "Privacy"
   }
 }

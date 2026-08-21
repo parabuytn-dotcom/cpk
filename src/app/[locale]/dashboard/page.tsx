@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/auth/session";
 import { listChildrenForParent } from "@/lib/admin/data";
 import PageHeader from "@/components/ui/PageHeader";
 import ChildAccountButton from "@/components/dashboard/ChildAccountButton";
+import PhonePrompt from "@/components/dashboard/PhonePrompt";
 
 export default async function DashboardPage({
   params,
@@ -26,10 +27,13 @@ export default async function DashboardPage({
     <div className="flex flex-col gap-6">
       <PageHeader title={t("title")} />
       <div className="glass-surface rounded-3xl px-6 py-10 text-foreground/70">
-        {profile.parentFirstName
-          ? `${profile.parentFirstName} ${profile.parentLastName ?? ""}`.trim()
-          : profile.role}
+        {profile.fullName ??
+          (profile.parentFirstName
+            ? `${profile.parentFirstName} ${profile.parentLastName ?? ""}`.trim()
+            : profile.role)}
       </div>
+
+      {!profile.phone && <PhonePrompt />}
 
       {profile.role === "parent" && profile.status === "validated" && (
         <div>

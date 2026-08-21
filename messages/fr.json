@@ -23,7 +23,9 @@
     "registerTitle": "Créer un compte",
     "methodCin": "CIN & mot de passe",
     "methodEmail": "Email",
+    "methodPhone": "Téléphone & mot de passe",
     "cin": "Carte d'identité (CIN)",
+    "phone": "Numéro de téléphone",
     "password": "Mot de passe",
     "email": "Email",
     "parentFirstName": "Prénom du parent",
@@ -81,10 +83,36 @@
     "timetableTab": "Emploi du temps",
     "absencesTab": "Absences",
     "selectClass": "Choisir une classe",
-    "noClasses": "Aucune classe. Ajoute-en depuis Supabase (table classes) pour commencer.",
-    "absencesEmpty": "Aucune absence déclarée."
+    "noClasses": "Aucune classe pour le moment.",
+    "absencesEmpty": "Aucune absence déclarée.",
+    "usersTab": "Utilisateurs",
+    "usersSubtitle": "Toutes les personnes inscrites sur la plateforme.",
+    "usersPrivacyNote": "Ces informations (identité, téléphone, email, classe) sont utilisées uniquement pour la gestion scolaire et la communication avec les familles. Elles ne sont jamais partagées avec des tiers. Voir la page Confidentialité pour le détail.",
+    "classesTab": "Classes",
+    "classesEmpty": "Aucune classe pour le moment.",
+    "addClass": "Ajouter une classe",
+    "staffTab": "Staff",
+    "addStaffMember": "Ajouter un membre",
+    "helpTab": "Aide",
+    "helpEmpty": "Aucune demande d'aide pour le moment.",
+    "releasesTab": "Nouveautés",
+    "publish": "Publier"
+  },
+  "privacy": {
+    "title": "Confidentialité de vos données",
+    "intro": "Cette page explique simplement quelles informations le Collège Pilote du Kef collecte via cette plateforme, et pourquoi.",
+    "collectedTitle": "Ce que nous stockons",
+    "collected1": "Identité : carte d'identité (CIN), prénom et nom du parent, classe de l'enfant.",
+    "collected2": "Contact : numéro de téléphone et adresse email, utilisés pour la connexion et pour vous prévenir en cas d'absence d'un professeur.",
+    "collected3": "Scolarité : emploi du temps, absences des professeurs, devoirs et présence sur les espaces communautaires.",
+    "collected4": "Historique des SMS envoyés (contenu et statut d'envoi), pour le suivi technique.",
+    "purposeTitle": "Pourquoi",
+    "purpose": "Ces données servent uniquement à la gestion administrative et pédagogique du collège (validation des comptes, communication, suivi de l'emploi du temps). Elles ne sont jamais vendues ni partagées avec des tiers.",
+    "contactTitle": "Une question ?",
+    "contact": "Contacte-nous au 99766801 ou par email à contact@cpkef.tn."
   },
   "footer": {
-    "rights": "Tous droits réservés."
+    "rights": "Tous droits réservés.",
+    "privacy": "Confidentialité"
   }
 }

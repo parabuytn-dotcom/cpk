@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
+import Avatar from "@/components/ui/Avatar";
+import { listStaffMembers } from "@/lib/admin/data";
 
 export default async function StaffPage({
   params,
@@ -9,14 +11,29 @@ export default async function StaffPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("staff");
+  const [t, members] = await Promise.all([getTranslations("staff"), listStaffMembers()]);
 
-  // TODO: fetch staff_members from Supabase Storage/DB and render photo cards
-  // with a profession-centered fallback design when no photo is provided (Phase 4).
   return (
     <div>
       <PageHeader title={t("title")} />
-      <EmptyState message={t("empty")} />
+      {members.length === 0 ? (
+        <EmptyState message={t("empty")} />
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {members.map((m) => (
+            <div
+              key={m.id}
+              className="glass-surface flex flex-col items-center gap-3 rounded-3xl px-6 py-8 text-center"
+            >
+              <Avatar name={m.fullName} photoUrl={m.showPhoto ? m.photoUrl : null} size={96} />
+              <div>
+                <p className="font-semibold">{m.fullName}</p>
+                <p className="text-sm text-foreground/60">{m.roleTitle}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,15 +3,15 @@
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { loginWithCin, loginWithEmail } from "@/lib/auth/actions";
+import { loginWithPhone, loginWithEmail } from "@/lib/auth/actions";
 
 export default function LoginForm() {
   const t = useTranslations("auth");
-  const [method, setMethod] = useState<"cin" | "email">("cin");
-  const [cinState, cinAction, cinPending] = useActionState(loginWithCin, undefined);
+  const [method, setMethod] = useState<"phone" | "email">("phone");
+  const [phoneState, phoneAction, phonePending] = useActionState(loginWithPhone, undefined);
   const [emailState, emailAction, emailPending] = useActionState(loginWithEmail, undefined);
 
-  const state = method === "cin" ? cinState : emailState;
+  const state = method === "phone" ? phoneState : emailState;
 
   return (
     <div className="glass-surface mx-auto max-w-md rounded-3xl p-8">
@@ -20,12 +20,12 @@ export default function LoginForm() {
       <div className="mb-6 flex gap-1 rounded-full bg-black/5 p-1 dark:bg-white/10">
         <button
           type="button"
-          onClick={() => setMethod("cin")}
+          onClick={() => setMethod("phone")}
           className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
-            method === "cin" ? "bg-white shadow dark:bg-white/20" : "text-foreground/60"
+            method === "phone" ? "bg-white shadow dark:bg-white/20" : "text-foreground/60"
           }`}
         >
-          {t("methodCin")}
+          {t("methodPhone")}
         </button>
         <button
           type="button"
@@ -38,11 +38,11 @@ export default function LoginForm() {
         </button>
       </div>
 
-      {method === "cin" ? (
-        <form action={cinAction} className="flex flex-col gap-4">
-          <Field label={t("cin")} name="cin" />
+      {method === "phone" ? (
+        <form action={phoneAction} className="flex flex-col gap-4">
+          <Field label={t("phone")} name="phone" type="tel" placeholder="99766801" />
           <Field label={t("password")} name="password" type="password" />
-          <SubmitButton pending={cinPending} label={t("submitLogin")} />
+          <SubmitButton pending={phonePending} label={t("submitLogin")} />
         </form>
       ) : (
         <form action={emailAction} className="flex flex-col gap-4">
@@ -70,10 +70,12 @@ function Field({
   label,
   name,
   type = "text",
+  placeholder,
 }: {
   label: string;
   name: string;
   type?: string;
+  placeholder?: string;
 }) {
   return (
     <div>
@@ -81,6 +83,7 @@ function Field({
       <input
         name={name}
         type={type}
+        placeholder={placeholder}
         required
         className="w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
       />

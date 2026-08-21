@@ -36,6 +36,34 @@ export const csvRowSchema = z.object({
   Professeur: z.string().trim().min(1),
 });
 
+export const userUpdateSchema = z.object({
+  profileId: z.string().uuid(),
+  role: z.enum(["parent", "student", "teacher", "admin", "staff"]),
+  status: z.enum(["pending", "validated"]),
+  phone: z.string().trim().optional().or(z.literal("")),
+  tags: z.string().trim().optional().or(z.literal("")),
+});
+
+export const classNameSchema = z.object({
+  name: z.string().trim().min(1, "Nom requis."),
+});
+
+export const staffMemberSchema = z.object({
+  fullName: z.string().trim().min(1, "Nom requis."),
+  roleTitle: z.string().trim().min(1, "Poste requis."),
+  showPhoto: z.coerce.boolean(),
+});
+
+export const releaseSchema = z.object({
+  title: z.string().trim().min(1, "Titre requis."),
+  body: z.string().trim().min(1, "Contenu requis."),
+});
+
+export const helpRequestSchema = z.object({
+  subject: z.string().trim().min(1, "Objet requis."),
+  description: z.string().trim().min(1, "Description requise."),
+});
+
 export type FormState =
   | {
       errors?: Record<string, string[]>;

@@ -12,6 +12,11 @@ import {
   timetableEntrySchema,
   teacherAbsenceSchema,
   csvRowSchema,
+  userUpdateSchema,
+  classNameSchema,
+  staffMemberSchema,
+  releaseSchema,
+  helpRequestSchema,
   type FormState,
 } from "./schemas";
 
@@ -371,4 +376,207 @@ export async function createChildAccount(
 
   revalidatePath("/dashboard");
   return { success: true, email, password };
+}
+
+// ---------------------------------------------------------------------------
+// Utilisateurs — vue d'ensemble + édition directe depuis le panel admin
+// ---------------------------------------------------------------------------
+
+export async function updateUserProfile(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const validated = userUpdateSchema.safeParse({
+    profileId: formData.get("profileId"),
+    role: formData.get("role"),
+    status: formData.get("status"),
+    phone: formData.get("phone") ?? "",
+    tags: formData.get("tags") ?? "",
+  });
+
+  if (!validated.success) {
+    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  const supabase = await createClient();
+  const tags = validated.data.tags
+    ? validated.data.tags.split(",").map((t) => t.trim()).filter(Boolean)
+    : [];
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      role: validated.data.role,
+      status: validated.data.status,
+      phone: validated.data.phone || null,
+      tags,
+    })
+    .eq("id", validated.data.profileId);
+
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/utilisateurs");
+  return { success: "Profil mis à jour." };
+}
+
+// ---------------------------------------------------------------------------
+// Classes
+// ---------------------------------------------------------------------------
+
+export async function createClass(_state: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const validated = classNameSchema.safeParse({ name: formData.get("name") });
+  if (!validated.success) return { message: validated.error.issues[0]?.message };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("classes").insert({ name: validated.data.name });
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/classes");
+  revalidatePath("/admin/emploi-du-temps");
+  return { success: "Classe ajoutée." };
+}
+
+export async function renameClass(classId: string, name: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("classes").update({ name }).eq("id", classId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/classes");
+}
+
+export async function deleteClass(classId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("classes").delete().eq("id", classId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/classes");
+}
+
+// ---------------------------------------------------------------------------
+// Staff — annuaire public avec choix de photo
+// ---------------------------------------------------------------------------
+
+export async function upsertStaffMember(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const validated = staffMemberSchema.safeParse({
+    fullName: formData.get("fullName"),
+    roleTitle: formData.get("roleTitle"),
+    showPhoto: formData.get("showPhoto") === "on",
+  });
+
+  if (!validated.success) {
+    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { message: "Supabase (clé service_role) n'est pas configuré." };
+
+  let photoUrl: string | null = null;
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    const path = `staff/${randomBytes(6).toString("hex")}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
+    const { error: uploadError } = await adminClient.storage
+      .from("staff-photos")
+      .upload(path, photo, { contentType: photo.type, upsert: true });
+    if (uploadError) return { message: uploadError.message };
+    photoUrl = adminClient.storage.from("staff-photos").getPublicUrl(path).data.publicUrl;
+  }
+
+  const { error } = await adminClient.from("staff_members").insert({
+    full_name: validated.data.fullName,
+    role_title: validated.data.roleTitle,
+    show_photo: validated.data.showPhoto,
+    photo_url: photoUrl,
+  });
+
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/staff");
+  revalidatePath("/staff");
+  return { success: "Membre du staff ajouté." };
+}
+
+export async function deleteStaffMember(staffId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("staff_members").delete().eq("id", staffId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/staff");
+  revalidatePath("/staff");
+}
+
+// ---------------------------------------------------------------------------
+// Aide — formulaire public + file d'attente admin
+// ---------------------------------------------------------------------------
+
+export async function submitHelpRequest(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return { message: "Connecte-toi d'abord pour envoyer une demande d'aide." };
+  }
+
+  const validated = helpRequestSchema.safeParse({
+    subject: formData.get("subject"),
+    description: formData.get("description"),
+  });
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("help_requests").insert({
+    author_id: profile.id,
+    subject: validated.data.subject,
+    description: validated.data.description,
+  });
+
+  if (error) return { message: error.message };
+  return { success: "Ta demande a bien été envoyée." };
+}
+
+export async function updateHelpRequestStatus(requestId: string, status: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("help_requests").update({ status }).eq("id", requestId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/aide");
+}
+
+// ---------------------------------------------------------------------------
+// Nouveautés — changelog publiable par l'admin
+// ---------------------------------------------------------------------------
+
+export async function publishRelease(_state: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+
+  const validated = releaseSchema.safeParse({
+    title: formData.get("title"),
+    body: formData.get("body"),
+  });
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("releases").insert({
+    title: validated.data.title,
+    body: validated.data.body,
+    published_by: admin.id,
+  });
+
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/nouveautes");
+  revalidatePath("/nouveautes");
+  return { success: "Publié." };
 }

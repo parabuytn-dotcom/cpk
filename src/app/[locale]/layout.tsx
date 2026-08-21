@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing, rtlLocales, type Locale } from "@/i18n/routing";
 import Navbar from "@/components/navbar/Navbar";
+import { Link } from "@/i18n/navigation";
 import PendingBanner from "@/components/auth/PendingBanner";
 import ValidatedModal from "@/components/auth/ValidatedModal";
 import { getCurrentProfile } from "@/lib/auth/session";
@@ -57,7 +58,10 @@ export default async function LocaleLayout({
           {profile?.status === "pending" && <PendingBanner />}
           <main className="mx-auto min-h-[60vh] max-w-6xl px-4 py-10">{children}</main>
           <footer className="border-t border-black/5 px-4 py-8 text-center text-sm text-foreground/60 dark:border-white/10">
-            © {new Date().getFullYear()} Collège Pilote du Kef — {footer("rights")}
+            © {new Date().getFullYear()} Collège Pilote du Kef — {footer("rights")} ·{" "}
+            <Link href="/confidentialite" className="underline hover:text-foreground">
+              {footer("privacy")}
+            </Link>
           </footer>
           {showValidatedModal && <ValidatedModalContainer />}
         </NextIntlClientProvider>

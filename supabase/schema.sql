@@ -322,3 +322,219 @@ create index if not exists idx_teacher_absences_teacher_id on public.teacher_abs
 create index if not exists idx_help_requests_status on public.help_requests (status);
 create index if not exists idx_profiles_status on public.profiles (status);
 create index if not exists idx_students_class_id on public.students (class_id);
+
+-- ============================================================================
+-- Phase 4, bloc 1 — panel admin complet, login par téléphone, profs, etc.
+-- Incrément idempotent : peut être ré-exécuté sans casser l'existant.
+-- ============================================================================
+
+alter table public.profiles add column if not exists full_name text;
+alter table public.profiles add column if not exists tags text[] not null default '{}';
+
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('parent', 'student', 'teacher', 'admin', 'staff'));
+
+alter table public.teachers add column if not exists user_id uuid references public.profiles (id) on delete set null;
+
+alter table public.staff_members add column if not exists show_photo boolean not null default true;
+
+-- ----------------------------------------------------------------------------
+-- homework — "Cahier de texte numérique" (Bloc 2, schéma créé maintenant).
+-- ----------------------------------------------------------------------------
+create table if not exists public.homework (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references public.classes (id) on delete cascade,
+  class_name text not null,
+  subject text not null,
+  description text not null,
+  due_date date not null,
+  priority text not null default 'medium' check (priority in ('low', 'medium', 'high')),
+  created_by uuid references public.profiles (id),
+  created_at timestamptz not null default now()
+);
+
+alter table public.homework enable row level security;
+
+create policy "Anyone authenticated can read homework"
+  on public.homework for select
+  using (auth.role() = 'authenticated');
+
+create policy "Teachers and admins manage homework"
+  on public.homework for all
+  using (public.is_admin() or auth.uid() = created_by)
+  with check (public.is_admin() or auth.uid() = created_by);
+
+create table if not exists public.homework_completions (
+  id uuid primary key default gen_random_uuid(),
+  homework_id uuid not null references public.homework (id) on delete cascade,
+  student_id uuid not null references public.profiles (id) on delete cascade,
+  completed_at timestamptz not null default now(),
+  unique (homework_id, student_id)
+);
+
+alter table public.homework_completions enable row level security;
+
+create policy "Students manage their own completions"
+  on public.homework_completions for all
+  using (auth.uid() = student_id or public.is_admin())
+  with check (auth.uid() = student_id or public.is_admin());
+
+-- ----------------------------------------------------------------------------
+-- feed_posts — "Mur social" (Bloc 3, schéma créé maintenant).
+-- ----------------------------------------------------------------------------
+create table if not exists public.feed_posts (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid references public.profiles (id) on delete set null,
+  content text not null,
+  image_url text,
+  pinned boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.feed_posts enable row level security;
+
+create policy "Anyone authenticated can read the feed"
+  on public.feed_posts for select
+  using (auth.role() = 'authenticated');
+
+create policy "Publishers can post to the feed"
+  on public.feed_posts for insert
+  with check (
+    public.is_admin()
+    or exists (
+      select 1 from public.profiles
+      where id = auth.uid() and 'feed_publisher' = any(tags)
+    )
+  );
+
+create policy "Admins manage feed posts"
+  on public.feed_posts for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ----------------------------------------------------------------------------
+-- course_resources — "Vault" (Bloc 4, schéma créé maintenant).
+-- ----------------------------------------------------------------------------
+create table if not exists public.course_resources (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references public.classes (id) on delete cascade,
+  class_name text not null,
+  subject text not null,
+  file_path text not null,
+  file_name text not null,
+  uploaded_by uuid references public.profiles (id),
+  view_count integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table public.course_resources enable row level security;
+
+create policy "Anyone authenticated can read course resources"
+  on public.course_resources for select
+  using (auth.role() = 'authenticated');
+
+create policy "Scribes can upload course resources"
+  on public.course_resources for insert
+  with check (
+    public.is_admin()
+    or exists (
+      select 1 from public.profiles
+      where id = auth.uid() and 'scribe' = any(tags)
+    )
+  );
+
+create policy "Admins manage course resources"
+  on public.course_resources for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ----------------------------------------------------------------------------
+-- badges / user_badges — gamification (Bloc 5, schéma créé maintenant).
+-- ----------------------------------------------------------------------------
+create table if not exists public.badges (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  label text not null,
+  emoji text not null,
+  description text not null
+);
+
+alter table public.badges enable row level security;
+
+create policy "Anyone can read badges"
+  on public.badges for select
+  using (true);
+
+create policy "Admins manage badges"
+  on public.badges for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+insert into public.badges (code, label, emoji, description) values
+  ('scanner_fou', 'Scanner Fou', '📸', '10 cours uploadés et validés.'),
+  ('sauveur_de_classe', 'Sauveur de Classe', '🛟', 'Un cours partagé consulté par plus de 20 élèves.'),
+  ('toujours_a_jour', 'Toujours à Jour', '⚡', 'Devoirs cochés 5 jours consécutifs.'),
+  ('journaliste_cpk', 'Journaliste CPK', '📰', 'Publications régulières sur le feed.'),
+  ('junior_dev', 'Junior Dev', '💻', 'Élève du club web contributeur.'),
+  ('fondateur', 'Fondateur', '👑', 'Badge exclusif administrateur.')
+on conflict (code) do nothing;
+
+create table if not exists public.user_badges (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  badge_id uuid not null references public.badges (id) on delete cascade,
+  earned_at timestamptz not null default now(),
+  unique (user_id, badge_id)
+);
+
+alter table public.user_badges enable row level security;
+
+create policy "Anyone can read user badges"
+  on public.user_badges for select
+  using (true);
+
+create policy "Admins manage user badges"
+  on public.user_badges for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- ----------------------------------------------------------------------------
+-- Storage — photos de staff (publiques) et documents du Vault (privés).
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+  values ('staff-photos', 'staff-photos', true)
+  on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+  values ('course-resources', 'course-resources', false)
+  on conflict (id) do nothing;
+
+create policy "Public read staff photos"
+  on storage.objects for select
+  using (bucket_id = 'staff-photos');
+
+create policy "Admins write staff photos"
+  on storage.objects for all
+  using (bucket_id = 'staff-photos' and public.is_admin())
+  with check (bucket_id = 'staff-photos' and public.is_admin());
+
+create policy "Authenticated read course resources"
+  on storage.objects for select
+  using (bucket_id = 'course-resources' and auth.role() = 'authenticated');
+
+create policy "Scribes write course resources"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'course-resources'
+    and (
+      public.is_admin()
+      or exists (select 1 from public.profiles where id = auth.uid() and 'scribe' = any(tags))
+    )
+  );
+
+create index if not exists idx_homework_class_id on public.homework (class_id);
+create index if not exists idx_homework_completions_student_id on public.homework_completions (student_id);
+create index if not exists idx_feed_posts_created_at on public.feed_posts (created_at);
+create index if not exists idx_course_resources_class_id on public.course_resources (class_id);
+create index if not exists idx_user_badges_user_id on public.user_badges (user_id);

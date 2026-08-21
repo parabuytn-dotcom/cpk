@@ -1,15 +1,18 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
-export type ProfileRole = "parent" | "student" | "admin" | "staff";
+export type ProfileRole = "parent" | "student" | "teacher" | "admin" | "staff";
 export type ProfileStatus = "pending" | "validated";
 
 export type CurrentProfile = {
   id: string;
   role: ProfileRole;
   status: ProfileStatus;
+  fullName: string | null;
   parentFirstName: string | null;
   parentLastName: string | null;
+  phone: string | null;
+  tags: string[];
   validationSeen: boolean;
 };
 
@@ -31,7 +34,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, role, status, parent_first_name, parent_last_name, validation_seen",
+      "id, role, status, full_name, parent_first_name, parent_last_name, phone, tags, validation_seen",
     )
     .eq("id", user.id)
     .single();
@@ -42,8 +45,11 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     id: profile.id,
     role: profile.role,
     status: profile.status,
+    fullName: profile.full_name,
     parentFirstName: profile.parent_first_name,
     parentLastName: profile.parent_last_name,
+    phone: profile.phone,
+    tags: profile.tags ?? [],
     validationSeen: profile.validation_seen,
   };
 }

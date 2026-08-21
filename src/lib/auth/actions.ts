@@ -7,8 +7,9 @@ import { redirect } from "@/i18n/navigation";
 import {
   registerManualSchema,
   registerEmailSchema,
-  loginCinSchema,
+  loginPhoneSchema,
   loginEmailSchema,
+  updatePhoneSchema,
   type FormState,
 } from "./schemas";
 
@@ -22,6 +23,7 @@ async function createParentAccount({
   email,
   password,
   cin,
+  phone,
   parentFirstName,
   parentLastName,
   childFirstName,
@@ -31,6 +33,7 @@ async function createParentAccount({
   email: string;
   password: string;
   cin: string | null;
+  phone: string;
   parentFirstName: string;
   parentLastName: string;
   childFirstName: string;
@@ -48,6 +51,16 @@ async function createParentAccount({
     return { message: "Supabase (clé service_role) n'est pas configuré." };
   }
 
+  const { data: existingPhone } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("phone", phone)
+    .maybeSingle();
+
+  if (existingPhone) {
+    return { message: "Ce numéro de téléphone est déjà utilisé par un autre compte." };
+  }
+
   const { data, error } = await adminClient.auth.admin.createUser({
     email,
     password,
@@ -63,6 +76,8 @@ async function createParentAccount({
     role: "parent",
     status: "pending",
     cin,
+    phone,
+    full_name: `${parentFirstName} ${parentLastName}`,
     parent_first_name: parentFirstName,
     parent_last_name: parentLastName,
     registration_method: method,
@@ -94,6 +109,7 @@ export async function registerManual(
 ): Promise<FormState> {
   const validated = registerManualSchema.safeParse({
     cin: formData.get("cin"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
     parentFirstName: formData.get("parentFirstName"),
     parentLastName: formData.get("parentLastName"),
@@ -105,13 +121,14 @@ export async function registerManual(
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const { cin, password, parentFirstName, parentLastName, childFirstName, childClass } =
+  const { cin, phone, password, parentFirstName, parentLastName, childFirstName, childClass } =
     validated.data;
 
   return createParentAccount({
     email: cinToEmail(cin),
     password,
     cin,
+    phone,
     parentFirstName,
     parentLastName,
     childFirstName,
@@ -126,6 +143,7 @@ export async function registerWithEmail(
 ): Promise<FormState> {
   const validated = registerEmailSchema.safeParse({
     email: formData.get("email"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
     parentFirstName: formData.get("parentFirstName"),
     parentLastName: formData.get("parentLastName"),
@@ -137,13 +155,14 @@ export async function registerWithEmail(
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const { email, password, parentFirstName, parentLastName, childFirstName, childClass } =
+  const { email, phone, password, parentFirstName, parentLastName, childFirstName, childClass } =
     validated.data;
 
   return createParentAccount({
     email,
     password,
     cin: null,
+    phone,
     parentFirstName,
     parentLastName,
     childFirstName,
@@ -172,12 +191,12 @@ async function signInAndRedirect(email: string, password: string): Promise<FormS
   });
 }
 
-export async function loginWithCin(
+export async function loginWithPhone(
   _state: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const validated = loginCinSchema.safeParse({
-    cin: formData.get("cin"),
+  const validated = loginPhoneSchema.safeParse({
+    phone: formData.get("phone"),
     password: formData.get("password"),
   });
 
@@ -185,7 +204,32 @@ export async function loginWithCin(
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  return signInAndRedirect(cinToEmail(validated.data.cin), validated.data.password);
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  // Everyone has a phone now regardless of how they registered (CIN with a
+  // synthetic email, or a real email) — look up their real auth email via
+  // the admin API so both cases can log in with the same phone+password form.
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("phone", validated.data.phone)
+    .maybeSingle();
+
+  if (!profile) {
+    return { message: "Identifiants incorrects." };
+  }
+
+  const { data: userData, error: userError } = await adminClient.auth.admin.getUserById(
+    profile.id,
+  );
+  if (userError || !userData.user?.email) {
+    return { message: "Identifiants incorrects." };
+  }
+
+  return signInAndRedirect(userData.user.email, validated.data.password);
 }
 
 export async function loginWithEmail(
@@ -218,4 +262,43 @@ export async function markValidationSeen() {
   if (!user) return;
 
   await supabase.from("profiles").update({ validation_seen: true }).eq("id", user.id);
+}
+
+export async function updateOwnPhone(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const validated = updatePhoneSchema.safeParse({ phone: formData.get("phone") });
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { message: "Non connecté." };
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: existingPhone } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("phone", validated.data.phone)
+    .maybeSingle();
+
+  if (existingPhone && existingPhone.id !== user.id) {
+    return { message: "Ce numéro est déjà utilisé par un autre compte." };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ phone: validated.data.phone })
+    .eq("id", user.id);
+
+  if (error) return { message: error.message };
+  return { success: "Numéro enregistré." };
 }

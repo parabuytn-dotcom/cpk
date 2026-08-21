@@ -129,6 +129,123 @@ export async function listTeacherAbsences(): Promise<TeacherAbsenceRow[]> {
   });
 }
 
+export type UserRow = {
+  id: string;
+  fullName: string | null;
+  role: string;
+  status: string;
+  phone: string | null;
+  tags: string[];
+  cin: string | null;
+  className: string | null;
+};
+
+export async function listAllProfiles(): Promise<UserRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, parent_first_name, parent_last_name, role, status, phone, tags, cin")
+    .order("created_at", { ascending: false });
+
+  if (!profiles || profiles.length === 0) return [];
+
+  const { data: students } = await supabase
+    .from("students")
+    .select("user_id, class_name")
+    .in(
+      "user_id",
+      profiles.map((p) => p.id),
+    );
+
+  const classByUserId = new Map((students ?? []).map((s) => [s.user_id, s.class_name]));
+
+  return profiles.map((p) => ({
+    id: p.id,
+    fullName:
+      p.full_name ??
+      (p.parent_first_name ? `${p.parent_first_name} ${p.parent_last_name ?? ""}`.trim() : null),
+    role: p.role,
+    status: p.status,
+    phone: p.phone,
+    tags: p.tags ?? [],
+    cin: p.cin,
+    className: classByUserId.get(p.id) ?? null,
+  }));
+}
+
+export type StaffMemberRow = {
+  id: string;
+  fullName: string;
+  roleTitle: string;
+  photoUrl: string | null;
+  showPhoto: boolean;
+};
+
+export async function listStaffMembers(): Promise<StaffMemberRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("staff_members")
+    .select("id, full_name, role_title, photo_url, show_photo")
+    .order("display_order");
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    fullName: row.full_name,
+    roleTitle: row.role_title,
+    photoUrl: row.photo_url,
+    showPhoto: row.show_photo,
+  }));
+}
+
+export type HelpRequestRow = {
+  id: string;
+  subject: string;
+  description: string;
+  status: string;
+  createdAt: string;
+};
+
+export async function listHelpRequests(): Promise<HelpRequestRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("help_requests")
+    .select("id, subject, description, status, created_at")
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    subject: row.subject,
+    description: row.description,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+}
+
+export type ReleaseRow = { id: string; title: string; body: string; publishedAt: string };
+
+export async function listReleases(): Promise<ReleaseRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("releases")
+    .select("id, title, body, published_at")
+    .order("published_at", { ascending: false });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    publishedAt: row.published_at,
+  }));
+}
+
 export type ChildRow = {
   id: string;
   firstName: string;
