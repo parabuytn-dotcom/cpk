@@ -37,21 +37,25 @@ async function createParentAccount({
   childClass: string;
   method: "manual" | "email";
 }): Promise<FormState> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signUp({ email, password });
-
-  if (error || !data.user) {
-    return { message: error?.message ?? "Impossible de créer le compte." };
-  }
-
-  // Use the service-role client for these inserts: right after signUp() there
-  // may not be an active session yet (e.g. if email confirmation is required
-  // in the Supabase Auth settings), so auth.uid() would be null and the
-  // regular RLS insert policy (auth.uid() = id) would reject the row.
+  // Created via the admin API (email_confirm: true) rather than the public
+  // signUp() flow: Supabase's default "Confirm email" setting would otherwise
+  // leave the account unable to log in until a confirmation link is clicked —
+  // which is impossible for CIN accounts, since their @cpk.internal address
+  // isn't real. This also lets us insert profiles/students without hitting
+  // the RLS insert policy (no session exists yet at this point anyway).
   const adminClient = createAdminClient();
   if (!adminClient) {
     return { message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data, error } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (error || !data.user) {
+    return { message: error?.message ?? "Impossible de créer le compte." };
   }
 
   const { error: profileError } = await adminClient.from("profiles").insert({
