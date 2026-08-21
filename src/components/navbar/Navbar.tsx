@@ -11,6 +11,7 @@ export default async function Navbar() {
   const items = [
     { href: "/", label: t("home") },
     { href: "/emploi-du-temps", label: t("timetable") },
+    ...(profile ? [{ href: "/feed", label: t("feed") }] : []),
     { href: "/staff", label: t("staff") },
     { href: "/a-propos", label: t("about") },
     { href: "/conseils", label: t("tips") },

@@ -426,6 +426,9 @@ create table if not exists public.feed_posts (
   created_at timestamptz not null default now()
 );
 
+alter table public.feed_posts add column if not exists media_type text check (media_type in ('image', 'video'));
+alter table public.feed_posts add column if not exists media_path text;
+
 alter table public.feed_posts enable row level security;
 
 drop policy if exists "Anyone authenticated can read the feed" on public.feed_posts;
@@ -433,14 +436,21 @@ create policy "Anyone authenticated can read the feed"
   on public.feed_posts for select
   using (auth.role() = 'authenticated');
 
+-- Publishing text/image posts requires the 'feed_publisher' tag; video posts
+-- ("reels") require the separate 'reels_publisher' tag, since video eats far
+-- more storage. Admins can always post either kind.
 drop policy if exists "Publishers can post to the feed" on public.feed_posts;
 create policy "Publishers can post to the feed"
   on public.feed_posts for insert
   with check (
     public.is_admin()
-    or exists (
-      select 1 from public.profiles
-      where id = auth.uid() and 'feed_publisher' = any(tags)
+    or (
+      (media_type is null or media_type = 'image')
+      and exists (select 1 from public.profiles where id = auth.uid() and 'feed_publisher' = any(tags))
+    )
+    or (
+      media_type = 'video'
+      and exists (select 1 from public.profiles where id = auth.uid() and 'reels_publisher' = any(tags))
     )
   );
 
@@ -449,6 +459,60 @@ create policy "Admins manage feed posts"
   on public.feed_posts for all
   using (public.is_admin())
   with check (public.is_admin());
+
+-- ----------------------------------------------------------------------------
+-- post_likes / post_comments — open to every authenticated user regardless
+-- of publishing permissions.
+-- ----------------------------------------------------------------------------
+create table if not exists public.post_likes (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references public.feed_posts (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (post_id, user_id)
+);
+
+alter table public.post_likes enable row level security;
+
+drop policy if exists "Anyone authenticated can read likes" on public.post_likes;
+create policy "Anyone authenticated can read likes"
+  on public.post_likes for select
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Users manage their own likes" on public.post_likes;
+create policy "Users manage their own likes"
+  on public.post_likes for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users remove their own likes" on public.post_likes;
+create policy "Users remove their own likes"
+  on public.post_likes for delete
+  using (auth.uid() = user_id or public.is_admin());
+
+create table if not exists public.post_comments (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references public.feed_posts (id) on delete cascade,
+  author_id uuid references public.profiles (id) on delete set null,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.post_comments enable row level security;
+
+drop policy if exists "Anyone authenticated can read comments" on public.post_comments;
+create policy "Anyone authenticated can read comments"
+  on public.post_comments for select
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Users add their own comments" on public.post_comments;
+create policy "Users add their own comments"
+  on public.post_comments for insert
+  with check (auth.uid() = author_id);
+
+drop policy if exists "Users delete their own comments" on public.post_comments;
+create policy "Users delete their own comments"
+  on public.post_comments for delete
+  using (auth.uid() = author_id or public.is_admin());
 
 -- ----------------------------------------------------------------------------
 -- course_resources — "Vault" (Bloc 4, schéma créé maintenant).
@@ -554,6 +618,10 @@ insert into storage.buckets (id, name, public)
   values ('course-resources', 'course-resources', false)
   on conflict (id) do nothing;
 
+insert into storage.buckets (id, name, public)
+  values ('feed-media', 'feed-media', true)
+  on conflict (id) do nothing;
+
 drop policy if exists "Public read staff photos" on storage.objects;
 create policy "Public read staff photos"
   on storage.objects for select
@@ -581,6 +649,27 @@ create policy "Scribes write course resources"
     )
   );
 
+drop policy if exists "Public read feed media" on storage.objects;
+create policy "Public read feed media"
+  on storage.objects for select
+  using (bucket_id = 'feed-media');
+
+drop policy if exists "Publishers write feed media" on storage.objects;
+create policy "Publishers write feed media"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'feed-media'
+    and (
+      public.is_admin()
+      or exists (
+        select 1 from public.profiles
+        where id = auth.uid() and (tags && array['feed_publisher', 'reels_publisher'])
+      )
+    )
+  );
+
+create index if not exists idx_post_likes_post_id on public.post_likes (post_id);
+create index if not exists idx_post_comments_post_id on public.post_comments (post_id);
 create index if not exists idx_homework_class_id on public.homework (class_id);
 create index if not exists idx_homework_completions_student_id on public.homework_completions (student_id);
 create index if not exists idx_feed_posts_created_at on public.feed_posts (created_at);
