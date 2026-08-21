@@ -96,7 +96,11 @@
     "helpTab": "Help",
     "helpEmpty": "No help request yet.",
     "releasesTab": "Releases",
-    "publish": "Publish"
+    "publish": "Publish",
+    "teachersTab": "Teachers",
+    "teachersSubtitle": "Create a login account for each teacher.",
+    "teachersEmpty": "No teacher yet (add timetable slots to create some).",
+    "accountExists": "Account created"
   },
   "privacy": {
     "title": "Your data, privacy",

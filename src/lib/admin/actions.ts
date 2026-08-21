@@ -17,6 +17,7 @@ import {
   staffMemberSchema,
   releaseSchema,
   helpRequestSchema,
+  homeworkSchema,
   type FormState,
 } from "./schemas";
 
@@ -205,27 +206,19 @@ function everyDayBetween(start: Date, end: Date) {
   return days;
 }
 
-export async function declareTeacherAbsence(
-  _state: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const admin = await requireAdmin();
-
-  const validated = teacherAbsenceSchema.safeParse({
-    teacherId: formData.get("teacherId"),
-    startsAt: formData.get("startsAt"),
-    endsAt: formData.get("endsAt"),
-    reason: formData.get("reason") ?? undefined,
-  });
-
-  if (!validated.success) {
-    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
-  }
-
-  const { teacherId, reason } = validated.data;
-  const startsAt = new Date(validated.data.startsAt);
-  const endsAt = new Date(validated.data.endsAt);
-
+async function applyTeacherAbsence({
+  teacherId,
+  startsAt,
+  endsAt,
+  reason,
+  createdBy,
+}: {
+  teacherId: string;
+  startsAt: Date;
+  endsAt: Date;
+  reason: string | undefined;
+  createdBy: string;
+}): Promise<FormState> {
   const supabase = await createClient();
 
   const { data: teacher } = await supabase
@@ -239,7 +232,7 @@ export async function declareTeacherAbsence(
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
     reason: reason || null,
-    created_by: admin.id,
+    created_by: createdBy,
   });
   if (absenceError) return { message: absenceError.message };
 
@@ -305,6 +298,180 @@ export async function declareTeacherAbsence(
   return {
     success: `Absence enregistrée. ${affectedEntryIds.size} créneau(x) annulé(s) sur ${affectedClasses.size} classe(s).`,
   };
+}
+
+export async function declareTeacherAbsence(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const admin = await requireAdmin();
+
+  const validated = teacherAbsenceSchema.safeParse({
+    teacherId: formData.get("teacherId"),
+    startsAt: formData.get("startsAt"),
+    endsAt: formData.get("endsAt"),
+    reason: formData.get("reason") ?? undefined,
+  });
+
+  if (!validated.success) {
+    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  return applyTeacherAbsence({
+    teacherId: validated.data.teacherId,
+    startsAt: new Date(validated.data.startsAt),
+    endsAt: new Date(validated.data.endsAt),
+    reason: validated.data.reason,
+    createdBy: admin.id,
+  });
+}
+
+/** Teacher self-service version of declareTeacherAbsence: no teacher picker, uses their own linked teacher row. */
+export async function declareOwnAbsence(_state: FormState, formData: FormData): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "teacher") {
+    return { message: "Non autorisé." };
+  }
+
+  const supabase = await createClient();
+  const { data: teacher } = await supabase
+    .from("teachers")
+    .select("id")
+    .eq("user_id", profile.id)
+    .maybeSingle();
+
+  if (!teacher) {
+    return { message: "Aucune fiche professeur liée à ce compte." };
+  }
+
+  const validated = teacherAbsenceSchema.safeParse({
+    teacherId: teacher.id,
+    startsAt: formData.get("startsAt"),
+    endsAt: formData.get("endsAt"),
+    reason: formData.get("reason") ?? undefined,
+  });
+
+  if (!validated.success) {
+    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  return applyTeacherAbsence({
+    teacherId: teacher.id,
+    startsAt: new Date(validated.data.startsAt),
+    endsAt: new Date(validated.data.endsAt),
+    reason: validated.data.reason,
+    createdBy: profile.id,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Comptes profs — création 1-clic depuis le panel admin
+// ---------------------------------------------------------------------------
+
+export async function createTeacherAccount(
+  teacherId: string,
+): Promise<{ success: true; email: string; password: string } | { success: false; error: string }> {
+  await requireAdmin();
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: teacher } = await adminClient
+    .from("teachers")
+    .select("id, first_name, last_name, phone, user_id")
+    .eq("id", teacherId)
+    .single();
+
+  if (!teacher) return { success: false, error: "Professeur introuvable." };
+  if (teacher.user_id) return { success: false, error: "Ce compte existe déjà." };
+
+  const password = generatePassword();
+  const identifier = teacher.phone || randomBytes(4).toString("hex");
+  const email = `${identifier}@cpk.internal`;
+
+  const { data: created, error } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (error || !created.user) {
+    return { success: false, error: error?.message ?? "Échec de la création du compte." };
+  }
+
+  await adminClient.from("profiles").insert({
+    id: created.user.id,
+    role: "teacher",
+    status: "validated",
+    phone: teacher.phone,
+    full_name: `${teacher.first_name} ${teacher.last_name}`,
+  });
+  await adminClient.from("teachers").update({ user_id: created.user.id }).eq("id", teacherId);
+
+  revalidatePath("/admin/profs");
+  return { success: true, email, password };
+}
+
+// ---------------------------------------------------------------------------
+// Cahier de texte numérique — devoirs par classe/matière
+// ---------------------------------------------------------------------------
+
+export async function createHomework(_state: FormState, formData: FormData): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile || (profile.role !== "teacher" && profile.role !== "admin")) {
+    return { message: "Non autorisé." };
+  }
+
+  const validated = homeworkSchema.safeParse({
+    classId: formData.get("classId") ?? "",
+    className: formData.get("className"),
+    subject: formData.get("subject"),
+    description: formData.get("description"),
+    dueDate: formData.get("dueDate"),
+    priority: formData.get("priority"),
+  });
+
+  if (!validated.success) {
+    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("homework").insert({
+    class_id: validated.data.classId || null,
+    class_name: validated.data.className,
+    subject: validated.data.subject,
+    description: validated.data.description,
+    due_date: validated.data.dueDate,
+    priority: validated.data.priority,
+    created_by: profile.id,
+  });
+
+  if (error) return { message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: "Devoir ajouté." };
+}
+
+export async function toggleHomeworkCompletion(homeworkId: string, completed: boolean) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Non connecté.");
+
+  const supabase = await createClient();
+
+  if (completed) {
+    await supabase
+      .from("homework_completions")
+      .insert({ homework_id: homeworkId, student_id: profile.id });
+  } else {
+    await supabase
+      .from("homework_completions")
+      .delete()
+      .eq("homework_id", homeworkId)
+      .eq("student_id", profile.id);
+  }
+
+  revalidatePath("/dashboard");
 }
 
 // ---------------------------------------------------------------------------

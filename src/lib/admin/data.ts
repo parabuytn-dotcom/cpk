@@ -41,7 +41,14 @@ export async function listClasses(): Promise<ClassRow[]> {
   return data ?? [];
 }
 
-export type TeacherRow = { id: string; firstName: string; lastName: string; subject: string | null };
+export type TeacherRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  subject: string | null;
+  phone: string | null;
+  hasAccount: boolean;
+};
 
 export async function listTeachers(): Promise<TeacherRow[]> {
   if (!isSupabaseConfigured()) return [];
@@ -49,7 +56,7 @@ export async function listTeachers(): Promise<TeacherRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("teachers")
-    .select("id, first_name, last_name, subject")
+    .select("id, first_name, last_name, subject, phone, user_id")
     .order("last_name");
 
   return (data ?? []).map((row) => ({
@@ -57,6 +64,8 @@ export async function listTeachers(): Promise<TeacherRow[]> {
     firstName: row.first_name,
     lastName: row.last_name,
     subject: row.subject,
+    phone: row.phone,
+    hasAccount: row.user_id !== null,
   }));
 }
 
@@ -244,6 +253,108 @@ export async function listReleases(): Promise<ReleaseRow[]> {
     body: row.body,
     publishedAt: row.published_at,
   }));
+}
+
+export type HomeworkRow = {
+  id: string;
+  className: string;
+  subject: string;
+  description: string;
+  dueDate: string;
+  priority: string;
+};
+
+export async function listHomeworkForTeacher(teacherProfileId: string): Promise<HomeworkRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("homework")
+    .select("id, class_name, subject, description, due_date, priority")
+    .eq("created_by", teacherProfileId)
+    .order("due_date", { ascending: false });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    className: row.class_name,
+    subject: row.subject,
+    description: row.description,
+    dueDate: row.due_date,
+    priority: row.priority,
+  }));
+}
+
+export async function listHomeworkForClass(
+  className: string,
+  studentId?: string,
+): Promise<(HomeworkRow & { completed: boolean })[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data: homework } = await supabase
+    .from("homework")
+    .select("id, class_name, subject, description, due_date, priority")
+    .eq("class_name", className)
+    .order("due_date", { ascending: true });
+
+  if (!homework || homework.length === 0) return [];
+
+  let completedIds = new Set<string>();
+  if (studentId) {
+    const { data: completions } = await supabase
+      .from("homework_completions")
+      .select("homework_id")
+      .eq("student_id", studentId)
+      .in(
+        "homework_id",
+        homework.map((h) => h.id),
+      );
+    completedIds = new Set((completions ?? []).map((c) => c.homework_id));
+  }
+
+  return homework.map((row) => ({
+    id: row.id,
+    className: row.class_name,
+    subject: row.subject,
+    description: row.description,
+    dueDate: row.due_date,
+    priority: row.priority,
+    completed: completedIds.has(row.id),
+  }));
+}
+
+export async function getStudentClassName(studentProfileId: string): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("students")
+    .select("class_name")
+    .eq("user_id", studentProfileId)
+    .maybeSingle();
+
+  return data?.class_name ?? null;
+}
+
+export async function getTeacherRowForUser(teacherProfileId: string): Promise<TeacherRow | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("teachers")
+    .select("id, first_name, last_name, subject, phone, user_id")
+    .eq("user_id", teacherProfileId)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    id: data.id,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    subject: data.subject,
+    phone: data.phone,
+    hasAccount: true,
+  };
 }
 
 export type ChildRow = {

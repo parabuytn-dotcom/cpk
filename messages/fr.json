@@ -96,7 +96,11 @@
     "helpTab": "Aide",
     "helpEmpty": "Aucune demande d'aide pour le moment.",
     "releasesTab": "Nouveautés",
-    "publish": "Publier"
+    "publish": "Publier",
+    "teachersTab": "Profs",
+    "teachersSubtitle": "Crée un compte de connexion pour chaque professeur.",
+    "teachersEmpty": "Aucun professeur pour le moment (ajoute des créneaux d'emploi du temps pour en créer).",
+    "accountExists": "Compte créé"
   },
   "privacy": {
     "title": "Confidentialité de vos données",

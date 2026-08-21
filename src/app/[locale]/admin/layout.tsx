@@ -24,6 +24,7 @@ export default async function AdminLayout({
     { href: "/admin/classes", label: t("classesTab") },
     { href: "/admin/emploi-du-temps", label: t("timetableTab") },
     { href: "/admin/absences", label: t("absencesTab") },
+    { href: "/admin/profs", label: t("teachersTab") },
     { href: "/admin/staff", label: t("staffTab") },
     { href: "/admin/aide", label: t("helpTab") },
     { href: "/admin/nouveautes", label: t("releasesTab") },

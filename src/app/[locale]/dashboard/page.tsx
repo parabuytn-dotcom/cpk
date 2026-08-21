@@ -1,10 +1,20 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { listChildrenForParent } from "@/lib/admin/data";
+import {
+  listChildrenForParent,
+  listClasses,
+  listHomeworkForTeacher,
+  listHomeworkForClass,
+  getStudentClassName,
+} from "@/lib/admin/data";
 import PageHeader from "@/components/ui/PageHeader";
 import ChildAccountButton from "@/components/dashboard/ChildAccountButton";
 import PhonePrompt from "@/components/dashboard/PhonePrompt";
+import HomeworkForm from "@/components/dashboard/HomeworkForm";
+import TeacherAbsenceForm from "@/components/dashboard/TeacherAbsenceForm";
+import HomeworkChecklist from "@/components/dashboard/HomeworkChecklist";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default async function DashboardPage({
   params,
@@ -65,6 +75,59 @@ export default async function DashboardPage({
             </div>
           )}
         </div>
+      )}
+
+      {profile.role === "teacher" && <TeacherDashboard profileId={profile.id} />}
+
+      {profile.role === "student" && <StudentDashboard profileId={profile.id} />}
+    </div>
+  );
+}
+
+async function TeacherDashboard({ profileId }: { profileId: string }) {
+  const [classes, homework] = await Promise.all([
+    listClasses(),
+    listHomeworkForTeacher(profileId),
+  ]);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h2 className="mb-3 text-lg font-semibold">Cahier de texte</h2>
+        <HomeworkForm classes={classes} />
+      </div>
+
+      {homework.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {homework.map((h) => (
+            <div key={h.id} className="glass-surface rounded-2xl px-5 py-3">
+              <p className="font-semibold">
+                {h.className} · {h.subject}
+              </p>
+              <p className="text-sm text-foreground/60">
+                {h.description} — pour le {new Date(h.dueDate).toLocaleDateString("fr-FR")}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <TeacherAbsenceForm />
+    </div>
+  );
+}
+
+async function StudentDashboard({ profileId }: { profileId: string }) {
+  const className = await getStudentClassName(profileId);
+  const homework = className ? await listHomeworkForClass(className, profileId) : [];
+
+  return (
+    <div>
+      <h2 className="mb-3 text-lg font-semibold">Mes devoirs</h2>
+      {homework.length === 0 ? (
+        <EmptyState message="Aucun devoir pour le moment." />
+      ) : (
+        <HomeworkChecklist items={homework} />
       )}
     </div>
   );

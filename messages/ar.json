@@ -96,7 +96,11 @@
     "helpTab": "المساعدة",
     "helpEmpty": "لا يوجد طلب مساعدة بعد.",
     "releasesTab": "التحديثات",
-    "publish": "نشر"
+    "publish": "نشر",
+    "teachersTab": "الأساتذة",
+    "teachersSubtitle": "أنشئ حساب دخول لكل أستاذ.",
+    "teachersEmpty": "لا يوجد أستاذ بعد (أضف حصصا في جدول الأوقات لإنشائهم).",
+    "accountExists": "تم إنشاء الحساب"
   },
   "privacy": {
     "title": "خصوصية بياناتك",

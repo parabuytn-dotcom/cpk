@@ -64,6 +64,15 @@ export const helpRequestSchema = z.object({
   description: z.string().trim().min(1, "Description requise."),
 });
 
+export const homeworkSchema = z.object({
+  classId: z.string().uuid().optional().or(z.literal("")),
+  className: z.string().trim().min(1, "Classe requise."),
+  subject: z.string().trim().min(1, "Matière requise."),
+  description: z.string().trim().min(1, "Description requise."),
+  dueDate: z.string().min(1, "Date limite requise."),
+  priority: z.enum(["low", "medium", "high"]),
+});
+
 export type FormState =
   | {
       errors?: Record<string, string[]>;
