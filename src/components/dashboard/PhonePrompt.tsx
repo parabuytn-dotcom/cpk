@@ -1,9 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { updateOwnPhone } from "@/lib/auth/actions";
 
 export default function PhonePrompt() {
+  const t = useTranslations("phonePrompt");
   const [state, action, pending] = useActionState(updateOwnPhone, undefined);
 
   if (state?.success) {
@@ -20,9 +22,7 @@ export default function PhonePrompt() {
       className="glass-surface flex flex-wrap items-end gap-3 rounded-2xl px-5 py-4"
     >
       <div>
-        <label className="mb-1 block text-sm font-medium">
-          Ajoute ton numéro de téléphone (utilisé pour te connecter)
-        </label>
+        <label className="mb-1 block text-sm font-medium">{t("label")}</label>
         <input
           name="phone"
           type="tel"
@@ -36,7 +36,7 @@ export default function PhonePrompt() {
         disabled={pending}
         className="rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
       >
-        Enregistrer
+        {t("save")}
       </button>
       {state?.message && (
         <p className="w-full text-sm text-red-600 dark:text-red-400">{state.message}</p>

@@ -117,6 +117,74 @@
     "contactTitle": "Une question ?",
     "contact": "Contacte-nous au 99766801 ou par email à contact@cpkef.tn."
   },
+  "feed": {
+    "title": "Mur social",
+    "placeholder": "Quoi de neuf au collège ?",
+    "videoHint": "Photo ou vidéo (reel) — les vidéos consomment beaucoup de stockage, merci de rester raisonnable.",
+    "publish": "Publier",
+    "publishing": "Publication…",
+    "like": "J'aime",
+    "commentPlaceholder": "Écrire un commentaire…",
+    "send": "Envoyer",
+    "empty": "Rien à afficher pour le moment.",
+    "noPermissionImage": "Tu n'as pas la permission de publier des images.",
+    "noPermissionVideo": "Tu n'as pas la permission de publier des vidéos (reels).",
+    "noPermissionFeed": "Tu n'as pas la permission de publier sur le feed.",
+    "loginFirst": "Connecte-toi d'abord."
+  },
+  "vault": {
+    "title": "Le Vault",
+    "subtitle": "Espace de partage des cours — les Scribes uploadent les leçons du jour pour les absents.",
+    "selectClass": "Choisir une classe",
+    "subject": "Matière",
+    "addToVault": "Ajouter au Vault",
+    "uploading": "Envoi…",
+    "open": "Ouvrir",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer ce document ?",
+    "noPermission": "Tu n'as pas la permission d'uploader (réservé aux Scribes).",
+    "chooseFile": "Choisis un fichier à uploader.",
+    "noResources": "Aucun document pour cette classe pour le moment.",
+    "views": "vue(s)",
+    "successAdded": "Cours ajouté au Vault."
+  },
+  "homework": {
+    "title": "Cahier de texte",
+    "classPlaceholder": "Classe…",
+    "subjectPlaceholder": "Matière",
+    "descriptionPlaceholder": "Description du devoir",
+    "priorityLow": "Priorité basse",
+    "priorityMedium": "Priorité moyenne",
+    "priorityHigh": "Priorité haute",
+    "submit": "Ajouter le devoir",
+    "added": "Devoir ajouté.",
+    "myHomework": "Mes devoirs",
+    "noHomework": "Aucun devoir pour le moment.",
+    "iAmAbsent": "Je suis absent(e)",
+    "start": "Début",
+    "end": "Fin",
+    "reasonPlaceholder": "Motif (optionnel)",
+    "declare": "Déclarer mon absence",
+    "dueFor": "pour le",
+    "absenceRecorded": "Absence enregistrée. {slots} créneau(x) annulé(s) sur {classes} classe(s)."
+  },
+  "notificationsUi": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "empty": "Aucune notification pour le moment."
+  },
+  "accountCreation": {
+    "createChild": "Créer le compte de mon enfant",
+    "create": "Créer le compte",
+    "creating": "Création…",
+    "createdNote": "Compte créé — note ces identifiants, ils ne seront plus affichés :",
+    "createdNoteSimple": "Compte créé :"
+  },
+  "phonePrompt": {
+    "label": "Ajoute ton numéro de téléphone (utilisé pour te connecter)",
+    "save": "Enregistrer",
+    "saved": "Numéro enregistré."
+  },
   "footer": {
     "rights": "Tous droits réservés.",
     "privacy": "Confidentialité"

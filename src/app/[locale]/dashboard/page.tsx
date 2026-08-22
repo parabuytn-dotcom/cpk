@@ -17,6 +17,7 @@ import HomeworkChecklist from "@/components/dashboard/HomeworkChecklist";
 import BadgesRow from "@/components/dashboard/BadgesRow";
 import EmptyState from "@/components/ui/EmptyState";
 import { listMyBadges } from "@/lib/badges/data";
+import { formatDate } from "@/lib/formatDate";
 
 export default async function DashboardPage({
   params,
@@ -84,15 +85,16 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {profile.role === "teacher" && <TeacherDashboard profileId={profile.id} />}
+      {profile.role === "teacher" && <TeacherDashboard profileId={profile.id} locale={locale} />}
 
       {profile.role === "student" && <StudentDashboard profileId={profile.id} />}
     </div>
   );
 }
 
-async function TeacherDashboard({ profileId }: { profileId: string }) {
-  const [classes, homework] = await Promise.all([
+async function TeacherDashboard({ profileId, locale }: { profileId: string; locale: string }) {
+  const [t, classes, homework] = await Promise.all([
+    getTranslations("homework"),
     listClasses(),
     listHomeworkForTeacher(profileId),
   ]);
@@ -100,7 +102,7 @@ async function TeacherDashboard({ profileId }: { profileId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Cahier de texte</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t("title")}</h2>
         <HomeworkForm classes={classes} />
       </div>
 
@@ -112,7 +114,7 @@ async function TeacherDashboard({ profileId }: { profileId: string }) {
                 {h.className} · {h.subject}
               </p>
               <p className="text-sm text-foreground/60">
-                {h.description} — pour le {new Date(h.dueDate).toLocaleDateString("fr-FR")}
+                {h.description} — {t("dueFor")} {formatDate(locale, h.dueDate)}
               </p>
             </div>
           ))}
@@ -125,14 +127,17 @@ async function TeacherDashboard({ profileId }: { profileId: string }) {
 }
 
 async function StudentDashboard({ profileId }: { profileId: string }) {
-  const className = await getStudentClassName(profileId);
+  const [t, className] = await Promise.all([
+    getTranslations("homework"),
+    getStudentClassName(profileId),
+  ]);
   const homework = className ? await listHomeworkForClass(className, profileId) : [];
 
   return (
     <div>
-      <h2 className="mb-3 text-lg font-semibold">Mes devoirs</h2>
+      <h2 className="mb-3 text-lg font-semibold">{t("myHomework")}</h2>
       {homework.length === 0 ? (
-        <EmptyState message="Aucun devoir pour le moment." />
+        <EmptyState message={t("noHomework")} />
       ) : (
         <HomeworkChecklist items={homework} />
       )}

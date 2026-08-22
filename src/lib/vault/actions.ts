@@ -2,6 +2,7 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { checkScannerFou, checkSauveurDeClasse } from "@/lib/badges/engine";
@@ -11,10 +12,11 @@ export async function uploadCourseResource(
   _state: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const t = await getTranslations("vault");
   const profile = await getCurrentProfile();
-  if (!profile) return { message: "Connecte-toi d'abord." };
+  if (!profile) return { message: t("noPermission") };
   if (profile.role !== "admin" && !profile.tags.includes("scribe")) {
-    return { message: "Tu n'as pas la permission d'uploader (réservé aux Scribes)." };
+    return { message: t("noPermission") };
   }
 
   const validated = uploadResourceSchema.safeParse({
@@ -23,12 +25,12 @@ export async function uploadCourseResource(
     subject: formData.get("subject"),
   });
   if (!validated.success) {
-    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+    return { message: validated.error.issues[0]?.message ?? "Invalid" };
   }
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { message: "Choisis un fichier à uploader." };
+    return { message: t("chooseFile") };
   }
 
   const supabase = await createClient();
@@ -53,7 +55,7 @@ export async function uploadCourseResource(
   await checkScannerFou(profile.id);
 
   revalidatePath("/cours");
-  return { success: "Cours ajouté au Vault." };
+  return { success: t("successAdded") };
 }
 
 export async function incrementResourceView(resourceId: string) {

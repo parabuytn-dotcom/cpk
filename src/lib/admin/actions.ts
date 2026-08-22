@@ -2,6 +2,7 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
@@ -297,10 +298,15 @@ async function applyTeacherAbsence({
     }
   }
 
+  const t = await getTranslations("homework");
   revalidatePath("/admin/absences");
   revalidatePath("/admin/emploi-du-temps");
+  revalidatePath("/dashboard");
   return {
-    success: `Absence enregistrée. ${affectedEntryIds.size} créneau(x) annulé(s) sur ${affectedClasses.size} classe(s).`,
+    success: t("absenceRecorded", {
+      slots: affectedEntryIds.size,
+      classes: affectedClasses.size,
+    }),
   };
 }
 
@@ -422,6 +428,7 @@ export async function createTeacherAccount(
 // ---------------------------------------------------------------------------
 
 export async function createHomework(_state: FormState, formData: FormData): Promise<FormState> {
+  const t = await getTranslations("homework");
   const profile = await getCurrentProfile();
   if (!profile || (profile.role !== "teacher" && profile.role !== "admin")) {
     return { message: "Non autorisé." };
@@ -470,7 +477,7 @@ export async function createHomework(_state: FormState, formData: FormData): Pro
   }
 
   revalidatePath("/dashboard");
-  return { success: "Devoir ajouté." };
+  return { success: t("added") };
 }
 
 export async function toggleHomeworkCompletion(homeworkId: string, completed: boolean) {

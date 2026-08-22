@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { toggleLike } from "@/lib/social/actions";
 
 export default function LikeButton({
@@ -12,6 +13,7 @@ export default function LikeButton({
   initialLiked: boolean;
   initialCount: number;
 }) {
+  const t = useTranslations("feed");
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [, startTransition] = useTransition();
@@ -33,7 +35,7 @@ export default function LikeButton({
       }`}
     >
       <span aria-hidden>{liked ? "❤️" : "🤍"}</span>
-      {count > 0 ? count : "J'aime"}
+      {count > 0 ? count : t("like")}
     </button>
   );
 }

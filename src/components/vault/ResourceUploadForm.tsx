@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { uploadCourseResource } from "@/lib/vault/actions";
 import type { ClassRow } from "@/lib/admin/data";
 
 export default function ResourceUploadForm({ classRow }: { classRow: ClassRow }) {
+  const t = useTranslations("vault");
   const [state, action, pending] = useActionState(uploadCourseResource, undefined);
 
   return (
@@ -18,7 +20,7 @@ export default function ResourceUploadForm({ classRow }: { classRow: ClassRow })
 
       <input
         name="subject"
-        placeholder="Matière"
+        placeholder={t("subject")}
         required
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 text-sm dark:border-white/10 dark:bg-white/5"
       />
@@ -28,7 +30,7 @@ export default function ResourceUploadForm({ classRow }: { classRow: ClassRow })
         disabled={pending}
         className="rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
       >
-        {pending ? "Envoi…" : "Ajouter au Vault"}
+        {pending ? t("uploading") : t("addToVault")}
       </button>
       {state?.message && <p className="w-full text-sm text-red-600 dark:text-red-400">{state.message}</p>}
       {state?.success && (

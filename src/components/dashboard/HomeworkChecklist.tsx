@@ -1,21 +1,25 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { toggleHomeworkCompletion } from "@/lib/admin/actions";
+import { formatDate } from "@/lib/formatDate";
 import type { HomeworkRow } from "@/lib/admin/data";
-
-const PRIORITY_LABEL: Record<string, string> = {
-  low: "Basse",
-  medium: "Moyenne",
-  high: "Haute",
-};
 
 export default function HomeworkChecklist({
   items,
 }: {
   items: (HomeworkRow & { completed: boolean })[];
 }) {
+  const t = useTranslations("homework");
+  const locale = useLocale();
   const [isPending, startTransition] = useTransition();
+
+  const priorityLabel: Record<string, string> = {
+    low: t("priorityLow"),
+    medium: t("priorityMedium"),
+    high: t("priorityHigh"),
+  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -38,8 +42,8 @@ export default function HomeworkChecklist({
               {item.subject} <span className="font-normal text-foreground/60">— {item.description}</span>
             </p>
             <p className="text-sm text-foreground/60">
-              Pour le {new Date(item.dueDate).toLocaleDateString("fr-FR")} · Priorité{" "}
-              {PRIORITY_LABEL[item.priority] ?? item.priority}
+              {t("dueFor")} {formatDate(locale, item.dueDate)} ·{" "}
+              {priorityLabel[item.priority] ?? item.priority}
             </p>
           </div>
         </label>

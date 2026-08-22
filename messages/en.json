@@ -117,6 +117,74 @@
     "contactTitle": "Any question?",
     "contact": "Contact us at 99766801 or by email at contact@cpkef.tn."
   },
+  "feed": {
+    "title": "Social wall",
+    "placeholder": "What's new at school?",
+    "videoHint": "Photo or video (reel) — videos use a lot of storage, please stay reasonable.",
+    "publish": "Post",
+    "publishing": "Posting…",
+    "like": "Like",
+    "commentPlaceholder": "Write a comment…",
+    "send": "Send",
+    "empty": "Nothing to show yet.",
+    "noPermissionImage": "You don't have permission to post images.",
+    "noPermissionVideo": "You don't have permission to post videos (reels).",
+    "noPermissionFeed": "You don't have permission to post on the feed.",
+    "loginFirst": "Log in first."
+  },
+  "vault": {
+    "title": "The Vault",
+    "subtitle": "Shared course space — Scribes upload the day's lessons for those who were absent.",
+    "selectClass": "Choose a class",
+    "subject": "Subject",
+    "addToVault": "Add to the Vault",
+    "uploading": "Uploading…",
+    "open": "Open",
+    "delete": "Delete",
+    "confirmDelete": "Delete this document?",
+    "noPermission": "You don't have permission to upload (Scribes only).",
+    "chooseFile": "Choose a file to upload.",
+    "noResources": "No document for this class yet.",
+    "views": "view(s)",
+    "successAdded": "Course added to the Vault."
+  },
+  "homework": {
+    "title": "Homework log",
+    "classPlaceholder": "Class…",
+    "subjectPlaceholder": "Subject",
+    "descriptionPlaceholder": "Homework description",
+    "priorityLow": "Low priority",
+    "priorityMedium": "Medium priority",
+    "priorityHigh": "High priority",
+    "submit": "Add homework",
+    "added": "Homework added.",
+    "myHomework": "My homework",
+    "noHomework": "No homework yet.",
+    "iAmAbsent": "I'm absent",
+    "start": "Start",
+    "end": "End",
+    "reasonPlaceholder": "Reason (optional)",
+    "declare": "Declare my absence",
+    "dueFor": "due",
+    "absenceRecorded": "Absence recorded. {slots} slot(s) cancelled across {classes} class(es)."
+  },
+  "notificationsUi": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notification yet."
+  },
+  "accountCreation": {
+    "createChild": "Create my child's account",
+    "create": "Create account",
+    "creating": "Creating…",
+    "createdNote": "Account created — note these credentials, they won't be shown again:",
+    "createdNoteSimple": "Account created:"
+  },
+  "phonePrompt": {
+    "label": "Add your phone number (used to log in)",
+    "save": "Save",
+    "saved": "Phone number saved."
+  },
   "footer": {
     "rights": "All rights reserved.",
     "privacy": "Privacy"

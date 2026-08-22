@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listClasses } from "@/lib/admin/data";
@@ -26,26 +26,23 @@ export default async function VaultPage({
     return null;
   }
 
-  const classes = await listClasses();
+  const [t, classes] = await Promise.all([getTranslations("vault"), listClasses()]);
   const selectedClass = classes.find((c) => c.id === classId);
   const resources = classId ? await listCourseResources(classId) : [];
   const canUpload = profile.role === "admin" || profile.tags.includes("scribe");
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Le Vault"
-        subtitle="Espace de partage des cours — les Scribes uploadent les leçons du jour pour les absents."
-      />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
-      <ClassSelector classes={classes} currentClassId={classId} label="Choisir une classe" />
+      <ClassSelector classes={classes} currentClassId={classId} label={t("selectClass")} />
 
       {selectedClass && (
         <div className="flex flex-col gap-4">
           {canUpload && <ResourceUploadForm classRow={selectedClass} />}
 
           {resources.length === 0 ? (
-            <EmptyState message="Aucun document pour cette classe pour le moment." />
+            <EmptyState message={t("noResources")} />
           ) : (
             <div className="flex flex-col gap-3">
               {resources.map((r) => (

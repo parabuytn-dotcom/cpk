@@ -117,6 +117,74 @@
     "contactTitle": "سؤال؟",
     "contact": "اتصل بنا على الرقم 99766801 أو عبر البريد الإلكتروني contact@cpkef.tn."
   },
+  "feed": {
+    "title": "الحائط الاجتماعي",
+    "placeholder": "ما الجديد في المعهد؟",
+    "videoHint": "صورة أو فيديو (reel) — الفيديوهات تستهلك مساحة تخزين كبيرة، رجاء البقاء في حدود معقولة.",
+    "publish": "نشر",
+    "publishing": "جارٍ النشر…",
+    "like": "أعجبني",
+    "commentPlaceholder": "اكتب تعليقا…",
+    "send": "إرسال",
+    "empty": "لا يوجد شيء لعرضه حاليا.",
+    "noPermissionImage": "ليس لديك صلاحية نشر الصور.",
+    "noPermissionVideo": "ليس لديك صلاحية نشر الفيديوهات (reels).",
+    "noPermissionFeed": "ليس لديك صلاحية النشر على الحائط.",
+    "loginFirst": "سجّل الدخول أولا."
+  },
+  "vault": {
+    "title": "المخزن",
+    "subtitle": "فضاء لمشاركة الدروس — يقوم الكتبة (Scribes) برفع دروس اليوم لفائدة الغائبين.",
+    "selectClass": "اختر قسما",
+    "subject": "المادة",
+    "addToVault": "إضافة إلى المخزن",
+    "uploading": "جارٍ الإرسال…",
+    "open": "فتح",
+    "delete": "حذف",
+    "confirmDelete": "حذف هذا الملف؟",
+    "noPermission": "ليس لديك صلاحية الرفع (خاص بالكتبة فقط).",
+    "chooseFile": "اختر ملفا لرفعه.",
+    "noResources": "لا يوجد ملف لهذا القسم حاليا.",
+    "views": "مشاهدة",
+    "successAdded": "تمت إضافة الدرس إلى المخزن."
+  },
+  "homework": {
+    "title": "كراس النصوص",
+    "classPlaceholder": "القسم…",
+    "subjectPlaceholder": "المادة",
+    "descriptionPlaceholder": "وصف الواجب",
+    "priorityLow": "أولوية منخفضة",
+    "priorityMedium": "أولوية متوسطة",
+    "priorityHigh": "أولوية عالية",
+    "submit": "إضافة الواجب",
+    "added": "تمت إضافة الواجب.",
+    "myHomework": "واجباتي",
+    "noHomework": "لا يوجد واجب حاليا.",
+    "iAmAbsent": "أنا غائب(ة)",
+    "start": "البداية",
+    "end": "النهاية",
+    "reasonPlaceholder": "السبب (اختياري)",
+    "declare": "التصريح بغيابي",
+    "dueFor": "بتاريخ",
+    "absenceRecorded": "تم تسجيل الغياب. تم إلغاء {slots} حصة/حصص في {classes} قسم/أقسام."
+  },
+  "notificationsUi": {
+    "title": "الإشعارات",
+    "markAllRead": "وضع علامة مقروء على الكل",
+    "empty": "لا يوجد إشعار حاليا."
+  },
+  "accountCreation": {
+    "createChild": "إنشاء حساب ابني/ابنتي",
+    "create": "إنشاء الحساب",
+    "creating": "جارٍ الإنشاء…",
+    "createdNote": "تم إنشاء الحساب — احتفظ بهذه المعلومات، لن تظهر مجددا:",
+    "createdNoteSimple": "تم إنشاء الحساب:"
+  },
+  "phonePrompt": {
+    "label": "أضف رقم هاتفك (يُستخدم لتسجيل الدخول)",
+    "save": "حفظ",
+    "saved": "تم حفظ الرقم."
+  },
   "footer": {
     "rights": "جميع الحقوق محفوظة.",
     "privacy": "الخصوصية"

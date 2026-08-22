@@ -1,19 +1,21 @@
 import Image from "next/image";
+import { getLocale } from "next-intl/server";
 import Avatar from "@/components/ui/Avatar";
 import LikeButton from "./LikeButton";
 import CommentSection from "./CommentSection";
+import { formatDateTime } from "@/lib/formatDate";
 import type { FeedPostRow } from "@/lib/social/data";
 
-export default function PostCard({ post }: { post: FeedPostRow }) {
+export default async function PostCard({ post }: { post: FeedPostRow }) {
+  const locale = await getLocale();
+
   return (
     <article className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
       <div className="flex items-center gap-3">
         <Avatar name={post.authorName} size={40} />
         <div>
           <p className="font-semibold">{post.authorName}</p>
-          <p className="text-xs text-foreground/50">
-            {new Date(post.createdAt).toLocaleString("fr-FR")}
-          </p>
+          <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>
         </div>
       </div>
 

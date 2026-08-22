@@ -2,6 +2,7 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { checkJournalisteCpk } from "@/lib/badges/engine";
@@ -9,8 +10,9 @@ import { notify } from "@/lib/notifications/engine";
 import { createPostSchema, createCommentSchema, type FormState } from "./schemas";
 
 export async function createPost(_state: FormState, formData: FormData): Promise<FormState> {
+  const t = await getTranslations("feed");
   const profile = await getCurrentProfile();
-  if (!profile) return { message: "Connecte-toi d'abord." };
+  if (!profile) return { message: t("loginFirst") };
 
   const validated = createPostSchema.safeParse({ content: formData.get("content") });
   if (!validated.success) {
@@ -28,12 +30,7 @@ export async function createPost(_state: FormState, formData: FormData): Promise
 
     const requiredTag = mediaType === "video" ? "reels_publisher" : "feed_publisher";
     if (profile.role !== "admin" && !profile.tags.includes(requiredTag)) {
-      return {
-        message:
-          mediaType === "video"
-            ? "Tu n'as pas la permission de publier des vidéos (reels)."
-            : "Tu n'as pas la permission de publier des images.",
-      };
+      return { message: mediaType === "video" ? t("noPermissionVideo") : t("noPermissionImage") };
     }
 
     const ext = media.name.split(".").pop() ?? "bin";
@@ -44,7 +41,7 @@ export async function createPost(_state: FormState, formData: FormData): Promise
     if (uploadError) return { message: uploadError.message };
     mediaPath = path;
   } else if (profile.role !== "admin" && !profile.tags.includes("feed_publisher")) {
-    return { message: "Tu n'as pas la permission de publier sur le feed." };
+    return { message: t("noPermissionFeed") };
   }
 
   const { error } = await supabase.from("feed_posts").insert({
@@ -59,7 +56,7 @@ export async function createPost(_state: FormState, formData: FormData): Promise
   await checkJournalisteCpk(profile.id);
 
   revalidatePath("/feed");
-  return { success: "Publié." };
+  return { success: "" };
 }
 
 export async function toggleLike(postId: string, liked: boolean) {
@@ -88,13 +85,16 @@ export async function toggleLike(postId: string, liked: boolean) {
 
 export async function addComment(_state: FormState, formData: FormData): Promise<FormState> {
   const profile = await getCurrentProfile();
-  if (!profile) return { message: "Connecte-toi d'abord." };
+  if (!profile) {
+    const t = await getTranslations("feed");
+    return { message: t("loginFirst") };
+  }
 
   const validated = createCommentSchema.safeParse({
     postId: formData.get("postId"),
     content: formData.get("content"),
   });
-  if (!validated.success) return { message: "Commentaire invalide." };
+  if (!validated.success) return { message: "Invalid" };
 
   const supabase = await createClient();
   const { error } = await supabase.from("post_comments").insert({

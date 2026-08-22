@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { createHomework } from "@/lib/admin/actions";
 import type { ClassRow } from "@/lib/admin/data";
 
 export default function HomeworkForm({ classes }: { classes: ClassRow[] }) {
+  const t = useTranslations("homework");
   const [state, action, pending] = useActionState(createHomework, undefined);
 
   return (
@@ -19,7 +21,7 @@ export default function HomeworkForm({ classes }: { classes: ClassRow[] }) {
         }}
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
       >
-        <option value="">Classe…</option>
+        <option value="">{t("classPlaceholder")}</option>
         {classes.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
@@ -30,7 +32,7 @@ export default function HomeworkForm({ classes }: { classes: ClassRow[] }) {
 
       <input
         name="subject"
-        placeholder="Matière"
+        placeholder={t("subjectPlaceholder")}
         required
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
       />
@@ -45,13 +47,13 @@ export default function HomeworkForm({ classes }: { classes: ClassRow[] }) {
         defaultValue="medium"
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
       >
-        <option value="low">Priorité basse</option>
-        <option value="medium">Priorité moyenne</option>
-        <option value="high">Priorité haute</option>
+        <option value="low">{t("priorityLow")}</option>
+        <option value="medium">{t("priorityMedium")}</option>
+        <option value="high">{t("priorityHigh")}</option>
       </select>
       <textarea
         name="description"
-        placeholder="Description du devoir"
+        placeholder={t("descriptionPlaceholder")}
         rows={3}
         required
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 sm:col-span-2 dark:border-white/10 dark:bg-white/5"
@@ -62,7 +64,7 @@ export default function HomeworkForm({ classes }: { classes: ClassRow[] }) {
         disabled={pending}
         className="self-start rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60 sm:col-span-2"
       >
-        Ajouter le devoir
+        {t("submit")}
       </button>
       {state?.message && (
         <p className="text-sm text-red-600 dark:text-red-400 sm:col-span-2">{state.message}</p>

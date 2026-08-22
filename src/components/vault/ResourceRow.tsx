@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { incrementResourceView, deleteCourseResource } from "@/lib/vault/actions";
 import type { CourseResourceRow } from "@/lib/vault/data";
 
@@ -11,6 +12,7 @@ export default function ResourceRow({
   resource: CourseResourceRow;
   canDelete: boolean;
 }) {
+  const t = useTranslations("vault");
   const [, startTransition] = useTransition();
 
   return (
@@ -18,7 +20,7 @@ export default function ResourceRow({
       <div>
         <p className="font-semibold">{resource.subject}</p>
         <p className="text-sm text-foreground/60">
-          {resource.fileName} · {resource.uploadedByName ?? "?"} · {resource.viewCount} vue(s)
+          {resource.fileName} · {resource.uploadedByName ?? "?"} · {resource.viewCount} {t("views")}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -30,19 +32,19 @@ export default function ResourceRow({
             onClick={() => startTransition(() => incrementResourceView(resource.id))}
             className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700"
           >
-            Ouvrir
+            {t("open")}
           </a>
         )}
         {canDelete && (
           <button
             onClick={() => {
-              if (confirm("Supprimer ce document ?")) {
+              if (confirm(t("confirmDelete"))) {
                 startTransition(() => deleteCourseResource(resource.id));
               }
             }}
             className="rounded-full border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-500/10 dark:text-red-400"
           >
-            Supprimer
+            {t("delete")}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { addComment } from "@/lib/social/actions";
 import type { CommentRow } from "@/lib/social/data";
 
@@ -11,6 +12,7 @@ export default function CommentSection({
   postId: string;
   comments: CommentRow[];
 }) {
+  const t = useTranslations("feed");
   const [, action, pending] = useActionState(addComment, undefined);
 
   return (
@@ -26,7 +28,7 @@ export default function CommentSection({
         <input type="hidden" name="postId" value={postId} />
         <input
           name="content"
-          placeholder="Écrire un commentaire…"
+          placeholder={t("commentPlaceholder")}
           required
           className="flex-1 rounded-full border border-black/10 bg-white/70 px-4 py-1.5 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
         />
@@ -35,7 +37,7 @@ export default function CommentSection({
           disabled={pending}
           className="rounded-full bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
         >
-          Envoyer
+          {t("send")}
         </button>
       </form>
     </div>

@@ -1,6 +1,6 @@
 "use server";
 
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "@/i18n/navigation";
@@ -300,5 +300,6 @@ export async function updateOwnPhone(
     .eq("id", user.id);
 
   if (error) return { message: error.message };
-  return { success: "Numéro enregistré." };
+  const t = await getTranslations("phonePrompt");
+  return { success: t("saved") };
 }

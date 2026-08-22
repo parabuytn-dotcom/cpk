@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listFeedPosts } from "@/lib/social/data";
@@ -21,20 +21,20 @@ export default async function FeedPage({
     return null;
   }
 
-  const posts = await listFeedPosts(profile.id);
+  const [t, posts] = await Promise.all([getTranslations("feed"), listFeedPosts(profile.id)]);
   const canPostImage = profile.role === "admin" || profile.tags.includes("feed_publisher");
   const canPostVideo = profile.role === "admin" || profile.tags.includes("reels_publisher");
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <PageHeader title="Mur social" />
+      <PageHeader title={t("title")} />
 
       {(canPostImage || canPostVideo) && (
         <PostComposer canPostImage={canPostImage} canPostVideo={canPostVideo} />
       )}
 
       {posts.length === 0 ? (
-        <EmptyState message="Rien à afficher pour le moment." />
+        <EmptyState message={t("empty")} />
       ) : (
         <div className="flex flex-col gap-6">
           {posts.map((post) => (

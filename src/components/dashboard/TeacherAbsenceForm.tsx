@@ -1,16 +1,18 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { declareOwnAbsence } from "@/lib/admin/actions";
 
 export default function TeacherAbsenceForm() {
+  const t = useTranslations("homework");
   const [state, action, pending] = useActionState(declareOwnAbsence, undefined);
 
   return (
     <form action={action} className="glass-surface grid gap-3 rounded-3xl p-6 sm:grid-cols-2">
-      <h2 className="font-semibold sm:col-span-2">Je suis absent(e)</h2>
+      <h2 className="font-semibold sm:col-span-2">{t("iAmAbsent")}</h2>
       <label className="text-sm">
-        Début
+        {t("start")}
         <input
           type="datetime-local"
           name="startsAt"
@@ -19,7 +21,7 @@ export default function TeacherAbsenceForm() {
         />
       </label>
       <label className="text-sm">
-        Fin
+        {t("end")}
         <input
           type="datetime-local"
           name="endsAt"
@@ -29,7 +31,7 @@ export default function TeacherAbsenceForm() {
       </label>
       <input
         name="reason"
-        placeholder="Motif (optionnel)"
+        placeholder={t("reasonPlaceholder")}
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 sm:col-span-2 dark:border-white/10 dark:bg-white/5"
       />
       <button
@@ -37,7 +39,7 @@ export default function TeacherAbsenceForm() {
         disabled={pending}
         className="self-start rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60 sm:col-span-2"
       >
-        Déclarer mon absence
+        {t("declare")}
       </button>
       {state?.message && (
         <p className="text-sm text-red-600 dark:text-red-400 sm:col-span-2">{state.message}</p>
