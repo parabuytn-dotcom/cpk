@@ -17,7 +17,7 @@ export async function askGemini(history: ChatTurn[]): Promise<AskGeminiResult> {
     return { error: "L'assistant n'est pas encore configuré (GEMINI_API_KEY manquante)." };
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   // Keep only the last few turns — controls token usage (and therefore cost
