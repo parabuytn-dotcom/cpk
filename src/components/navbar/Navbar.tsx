@@ -19,7 +19,6 @@ export default async function Navbar() {
     { href: "/staff", label: t("staff") },
     { href: "/a-propos", label: t("about") },
     { href: "/nouveautes", label: t("releases") },
-    { href: "/aide", label: t("help") },
   ];
 
   const authHref = profile

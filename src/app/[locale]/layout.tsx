@@ -42,9 +42,10 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
 
-  const [profile, footer] = await Promise.all([
+  const [profile, footer, nav] = await Promise.all([
     getCurrentProfile(),
     getTranslations("footer"),
+    getTranslations("nav"),
   ]);
 
   const dir = rtlLocales.includes(locale as Locale) ? "rtl" : "ltr";
@@ -60,6 +61,10 @@ export default async function LocaleLayout({
           <main className="mx-auto min-h-[60vh] max-w-6xl px-4 py-10">{children}</main>
           <footer className="border-t border-black/5 px-4 py-8 text-center text-sm text-foreground/60 dark:border-white/10">
             © {new Date().getFullYear()} Collège Pilote du Kef — {footer("rights")} ·{" "}
+            <Link href="/aide" className="underline hover:text-foreground">
+              {nav("help")}
+            </Link>{" "}
+            ·{" "}
             <Link href="/confidentialite" className="underline hover:text-foreground">
               {footer("privacy")}
             </Link>
