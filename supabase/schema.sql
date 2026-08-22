@@ -754,3 +754,110 @@ create policy "Users manage their own avatar"
 -- l'email d'authentification. Encourage à compléter via ProfileProgress.
 -- ----------------------------------------------------------------------------
 alter table public.profiles add column if not exists contact_email text;
+
+-- ----------------------------------------------------------------------------
+-- Messagerie — un groupe par classe (parents + élèves + profs de la classe)
+-- et des messages privés 1-à-1 entre membres d'un même groupe de classe.
+-- `conversation_members` est la source de vérité pour l'accès RLS ; les
+-- lignes sont créées uniquement côté serveur via le client service-role
+-- (réconciliation à l'ouverture de /messages), jamais insérées par
+-- l'utilisateur lui-même — seule sa propre `last_read_at` est modifiable.
+-- ----------------------------------------------------------------------------
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('class_group', 'direct')),
+  class_id uuid references public.classes (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.conversation_members (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  last_read_at timestamptz not null default now(),
+  unique (conversation_id, user_id)
+);
+
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations (id) on delete cascade,
+  author_id uuid references public.profiles (id) on delete set null,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.conversations enable row level security;
+alter table public.conversation_members enable row level security;
+alter table public.messages enable row level security;
+
+drop policy if exists "Members can read their conversations" on public.conversations;
+create policy "Members can read their conversations"
+  on public.conversations for select
+  using (
+    public.is_admin()
+    or exists (
+      select 1 from public.conversation_members cm
+      where cm.conversation_id = conversations.id and cm.user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Members can read their memberships" on public.conversation_members;
+create policy "Members can read their memberships"
+  on public.conversation_members for select
+  using (
+    public.is_admin()
+    or user_id = auth.uid()
+    or exists (
+      select 1 from public.conversation_members cm2
+      where cm2.conversation_id = conversation_members.conversation_id and cm2.user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Users mark their own membership read" on public.conversation_members;
+create policy "Users mark their own membership read"
+  on public.conversation_members for update
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+drop policy if exists "Members can read messages" on public.messages;
+create policy "Members can read messages"
+  on public.messages for select
+  using (
+    public.is_admin()
+    or exists (
+      select 1 from public.conversation_members cm
+      where cm.conversation_id = messages.conversation_id and cm.user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Members can send messages" on public.messages;
+create policy "Members can send messages"
+  on public.messages for insert
+  with check (
+    auth.uid() = author_id
+    and (
+      public.is_admin()
+      or exists (
+        select 1 from public.conversation_members cm
+        where cm.conversation_id = messages.conversation_id and cm.user_id = auth.uid()
+      )
+    )
+  );
+
+-- Live delivery — WhatsApp-like instant messages via Supabase Realtime.
+-- Guarded: ALTER PUBLICATION ... ADD TABLE errors if already a member, which
+-- would otherwise break re-running this file.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'messages'
+  ) then
+    alter publication supabase_realtime add table public.messages;
+  end if;
+end $$;
+
+create index if not exists idx_conversation_members_user_id on public.conversation_members (user_id);
+create index if not exists idx_conversation_members_conversation_id on public.conversation_members (conversation_id);
+create index if not exists idx_messages_conversation_id on public.messages (conversation_id, created_at);
+create index if not exists idx_conversations_class_id on public.conversations (class_id);

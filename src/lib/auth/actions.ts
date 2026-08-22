@@ -90,10 +90,17 @@ async function createParentAccount({
     return { message: profileError.message };
   }
 
+  const { data: classRow } = await adminClient
+    .from("classes")
+    .select("id")
+    .eq("name", childClass)
+    .maybeSingle();
+
   const { error: studentError } = await adminClient.from("students").insert({
     parent_id: data.user.id,
     first_name: childFirstName,
     class_name: childClass,
+    class_id: classRow?.id ?? null,
   });
 
   if (studentError) {

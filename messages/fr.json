@@ -191,6 +191,14 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…"
   },
+  "messaging": {
+    "title": "Messages",
+    "empty": "Aucune conversation pour le moment.",
+    "noMessagesYet": "Aucun message pour le moment.",
+    "placeholder": "Écris un message…",
+    "send": "Envoyer",
+    "me": "Moi"
+  },
   "assistant": {
     "title": "Assistant CPK",
     "welcome": "Bonjour ! Pose-moi une question sur le site (inscription, emploi du temps, absences...).",

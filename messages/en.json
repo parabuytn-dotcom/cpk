@@ -191,6 +191,14 @@
     "save": "Save",
     "saving": "Saving…"
   },
+  "messaging": {
+    "title": "Messages",
+    "empty": "No conversation yet.",
+    "noMessagesYet": "No message yet.",
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "me": "Me"
+  },
   "assistant": {
     "title": "CPK Assistant",
     "welcome": "Hi! Ask me anything about the site (signup, timetable, absences...).",

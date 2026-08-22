@@ -2,8 +2,10 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listNotifications, countUnreadNotifications } from "@/lib/notifications/data";
+import { countUnreadMessages } from "@/lib/messaging/data";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
+import MessagesLink from "./MessagesLink";
 import MobileMenu from "./MobileMenu";
 
 export default async function Navbar() {
@@ -31,9 +33,13 @@ export default async function Navbar() {
       : t("dashboard")
     : t("login");
 
-  const [notifications, unreadCount] = profile
-    ? await Promise.all([listNotifications(profile.id), countUnreadNotifications(profile.id)])
-    : [[], 0];
+  const [notifications, unreadCount, unreadMessages] = profile
+    ? await Promise.all([
+        listNotifications(profile.id),
+        countUnreadNotifications(profile.id),
+        countUnreadMessages(profile),
+      ])
+    : [[], 0, 0];
 
   return (
     <header className="sticky top-0 z-40 w-full px-4 pt-4">
@@ -58,6 +64,7 @@ export default async function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {profile && <MessagesLink unreadCount={unreadMessages} />}
           {profile && <NotificationBell notifications={notifications} unreadCount={unreadCount} />}
           <LanguageSwitcher />
           <Link

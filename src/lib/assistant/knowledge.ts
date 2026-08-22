@@ -47,13 +47,23 @@ d'inventer une réponse.
   depuis leur tableau de bord.
 - Les élèves voient leurs devoirs sur leur tableau de bord et les cochent au fur et à mesure.
 
-# Mur social (Feed)
+# Feed (mur social)
 - Fonctionne comme Instagram/Facebook : publications texte, photo, ou vidéo (reel).
 - Publier du texte ou une photo nécessite une autorisation spéciale ("feed_publisher"), publier
   une vidéo/reel nécessite une autre autorisation séparée ("reels_publisher") car les vidéos
   prennent beaucoup de place de stockage. Ces autorisations sont données par l'administration.
 - Aimer (like) et commenter une publication est ouvert à tout le monde une fois connecté, sans
   autorisation spéciale.
+- Chacun peut supprimer ses propres publications (icône 🗑 sur la publication) ; l'administration
+  peut supprimer n'importe quelle publication.
+
+# Messages
+- Fonctionne comme WhatsApp : un groupe de discussion automatique par classe (parents, élèves et
+  professeurs de cette classe), plus des messages privés en 1-à-1.
+- Les messages privés ne sont possibles qu'entre personnes qui partagent au moins une classe (pas
+  d'annuaire général) — depuis un groupe de classe, cliquer sur un membre puis "Message privé".
+- Les messages arrivent instantanément, sans recharger la page. Une bulle sur l'icône 💬 en haut du
+  site indique le nombre de messages non lus.
 
 # Le Vault (documents de cours)
 - Espace où des élèves désignés "Scribes" (autorisation donnée par l'administration) uploadent
