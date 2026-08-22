@@ -51,12 +51,12 @@ export default async function Navbar() {
           <span className="hidden sm:inline">Collège Pilote du Kef</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden flex-nowrap items-center gap-1 overflow-x-auto lg:flex">
           {items.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3 py-2 text-sm font-medium text-foreground/80 transition hover:bg-brand-500/10 hover:text-foreground"
+              className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium text-foreground/80 transition hover:bg-brand-500/10 hover:text-foreground"
             >
               {item.label}
             </Link>
@@ -69,7 +69,7 @@ export default async function Navbar() {
           <LanguageSwitcher />
           <Link
             href={authHref}
-            className="hidden rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 md:inline-block"
+            className="hidden rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 lg:inline-block"
           >
             {authLabel}
           </Link>
