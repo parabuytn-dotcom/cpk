@@ -40,6 +40,9 @@ yarn-error.log*
 # generated reports (real personal data — never commit)
 rapport-cpk-*.xlsx
 
+# built APKs — regenerate from the android/ project, not tracked as source
+/dist
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
