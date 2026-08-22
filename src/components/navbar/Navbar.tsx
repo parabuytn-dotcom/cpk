@@ -50,7 +50,7 @@ export default async function Navbar() {
           <span className="hidden sm:inline">Collège Pilote du Kef</span>
         </Link>
 
-        <nav className="hidden flex-nowrap items-center gap-1 overflow-x-auto lg:flex">
+        <nav className="hidden flex-nowrap items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] xl:flex [&::-webkit-scrollbar]:hidden">
           {items.map((item) => (
             <Link
               key={item.href}
@@ -68,7 +68,7 @@ export default async function Navbar() {
           <LanguageSwitcher />
           <Link
             href={authHref}
-            className="hidden rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 lg:inline-block"
+            className="hidden rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 xl:inline-block"
           >
             {authLabel}
           </Link>
