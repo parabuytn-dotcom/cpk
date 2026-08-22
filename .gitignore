@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# generated reports (real personal data — never commit)
+rapport-cpk-*.xlsx
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
