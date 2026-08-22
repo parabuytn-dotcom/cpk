@@ -9,6 +9,7 @@ import { sendSms } from "@/lib/smsService";
 import { sendEmail } from "@/lib/emailService";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { checkToujoursAJour } from "@/lib/badges/engine";
+import { notify, notifyMany } from "@/lib/notifications/engine";
 import {
   timetableEntrySchema,
   teacherAbsenceSchema,
@@ -36,6 +37,9 @@ export async function validateAccount(profileId: string) {
     .eq("id", profileId);
 
   if (error) throw new Error(error.message);
+
+  await notify(profileId, "account_validated", "Ton compte a été validé ! Tu as maintenant accès à toutes les fonctionnalités.", "/dashboard");
+
   revalidatePath("/admin/comptes");
 }
 
@@ -281,16 +285,15 @@ async function applyTeacherAbsence({
       .select("parent_id")
       .in("class_name", classNames);
 
-    const parentIds = Array.from(new Set((students ?? []).map((s) => s.parent_id).filter(Boolean)));
+    const parentIds = Array.from(new Set((students ?? []).map((s) => s.parent_id).filter(Boolean))) as string[];
     if (parentIds.length > 0) {
-      const { data: parents } = await supabase
-        .from("profiles")
-        .select("phone")
-        .in("id", parentIds as string[]);
+      const { data: parents } = await supabase.from("profiles").select("id, phone").in("id", parentIds);
 
       for (const parent of parents ?? []) {
         if (parent.phone) await sendSms(parent.phone, message, "teacher_absence");
       }
+
+      await notifyMany(parentIds, "teacher_absence", message, "/emploi-du-temps");
     }
   }
 
@@ -449,6 +452,22 @@ export async function createHomework(_state: FormState, formData: FormData): Pro
   });
 
   if (error) return { message: error.message };
+
+  const { data: students } = await supabase
+    .from("students")
+    .select("user_id")
+    .eq("class_name", validated.data.className)
+    .not("user_id", "is", null);
+
+  const studentIds = (students ?? []).map((s) => s.user_id).filter(Boolean) as string[];
+  if (studentIds.length > 0) {
+    await notifyMany(
+      studentIds,
+      "homework",
+      `Nouveau devoir de ${validated.data.subject} pour le ${new Date(validated.data.dueDate).toLocaleDateString("fr-FR")}.`,
+      "/dashboard",
+    );
+  }
 
   revalidatePath("/dashboard");
   return { success: "Devoir ajouté." };

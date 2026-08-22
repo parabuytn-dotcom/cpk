@@ -691,3 +691,34 @@ create index if not exists idx_homework_completions_student_id on public.homewor
 create index if not exists idx_feed_posts_created_at on public.feed_posts (created_at);
 create index if not exists idx_course_resources_class_id on public.course_resources (class_id);
 create index if not exists idx_user_badges_user_id on public.user_badges (user_id);
+
+-- ----------------------------------------------------------------------------
+-- notifications — in-site notifications for now; `link` lets the UI route
+-- to the relevant page. Always inserted via the service-role client (system-
+-- triggered on someone else's behalf), so no insert policy is needed here.
+-- TODO: Intégrer API Push Mobile — miroir de ces notifications en push une
+-- fois l'app mobile disponible.
+-- ----------------------------------------------------------------------------
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  type text not null,
+  message text not null,
+  link text,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.notifications enable row level security;
+
+drop policy if exists "Users read their own notifications" on public.notifications;
+create policy "Users read their own notifications"
+  on public.notifications for select
+  using (auth.uid() = user_id or public.is_admin());
+
+drop policy if exists "Users update their own notifications" on public.notifications;
+create policy "Users update their own notifications"
+  on public.notifications for update
+  using (auth.uid() = user_id or public.is_admin());
+
+create index if not exists idx_notifications_user_id on public.notifications (user_id, read);

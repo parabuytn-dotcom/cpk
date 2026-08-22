@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { checkJournalisteCpk } from "@/lib/badges/engine";
+import { notify } from "@/lib/notifications/engine";
 import { createPostSchema, createCommentSchema, type FormState } from "./schemas";
 
 export async function createPost(_state: FormState, formData: FormData): Promise<FormState> {
@@ -69,6 +70,15 @@ export async function toggleLike(postId: string, liked: boolean) {
 
   if (liked) {
     await supabase.from("post_likes").insert({ post_id: postId, user_id: profile.id });
+
+    const { data: post } = await supabase
+      .from("feed_posts")
+      .select("author_id")
+      .eq("id", postId)
+      .single();
+    if (post?.author_id && post.author_id !== profile.id) {
+      await notify(post.author_id, "like", "Quelqu'un a aimé votre publication.", "/feed");
+    }
   } else {
     await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", profile.id);
   }
@@ -94,6 +104,15 @@ export async function addComment(_state: FormState, formData: FormData): Promise
   });
 
   if (error) return { message: error.message };
+
+  const { data: post } = await supabase
+    .from("feed_posts")
+    .select("author_id")
+    .eq("id", validated.data.postId)
+    .single();
+  if (post?.author_id && post.author_id !== profile.id) {
+    await notify(post.author_id, "comment", "Quelqu'un a commenté votre publication.", "/feed");
+  }
 
   revalidatePath("/feed");
   return { success: "" };
