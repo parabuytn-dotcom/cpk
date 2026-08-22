@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { checkScannerFou, checkSauveurDeClasse } from "@/lib/badges/engine";
 import { uploadResourceSchema, type FormState } from "./schemas";
 
 export async function uploadCourseResource(
@@ -49,6 +50,8 @@ export async function uploadCourseResource(
 
   if (error) return { message: error.message };
 
+  await checkScannerFou(profile.id);
+
   revalidatePath("/cours");
   return { success: "Cours ajouté au Vault." };
 }
@@ -56,6 +59,7 @@ export async function uploadCourseResource(
 export async function incrementResourceView(resourceId: string) {
   const supabase = await createClient();
   await supabase.rpc("increment_resource_views", { resource_id: resourceId });
+  await checkSauveurDeClasse(resourceId);
 }
 
 export async function deleteCourseResource(resourceId: string) {

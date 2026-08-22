@@ -3,6 +3,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import UserEditRow from "@/components/admin/UserEditRow";
 import { listAllProfiles } from "@/lib/admin/data";
+import { listAllBadges } from "@/lib/badges/data";
 
 export default async function AdminUsersPage({
   params,
@@ -12,7 +13,11 @@ export default async function AdminUsersPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [t, users] = await Promise.all([getTranslations("admin"), listAllProfiles()]);
+  const [t, users, badges] = await Promise.all([
+    getTranslations("admin"),
+    listAllProfiles(),
+    listAllBadges(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,7 +32,7 @@ export default async function AdminUsersPage({
       ) : (
         <div className="flex flex-col gap-3">
           {users.map((user) => (
-            <UserEditRow key={user.id} user={user} />
+            <UserEditRow key={user.id} user={user} badges={badges} />
           ))}
         </div>
       )}

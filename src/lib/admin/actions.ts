@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { sendSms } from "@/lib/smsService";
 import { sendEmail } from "@/lib/emailService";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { checkToujoursAJour } from "@/lib/badges/engine";
 import {
   timetableEntrySchema,
   teacherAbsenceSchema,
@@ -463,6 +464,7 @@ export async function toggleHomeworkCompletion(homeworkId: string, completed: bo
     await supabase
       .from("homework_completions")
       .insert({ homework_id: homeworkId, student_id: profile.id });
+    await checkToujoursAJour(profile.id);
   } else {
     await supabase
       .from("homework_completions")

@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { checkJournalisteCpk } from "@/lib/badges/engine";
 import { createPostSchema, createCommentSchema, type FormState } from "./schemas";
 
 export async function createPost(_state: FormState, formData: FormData): Promise<FormState> {
@@ -53,6 +54,8 @@ export async function createPost(_state: FormState, formData: FormData): Promise
   });
 
   if (error) return { message: error.message };
+
+  await checkJournalisteCpk(profile.id);
 
   revalidatePath("/feed");
   return { success: "Publié." };

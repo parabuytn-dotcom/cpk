@@ -147,6 +147,7 @@ export type UserRow = {
   tags: string[];
   cin: string | null;
   className: string | null;
+  badgeIds: string[];
 };
 
 export async function listAllProfiles(): Promise<UserRow[]> {
@@ -160,15 +161,18 @@ export async function listAllProfiles(): Promise<UserRow[]> {
 
   if (!profiles || profiles.length === 0) return [];
 
-  const { data: students } = await supabase
-    .from("students")
-    .select("user_id, class_name")
-    .in(
-      "user_id",
-      profiles.map((p) => p.id),
-    );
+  const profileIds = profiles.map((p) => p.id);
+
+  const [{ data: students }, { data: badges }] = await Promise.all([
+    supabase.from("students").select("user_id, class_name").in("user_id", profileIds),
+    supabase.from("user_badges").select("user_id, badge_id").in("user_id", profileIds),
+  ]);
 
   const classByUserId = new Map((students ?? []).map((s) => [s.user_id, s.class_name]));
+  const badgesByUserId = new Map<string, string[]>();
+  for (const b of badges ?? []) {
+    badgesByUserId.set(b.user_id, [...(badgesByUserId.get(b.user_id) ?? []), b.badge_id]);
+  }
 
   return profiles.map((p) => ({
     id: p.id,
@@ -180,6 +184,7 @@ export async function listAllProfiles(): Promise<UserRow[]> {
     phone: p.phone,
     tags: p.tags ?? [],
     cin: p.cin,
+    badgeIds: badgesByUserId.get(p.id) ?? [],
     className: classByUserId.get(p.id) ?? null,
   }));
 }

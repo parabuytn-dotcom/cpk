@@ -14,7 +14,9 @@ import PhonePrompt from "@/components/dashboard/PhonePrompt";
 import HomeworkForm from "@/components/dashboard/HomeworkForm";
 import TeacherAbsenceForm from "@/components/dashboard/TeacherAbsenceForm";
 import HomeworkChecklist from "@/components/dashboard/HomeworkChecklist";
+import BadgesRow from "@/components/dashboard/BadgesRow";
 import EmptyState from "@/components/ui/EmptyState";
+import { listMyBadges } from "@/lib/badges/data";
 
 export default async function DashboardPage({
   params,
@@ -31,7 +33,10 @@ export default async function DashboardPage({
   }
 
   const t = await getTranslations("dashboard");
-  const children = profile.role === "parent" ? await listChildrenForParent(profile.id) : [];
+  const [children, myBadges] = await Promise.all([
+    profile.role === "parent" ? listChildrenForParent(profile.id) : Promise.resolve([]),
+    listMyBadges(profile.id),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,6 +47,8 @@ export default async function DashboardPage({
             ? `${profile.parentFirstName} ${profile.parentLastName ?? ""}`.trim()
             : profile.role)}
       </div>
+
+      <BadgesRow badges={myBadges} />
 
       {!profile.phone && <PhonePrompt />}
 
