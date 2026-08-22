@@ -37,7 +37,12 @@ export const loginEmailSchema = z.object({
   password: z.string().min(1, "Champ requis."),
 });
 
-export const updatePhoneSchema = z.object({ phone });
+export const updateProfileInfoSchema = z.object({
+  fullName: z.string().trim().min(1, "Champ requis."),
+  phone,
+  cin: z.string().trim().length(0).or(cin),
+  contactEmail: z.string().trim().length(0).or(z.string().trim().email("Email invalide.")),
+});
 
 export type FormState =
   | {

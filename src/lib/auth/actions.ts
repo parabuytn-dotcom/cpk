@@ -2,7 +2,7 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/session";
@@ -12,7 +12,7 @@ import {
   registerEmailSchema,
   loginPhoneSchema,
   loginEmailSchema,
-  updatePhoneSchema,
+  updateProfileInfoSchema,
   type FormState,
 } from "./schemas";
 
@@ -267,46 +267,6 @@ export async function markValidationSeen() {
   await supabase.from("profiles").update({ validation_seen: true }).eq("id", user.id);
 }
 
-export async function updateOwnPhone(
-  _state: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const validated = updatePhoneSchema.safeParse({ phone: formData.get("phone") });
-  if (!validated.success) {
-    return { errors: validated.error.flatten().fieldErrors };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { message: "Non connecté." };
-
-  const adminClient = createAdminClient();
-  if (!adminClient) {
-    return { message: "Supabase (clé service_role) n'est pas configuré." };
-  }
-
-  const { data: existingPhone } = await adminClient
-    .from("profiles")
-    .select("id")
-    .eq("phone", validated.data.phone)
-    .maybeSingle();
-
-  if (existingPhone && existingPhone.id !== user.id) {
-    return { message: "Ce numéro est déjà utilisé par un autre compte." };
-  }
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ phone: validated.data.phone })
-    .eq("id", user.id);
-
-  if (error) return { message: error.message };
-  const t = await getTranslations("phonePrompt");
-  return { success: t("saved") };
-}
-
 export async function updateAvatar(_state: FormState, formData: FormData): Promise<FormState> {
   const profile = await getCurrentProfile();
   if (!profile) return { message: "Non connecté." };
@@ -338,4 +298,69 @@ export async function updateAvatar(_state: FormState, formData: FormData): Promi
 
   revalidatePath("/", "layout");
   return { success: "Photo de profil mise à jour." };
+}
+
+export async function updateProfileInfo(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { message: "Non connecté." };
+
+  const validated = updateProfileInfoSchema.safeParse({
+    fullName: formData.get("fullName"),
+    phone: formData.get("phone"),
+    cin: formData.get("cin") ?? "",
+    contactEmail: formData.get("contactEmail") ?? "",
+  });
+
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const { fullName, phone, cin, contactEmail } = validated.data;
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { message: "Supabase (clé service_role) n'est pas configuré." };
+
+  // Uniqueness checks (phone/cin are unique-ish identifiers used for login
+  // lookup) — done via the admin client since regular users can't read
+  // other people's profiles under RLS.
+  if (phone !== profile.phone) {
+    const { data: existing } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (existing && existing.id !== profile.id) {
+      return { message: "Ce numéro de téléphone est déjà utilisé par un autre compte." };
+    }
+  }
+
+  if (cin && cin !== profile.cin) {
+    const { data: existing } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("cin", cin)
+      .maybeSingle();
+    if (existing && existing.id !== profile.id) {
+      return { message: "Ce CIN est déjà utilisé par un autre compte." };
+    }
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: fullName,
+      phone,
+      cin: cin || null,
+      contact_email: contactEmail || null,
+    })
+    .eq("id", profile.id);
+
+  if (error) return { message: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: "Informations mises à jour." };
 }

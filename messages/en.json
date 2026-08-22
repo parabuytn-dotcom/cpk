@@ -184,10 +184,17 @@
     "change": "Change photo",
     "uploading": "Uploading…"
   },
-  "phonePrompt": {
-    "label": "Add your phone number (used to log in)",
+  "profile": {
+    "title": "Complete your profile",
+    "missing": "Missing",
+    "editTitle": "My information",
+    "fullName": "Full name",
+    "phone": "Phone",
+    "cin": "National ID (CIN)",
+    "contactEmail": "Contact email",
+    "photo": "Profile photo",
     "save": "Save",
-    "saved": "Phone number saved."
+    "saving": "Saving…"
   },
   "footer": {
     "rights": "All rights reserved.",

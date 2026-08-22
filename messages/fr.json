@@ -184,10 +184,17 @@
     "change": "Changer la photo",
     "uploading": "Envoi…"
   },
-  "phonePrompt": {
-    "label": "Ajoute ton numéro de téléphone (utilisé pour te connecter)",
+  "profile": {
+    "title": "Complète ton profil",
+    "missing": "Il manque",
+    "editTitle": "Mes informations",
+    "fullName": "Nom complet",
+    "phone": "Téléphone",
+    "cin": "CIN",
+    "contactEmail": "Email de contact",
+    "photo": "Photo de profil",
     "save": "Enregistrer",
-    "saved": "Numéro enregistré."
+    "saving": "Enregistrement…"
   },
   "footer": {
     "rights": "Tous droits réservés.",

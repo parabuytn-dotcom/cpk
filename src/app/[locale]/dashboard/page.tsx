@@ -10,7 +10,8 @@ import {
 } from "@/lib/admin/data";
 import PageHeader from "@/components/ui/PageHeader";
 import ChildAccountButton from "@/components/dashboard/ChildAccountButton";
-import PhonePrompt from "@/components/dashboard/PhonePrompt";
+import ProfileProgress from "@/components/dashboard/ProfileProgress";
+import EditProfileForm from "@/components/dashboard/EditProfileForm";
 import HomeworkForm from "@/components/dashboard/HomeworkForm";
 import TeacherAbsenceForm from "@/components/dashboard/TeacherAbsenceForm";
 import HomeworkChecklist from "@/components/dashboard/HomeworkChecklist";
@@ -58,7 +59,8 @@ export default async function DashboardPage({
 
       <BadgesRow badges={myBadges} />
 
-      {!profile.phone && <PhonePrompt />}
+      <ProfileProgress profile={profile} />
+      <EditProfileForm profile={profile} />
 
       {profile.role === "parent" && profile.status === "validated" && (
         <div>
