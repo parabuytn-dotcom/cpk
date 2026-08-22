@@ -196,6 +196,14 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…"
   },
+  "assistant": {
+    "title": "Assistant CPK",
+    "welcome": "Bonjour ! Pose-moi une question sur le site (inscription, emploi du temps, absences...).",
+    "placeholder": "Écris ta question…",
+    "send": "Envoyer",
+    "close": "Fermer",
+    "error": "L'assistant n'a pas pu répondre, réessaie dans un instant."
+  },
   "footer": {
     "rights": "Tous droits réservés.",
     "privacy": "Confidentialité"

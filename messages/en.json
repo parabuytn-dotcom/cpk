@@ -196,6 +196,14 @@
     "save": "Save",
     "saving": "Saving…"
   },
+  "assistant": {
+    "title": "CPK Assistant",
+    "welcome": "Hi! Ask me anything about the site (signup, timetable, absences...).",
+    "placeholder": "Type your question…",
+    "send": "Send",
+    "close": "Close",
+    "error": "The assistant couldn't reply, try again in a moment."
+  },
   "footer": {
     "rights": "All rights reserved.",
     "privacy": "Privacy"

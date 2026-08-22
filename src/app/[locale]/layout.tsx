@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import PendingBanner from "@/components/auth/PendingBanner";
 import ValidatedModal from "@/components/auth/ValidatedModal";
 import { getCurrentProfile } from "@/lib/auth/session";
+import ChatWidget from "@/components/assistant/ChatWidget";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -64,6 +65,7 @@ export default async function LocaleLayout({
             </Link>
           </footer>
           {showValidatedModal && <ValidatedModalContainer />}
+          <ChatWidget />
         </NextIntlClientProvider>
       </body>
     </html>
