@@ -1,8 +1,11 @@
 "use server";
 
+import { randomBytes } from "crypto";
+import { revalidatePath } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentProfile } from "@/lib/auth/session";
 import { redirect } from "@/i18n/navigation";
 import {
   registerManualSchema,
@@ -302,4 +305,37 @@ export async function updateOwnPhone(
   if (error) return { message: error.message };
   const t = await getTranslations("phonePrompt");
   return { success: t("saved") };
+}
+
+export async function updateAvatar(_state: FormState, formData: FormData): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { message: "Non connecté." };
+
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0) {
+    return { message: "Choisis une image." };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { message: "Le fichier doit être une image." };
+  }
+
+  const supabase = await createClient();
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `${profile.id}/${randomBytes(6).toString("hex")}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { contentType: file.type });
+  if (uploadError) return { message: uploadError.message };
+
+  const publicUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: publicUrl })
+    .eq("id", profile.id);
+  if (error) return { message: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: "Photo de profil mise à jour." };
 }

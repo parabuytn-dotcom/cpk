@@ -12,7 +12,7 @@ export default async function PostCard({ post }: { post: FeedPostRow }) {
   return (
     <article className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
       <div className="flex items-center gap-3">
-        <Avatar name={post.authorName} size={40} />
+        <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={40} />
         <div>
           <p className="font-semibold">{post.authorName}</p>
           <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>

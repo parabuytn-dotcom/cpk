@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
 
 export type PendingProfile = {
@@ -8,6 +9,7 @@ export type PendingProfile = {
   parentFirstName: string | null;
   parentLastName: string | null;
   registrationMethod: string | null;
+  avatarUrl: string | null;
   createdAt: string;
 };
 
@@ -17,7 +19,9 @@ export async function listPendingProfiles(): Promise<PendingProfile[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, cin, parent_first_name, parent_last_name, registration_method, created_at")
+    .select(
+      "id, cin, parent_first_name, parent_last_name, registration_method, avatar_url, created_at",
+    )
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
@@ -27,8 +31,85 @@ export async function listPendingProfiles(): Promise<PendingProfile[]> {
     parentFirstName: row.parent_first_name,
     parentLastName: row.parent_last_name,
     registrationMethod: row.registration_method,
+    avatarUrl: row.avatar_url,
     createdAt: row.created_at,
   }));
+}
+
+export type ProfileDetail = {
+  id: string;
+  fullName: string | null;
+  role: string;
+  status: string;
+  phone: string | null;
+  cin: string | null;
+  tags: string[];
+  avatarUrl: string | null;
+  registrationMethod: string | null;
+  createdAt: string;
+  email: string | null;
+  children: { id: string; firstName: string; lastName: string | null; className: string; hasAccount: boolean }[];
+  badges: { label: string; emoji: string }[];
+};
+
+export async function getProfileDetail(profileId: string): Promise<ProfileDetail | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select(
+      "id, full_name, parent_first_name, parent_last_name, role, status, phone, cin, tags, avatar_url, registration_method, created_at",
+    )
+    .eq("id", profileId)
+    .single();
+
+  if (!profile) return null;
+
+  const [{ data: children }, { data: badgeRows }] = await Promise.all([
+    profile.role === "parent"
+      ? supabase
+          .from("students")
+          .select("id, first_name, last_name, class_name, user_id")
+          .eq("parent_id", profileId)
+      : Promise.resolve({ data: [] }),
+    supabase.from("user_badges").select("badges(label, emoji)").eq("user_id", profileId),
+  ]);
+
+  let email: string | null = null;
+  const adminClient = createAdminClient();
+  if (adminClient) {
+    const { data: userData } = await adminClient.auth.admin.getUserById(profileId);
+    email = userData.user?.email ?? null;
+  }
+
+  return {
+    id: profile.id,
+    fullName:
+      profile.full_name ??
+      (profile.parent_first_name
+        ? `${profile.parent_first_name} ${profile.parent_last_name ?? ""}`.trim()
+        : null),
+    role: profile.role,
+    status: profile.status,
+    phone: profile.phone,
+    cin: profile.cin,
+    tags: profile.tags ?? [],
+    avatarUrl: profile.avatar_url,
+    registrationMethod: profile.registration_method,
+    createdAt: profile.created_at,
+    email,
+    children: (children ?? []).map((c) => ({
+      id: c.id,
+      firstName: c.first_name,
+      lastName: c.last_name,
+      className: c.class_name,
+      hasAccount: c.user_id !== null,
+    })),
+    badges: (badgeRows ?? [])
+      .map((b) => (Array.isArray(b.badges) ? b.badges[0] : b.badges))
+      .filter((b): b is { label: string; emoji: string } => Boolean(b)),
+  };
 }
 
 export type ClassRow = { id: string; name: string };
@@ -148,6 +229,7 @@ export type UserRow = {
   cin: string | null;
   className: string | null;
   badgeIds: string[];
+  avatarUrl: string | null;
 };
 
 export async function listAllProfiles(): Promise<UserRow[]> {
@@ -156,7 +238,9 @@ export async function listAllProfiles(): Promise<UserRow[]> {
   const supabase = await createClient();
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, full_name, parent_first_name, parent_last_name, role, status, phone, tags, cin")
+    .select(
+      "id, full_name, parent_first_name, parent_last_name, role, status, phone, tags, cin, avatar_url",
+    )
     .order("created_at", { ascending: false });
 
   if (!profiles || profiles.length === 0) return [];
@@ -186,6 +270,7 @@ export async function listAllProfiles(): Promise<UserRow[]> {
     cin: p.cin,
     badgeIds: badgesByUserId.get(p.id) ?? [],
     className: classByUserId.get(p.id) ?? null,
+    avatarUrl: p.avatar_url,
   }));
 }
 

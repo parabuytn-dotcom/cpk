@@ -4,8 +4,9 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { registerManual, registerWithEmail } from "@/lib/auth/actions";
+import type { ClassRow } from "@/lib/admin/data";
 
-export default function RegisterForm() {
+export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
   const t = useTranslations("auth");
   const [method, setMethod] = useState<"manual" | "email">("manual");
   const [manualState, manualAction, manualPending] = useActionState(registerManual, undefined);
@@ -81,11 +82,30 @@ export default function RegisterForm() {
             name="childFirstName"
             errors={state?.errors?.childFirstName}
           />
-          <Field
-            label={t("childClass")}
-            name="childClass"
-            errors={state?.errors?.childClass}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t("childClass")}</label>
+            <select
+              name="childClass"
+              required
+              defaultValue=""
+              disabled={classes.length === 0}
+              className="w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 outline-none focus:border-brand-500 disabled:opacity-60 dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="" disabled>
+                {classes.length === 0 ? "Aucune classe disponible" : "—"}
+              </option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {state?.errors?.childClass?.map((err) => (
+              <p key={err} className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {err}
+              </p>
+            ))}
+          </div>
         </div>
 
         <button

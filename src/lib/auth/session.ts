@@ -13,6 +13,7 @@ export type CurrentProfile = {
   parentLastName: string | null;
   phone: string | null;
   tags: string[];
+  avatarUrl: string | null;
   validationSeen: boolean;
 };
 
@@ -34,7 +35,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, role, status, full_name, parent_first_name, parent_last_name, phone, tags, validation_seen",
+      "id, role, status, full_name, parent_first_name, parent_last_name, phone, tags, avatar_url, validation_seen",
     )
     .eq("id", user.id)
     .single();
@@ -50,6 +51,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     parentLastName: profile.parent_last_name,
     phone: profile.phone,
     tags: profile.tags ?? [],
+    avatarUrl: profile.avatar_url,
     validationSeen: profile.validation_seen,
   };
 }

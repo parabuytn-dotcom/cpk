@@ -180,6 +180,10 @@
     "createdNote": "Account created — note these credentials, they won't be shown again:",
     "createdNoteSimple": "Account created:"
   },
+  "avatarUpload": {
+    "change": "Change photo",
+    "uploading": "Uploading…"
+  },
   "phonePrompt": {
     "label": "Add your phone number (used to log in)",
     "save": "Save",

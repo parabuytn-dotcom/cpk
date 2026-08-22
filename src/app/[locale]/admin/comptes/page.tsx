@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
+import Avatar from "@/components/ui/Avatar";
 import { listPendingProfiles } from "@/lib/admin/data";
 import { validateAccount } from "@/lib/admin/actions";
 
@@ -29,14 +31,24 @@ export default async function AdminAccountsPage({
               key={p.id}
               className="glass-surface flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4"
             >
-              <div>
-                <p className="font-semibold">
-                  {p.parentFirstName} {p.parentLastName}
-                </p>
-                <p className="text-sm text-foreground/60">
-                  CIN: {p.cin ?? "—"} · {p.registrationMethod}
-                </p>
-              </div>
+              <Link
+                href={`/admin/utilisateurs/${p.id}`}
+                className="flex items-center gap-3 hover:opacity-80"
+              >
+                <Avatar
+                  name={`${p.parentFirstName ?? ""} ${p.parentLastName ?? ""}`.trim() || "?"}
+                  photoUrl={p.avatarUrl}
+                  size={44}
+                />
+                <div>
+                  <p className="font-semibold">
+                    {p.parentFirstName} {p.parentLastName}
+                  </p>
+                  <p className="text-sm text-foreground/60">
+                    CIN: {p.cin ?? "—"} · {p.registrationMethod}
+                  </p>
+                </div>
+              </Link>
               <form action={validateAccount.bind(null, p.id)}>
                 <button
                   type="submit"

@@ -1,8 +1,10 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
+import { Link } from "@/i18n/navigation";
 import { updateUserProfile } from "@/lib/admin/actions";
 import { setUserBadge } from "@/lib/badges/actions";
+import Avatar from "@/components/ui/Avatar";
 import type { UserRow } from "@/lib/admin/data";
 import type { BadgeRow } from "@/lib/badges/data";
 
@@ -21,12 +23,18 @@ export default function UserEditRow({ user, badges }: { user: UserRow; badges: B
       >
         <input type="hidden" name="profileId" value={user.id} />
 
-        <div>
-          <p className="font-semibold">{user.fullName ?? "—"}</p>
-          <p className="text-xs text-foreground/60">
-            {user.cin ?? "—"} {user.className ? `· ${user.className}` : ""}
-          </p>
-        </div>
+        <Link
+          href={`/admin/utilisateurs/${user.id}`}
+          className="flex items-center gap-2 hover:opacity-80"
+        >
+          <Avatar name={user.fullName ?? "?"} photoUrl={user.avatarUrl} size={36} />
+          <div>
+            <p className="font-semibold">{user.fullName ?? "—"}</p>
+            <p className="text-xs text-foreground/60">
+              {user.cin ?? "—"} {user.className ? `· ${user.className}` : ""}
+            </p>
+          </div>
+        </Link>
 
         <select
           name="role"

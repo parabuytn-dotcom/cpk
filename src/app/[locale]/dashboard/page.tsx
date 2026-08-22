@@ -15,6 +15,7 @@ import HomeworkForm from "@/components/dashboard/HomeworkForm";
 import TeacherAbsenceForm from "@/components/dashboard/TeacherAbsenceForm";
 import HomeworkChecklist from "@/components/dashboard/HomeworkChecklist";
 import BadgesRow from "@/components/dashboard/BadgesRow";
+import AvatarUpload from "@/components/dashboard/AvatarUpload";
 import EmptyState from "@/components/ui/EmptyState";
 import { listMyBadges } from "@/lib/badges/data";
 import { formatDate } from "@/lib/formatDate";
@@ -42,11 +43,17 @@ export default async function DashboardPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t("title")} />
-      <div className="glass-surface rounded-3xl px-6 py-10 text-foreground/70">
-        {profile.fullName ??
-          (profile.parentFirstName
-            ? `${profile.parentFirstName} ${profile.parentLastName ?? ""}`.trim()
-            : profile.role)}
+      <div className="glass-surface flex items-center justify-between gap-4 rounded-3xl px-6 py-6">
+        <p className="text-foreground/70">
+          {profile.fullName ??
+            (profile.parentFirstName
+              ? `${profile.parentFirstName} ${profile.parentLastName ?? ""}`.trim()
+              : profile.role)}
+        </p>
+        <AvatarUpload
+          name={profile.fullName ?? profile.parentFirstName ?? profile.role}
+          avatarUrl={profile.avatarUrl}
+        />
       </div>
 
       <BadgesRow badges={myBadges} />

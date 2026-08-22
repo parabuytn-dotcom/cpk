@@ -1,5 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import RegisterForm from "@/components/auth/RegisterForm";
+import { listClasses } from "@/lib/admin/data";
 
 export default async function RegisterPage({
   params,
@@ -9,5 +10,7 @@ export default async function RegisterPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <RegisterForm />;
+  const classes = await listClasses();
+
+  return <RegisterForm classes={classes} />;
 }
