@@ -36,7 +36,7 @@ export async function askGemini(history: ChatTurn[]): Promise<AskGeminiResult> {
         })),
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 400,
+          maxOutputTokens: 1024,
         },
       }),
     });
