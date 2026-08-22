@@ -2,11 +2,10 @@
   "nav": {
     "home": "Accueil",
     "timetable": "Emploi du temps",
-    "feed": "Mur social",
+    "feed": "Feed",
     "vault": "Le Vault",
     "staff": "Le Staff",
     "about": "Plus de nous",
-    "tips": "Tips",
     "releases": "Nouveautés",
     "help": "Aide",
     "login": "Connexion",
@@ -66,10 +65,6 @@
     "title": "Nouveautés",
     "empty": "Aucune mise à jour publiée pour le moment."
   },
-  "tips": {
-    "title": "Conseils de réussite",
-    "empty": "Aucun conseil publié pour le moment."
-  },
   "dashboard": {
     "title": "Mon espace",
     "myChildren": "Mes enfants",
@@ -118,7 +113,7 @@
     "contact": "Contacte-nous au 99766801 ou par email à contact@cpkef.tn."
   },
   "feed": {
-    "title": "Mur social",
+    "title": "Feed",
     "placeholder": "Quoi de neuf au collège ?",
     "videoHint": "Photo ou vidéo (reel) — les vidéos consomment beaucoup de stockage, merci de rester raisonnable.",
     "publish": "Publier",

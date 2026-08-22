@@ -2,11 +2,10 @@
   "nav": {
     "home": "Home",
     "timetable": "Timetable",
-    "feed": "Social wall",
+    "feed": "Feed",
     "vault": "The Vault",
     "staff": "The Staff",
     "about": "About Us",
-    "tips": "Tips",
     "releases": "Releases",
     "help": "Help",
     "login": "Login",
@@ -66,10 +65,6 @@
     "title": "Releases",
     "empty": "No update published yet."
   },
-  "tips": {
-    "title": "Success tips",
-    "empty": "No tip published yet."
-  },
   "dashboard": {
     "title": "My space",
     "myChildren": "My children",
@@ -118,7 +113,7 @@
     "contact": "Contact us at 99766801 or by email at contact@cpkef.tn."
   },
   "feed": {
-    "title": "Social wall",
+    "title": "Feed",
     "placeholder": "What's new at school?",
     "videoHint": "Photo or video (reel) — videos use a lot of storage, please stay reasonable.",
     "publish": "Post",

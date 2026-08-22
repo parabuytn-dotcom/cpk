@@ -59,6 +59,33 @@ export async function createPost(_state: FormState, formData: FormData): Promise
   return { success: "" };
 }
 
+export async function deletePost(postId: string) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Non connecté.");
+
+  const supabase = await createClient();
+
+  const { data: post } = await supabase
+    .from("feed_posts")
+    .select("author_id, media_path")
+    .eq("id", postId)
+    .single();
+
+  if (!post) return;
+  if (post.author_id !== profile.id && profile.role !== "admin") {
+    throw new Error("Non autorisé.");
+  }
+
+  const { error } = await supabase.from("feed_posts").delete().eq("id", postId);
+  if (error) throw new Error(error.message);
+
+  if (post.media_path) {
+    await supabase.storage.from("feed-media").remove([post.media_path]);
+  }
+
+  revalidatePath("/feed");
+}
+
 export async function toggleLike(postId: string, liked: boolean) {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Non connecté.");

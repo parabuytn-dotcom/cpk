@@ -3,10 +3,17 @@ import { getLocale } from "next-intl/server";
 import Avatar from "@/components/ui/Avatar";
 import LikeButton from "./LikeButton";
 import CommentSection from "./CommentSection";
+import DeletePostButton from "./DeletePostButton";
 import { formatDateTime } from "@/lib/formatDate";
 import type { FeedPostRow } from "@/lib/social/data";
 
-export default async function PostCard({ post }: { post: FeedPostRow }) {
+export default async function PostCard({
+  post,
+  canDelete,
+}: {
+  post: FeedPostRow;
+  canDelete: boolean;
+}) {
   const locale = await getLocale();
 
   return (
@@ -17,6 +24,7 @@ export default async function PostCard({ post }: { post: FeedPostRow }) {
           <p className="font-semibold">{post.authorName}</p>
           <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>
         </div>
+        {canDelete && <DeletePostButton postId={post.id} />}
       </div>
 
       <p className="whitespace-pre-wrap text-foreground/90">{post.content}</p>

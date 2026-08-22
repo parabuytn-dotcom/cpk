@@ -38,7 +38,11 @@ export default async function FeedPage({
       ) : (
         <div className="flex flex-col gap-6">
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard
+              key={post.id}
+              post={post}
+              canDelete={profile.role === "admin" || profile.id === post.authorId}
+            />
           ))}
         </div>
       )}

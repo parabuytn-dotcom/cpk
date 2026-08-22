@@ -11,6 +11,7 @@ export type CommentRow = {
 
 export type FeedPostRow = {
   id: string;
+  authorId: string | null;
   authorName: string;
   authorAvatarUrl: string | null;
   content: string;
@@ -41,7 +42,7 @@ export async function listFeedPosts(currentUserId?: string): Promise<FeedPostRow
   const { data: posts } = await supabase
     .from("feed_posts")
     .select(
-      "id, content, media_type, media_path, created_at, profiles(full_name, parent_first_name, avatar_url)",
+      "id, author_id, content, media_type, media_path, created_at, profiles(full_name, parent_first_name, avatar_url)",
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -86,6 +87,7 @@ export async function listFeedPosts(currentUserId?: string): Promise<FeedPostRow
 
     return {
       id: post.id,
+      authorId: post.author_id,
       authorName: authorName(profile),
       authorAvatarUrl: profile?.avatar_url ?? null,
       content: post.content,

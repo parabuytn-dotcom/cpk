@@ -460,6 +460,11 @@ create policy "Admins manage feed posts"
   using (public.is_admin())
   with check (public.is_admin());
 
+drop policy if exists "Authors delete their own posts" on public.feed_posts;
+create policy "Authors delete their own posts"
+  on public.feed_posts for delete
+  using (auth.uid() = author_id);
+
 -- ----------------------------------------------------------------------------
 -- post_likes / post_comments — open to every authenticated user regardless
 -- of publishing permissions.
