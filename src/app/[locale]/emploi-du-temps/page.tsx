@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import ClassSelector from "@/components/admin/ClassSelector";
-import TimetableTable from "@/components/admin/TimetableTable";
+import TimetableGrid from "@/components/admin/TimetableGrid";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { listClasses, listTimetableEntries } from "@/lib/admin/data";
@@ -49,7 +49,7 @@ export default async function TimetablePage({
         <ClassSelector classes={classes} currentClassId={selectedClass?.id} label={t("selectClass")} />
       </div>
 
-      {selectedClass ? <TimetableTable entries={entries} /> : <EmptyState message={t("empty")} />}
+      {selectedClass ? <TimetableGrid entries={entries} /> : <EmptyState message={t("empty")} />}
     </div>
   );
 }

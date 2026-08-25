@@ -3,7 +3,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import ClassSelector from "@/components/admin/ClassSelector";
 import CsvImportForm from "@/components/admin/CsvImportForm";
 import ManualEntryForm from "@/components/admin/ManualEntryForm";
-import TimetableTable from "@/components/admin/TimetableTable";
+import TimetableGrid from "@/components/admin/TimetableGrid";
 import { listClasses, listTimetableEntries } from "@/lib/admin/data";
 
 export default async function AdminTimetablePage({
@@ -39,7 +39,7 @@ export default async function AdminTimetablePage({
             <CsvImportForm classRow={selectedClass} />
             <ManualEntryForm classRow={selectedClass} />
           </div>
-          <TimetableTable entries={entries} />
+          <TimetableGrid entries={entries} />
         </div>
       )}
     </div>
