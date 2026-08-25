@@ -45,7 +45,9 @@
   "timetable": {
     "title": "Emploi du temps",
     "empty": "Aucun emploi du temps disponible pour le moment.",
-    "absent": "Absent(e)"
+    "absent": "Absent(e)",
+    "selectClass": "Choisir une classe",
+    "loginToSeeYours": "Connecte-toi pour voir directement l'emploi du temps de ta classe."
   },
   "staff": {
     "title": "Le Staff",

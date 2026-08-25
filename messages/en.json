@@ -45,7 +45,9 @@
   "timetable": {
     "title": "Timetable",
     "empty": "No timetable available yet.",
-    "absent": "Absent"
+    "absent": "Absent",
+    "selectClass": "Choose a class",
+    "loginToSeeYours": "Log in to see your class's timetable directly."
   },
   "staff": {
     "title": "The Staff",
