@@ -12,6 +12,7 @@ import {
   registerEmailSchema,
   loginPhoneSchema,
   loginEmailSchema,
+  loginChildSchema,
   updateProfileInfoSchema,
   type FormState,
 } from "./schemas";
@@ -256,6 +257,44 @@ export async function loginWithEmail(
   }
 
   return signInAndRedirect(validated.data.email, validated.data.password);
+}
+
+export async function loginAsChild(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const validated = loginChildSchema.safeParse({
+    studentId: formData.get("studentId"),
+    password: formData.get("password"),
+  });
+
+  if (!validated.success) {
+    return { message: "Identifiants incorrects." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: student } = await adminClient
+    .from("students")
+    .select("user_id")
+    .eq("id", validated.data.studentId)
+    .maybeSingle();
+
+  if (!student?.user_id) {
+    return { message: "Identifiants incorrects." };
+  }
+
+  const { data: userData, error: userError } = await adminClient.auth.admin.getUserById(
+    student.user_id,
+  );
+  if (userError || !userData.user?.email) {
+    return { message: "Identifiants incorrects." };
+  }
+
+  return signInAndRedirect(userData.user.email, validated.data.password);
 }
 
 export async function logout() {

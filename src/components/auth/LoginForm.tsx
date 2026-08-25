@@ -4,14 +4,22 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { loginWithPhone, loginWithEmail } from "@/lib/auth/actions";
+import ChildLoginPicker from "./ChildLoginPicker";
+import type { ChildLoginClass, ChildLoginStudent } from "@/lib/auth/data";
 
-export default function LoginForm() {
+export default function LoginForm({
+  childLoginClasses,
+  childLoginStudents,
+}: {
+  childLoginClasses: ChildLoginClass[];
+  childLoginStudents: ChildLoginStudent[];
+}) {
   const t = useTranslations("auth");
-  const [method, setMethod] = useState<"phone" | "email">("phone");
+  const [method, setMethod] = useState<"phone" | "email" | "child">("phone");
   const [phoneState, phoneAction, phonePending] = useActionState(loginWithPhone, undefined);
   const [emailState, emailAction, emailPending] = useActionState(loginWithEmail, undefined);
 
-  const state = method === "phone" ? phoneState : emailState;
+  const state = method === "phone" ? phoneState : method === "email" ? emailState : undefined;
 
   return (
     <div className="glass-surface mx-auto max-w-md rounded-3xl p-8">
@@ -36,20 +44,33 @@ export default function LoginForm() {
         >
           {t("methodEmail")}
         </button>
+        <button
+          type="button"
+          onClick={() => setMethod("child")}
+          className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+            method === "child" ? "bg-white shadow dark:bg-white/20" : "text-foreground/60"
+          }`}
+        >
+          {t("methodChild")}
+        </button>
       </div>
 
-      {method === "phone" ? (
+      {method === "phone" && (
         <form action={phoneAction} className="flex flex-col gap-4">
           <Field label={t("phone")} name="phone" type="tel" placeholder="99766801" />
           <Field label={t("password")} name="password" type="password" />
           <SubmitButton pending={phonePending} label={t("submitLogin")} />
         </form>
-      ) : (
+      )}
+      {method === "email" && (
         <form action={emailAction} className="flex flex-col gap-4">
           <Field label={t("email")} name="email" type="email" />
           <Field label={t("password")} name="password" type="password" />
           <SubmitButton pending={emailPending} label={t("submitLogin")} />
         </form>
+      )}
+      {method === "child" && (
+        <ChildLoginPicker classes={childLoginClasses} students={childLoginStudents} />
       )}
 
       {state?.message && (

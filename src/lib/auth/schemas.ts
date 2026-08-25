@@ -37,6 +37,11 @@ export const loginEmailSchema = z.object({
   password: z.string().min(1, "Champ requis."),
 });
 
+export const loginChildSchema = z.object({
+  studentId: z.string().uuid("Élève invalide."),
+  password: z.string().min(1, "Champ requis."),
+});
+
 export const updateProfileInfoSchema = z.object({
   fullName: z.string().trim().min(1, "Champ requis."),
   phone,
