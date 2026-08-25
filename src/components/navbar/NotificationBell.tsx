@@ -42,7 +42,7 @@ export default function NotificationBell({
       </button>
 
       {open && (
-        <div className="glass-surface absolute right-0 top-12 z-50 w-80 max-w-[90vw] rounded-2xl p-3 shadow-xl">
+        <div className="absolute right-0 top-12 z-50 w-80 max-w-[90vw] rounded-2xl border border-black/5 bg-white p-3 shadow-xl dark:border-white/10 dark:bg-gray-900">
           <div className="mb-2 flex items-center justify-between px-1">
             <p className="text-sm font-semibold">{t("title")}</p>
             {unreadCount > 0 && (

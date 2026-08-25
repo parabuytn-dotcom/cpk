@@ -545,10 +545,14 @@ function generatePassword() {
 
 export async function createChildAccount(
   studentId: string,
+  password: string,
 ): Promise<{ success: true; email: string; password: string } | { success: false; error: string }> {
   const profile = await getCurrentProfile();
   if (!profile || profile.role !== "parent") {
     return { success: false, error: "Non autorisé." };
+  }
+  if (password.length < 6) {
+    return { success: false, error: "Le mot de passe doit contenir au moins 6 caractères." };
   }
 
   const adminClient = createAdminClient();
@@ -570,7 +574,6 @@ export async function createChildAccount(
     return { success: false, error: "Ce compte existe déjà." };
   }
 
-  const password = generatePassword();
   const email = `${student.first_name.toLowerCase().replace(/[^a-z0-9]/g, "")}.${randomBytes(3).toString("hex")}@cpk.internal`;
 
   const { data: created, error } = await adminClient.auth.admin.createUser({
@@ -608,10 +611,14 @@ export async function createChildAccount(
 
 export async function resetChildPassword(
   studentId: string,
+  password: string,
 ): Promise<{ success: true; email: string; password: string } | { success: false; error: string }> {
   const profile = await getCurrentProfile();
   if (!profile || profile.role !== "parent") {
     return { success: false, error: "Non autorisé." };
+  }
+  if (password.length < 6) {
+    return { success: false, error: "Le mot de passe doit contenir au moins 6 caractères." };
   }
 
   const adminClient = createAdminClient();
@@ -633,7 +640,6 @@ export async function resetChildPassword(
     return { success: false, error: "Ce compte n'existe pas encore." };
   }
 
-  const password = generatePassword();
   const { error } = await adminClient.auth.admin.updateUserById(student.user_id, { password });
   if (error) return { success: false, error: error.message };
 

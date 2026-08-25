@@ -187,8 +187,10 @@
     "createdNoteSimple": "Account created:",
     "resetPassword": "Reset password",
     "resetting": "Resetting…",
-    "resetConfirm": "The old password will stop working. Continue?",
-    "resetNote": "Password reset — note these credentials, they won't be shown again:"
+    "resetConfirm": "The old password will stop working once confirmed.",
+    "resetNote": "Password reset — note these credentials, they won't be shown again:",
+    "choosePassword": "Choose a password (6 characters min.)",
+    "confirm": "Confirm"
   },
   "avatarUpload": {
     "change": "Change photo",

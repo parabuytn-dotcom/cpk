@@ -187,8 +187,10 @@
     "createdNoteSimple": "Compte créé :",
     "resetPassword": "Réinitialiser le mot de passe",
     "resetting": "Réinitialisation…",
-    "resetConfirm": "L'ancien mot de passe ne fonctionnera plus. Continuer ?",
-    "resetNote": "Mot de passe réinitialisé — note ces identifiants, ils ne seront plus affichés :"
+    "resetConfirm": "L'ancien mot de passe ne fonctionnera plus une fois validé.",
+    "resetNote": "Mot de passe réinitialisé — note ces identifiants, ils ne seront plus affichés :",
+    "choosePassword": "Choisis un mot de passe (6 caractères min.)",
+    "confirm": "Valider"
   },
   "avatarUpload": {
     "change": "Changer la photo",

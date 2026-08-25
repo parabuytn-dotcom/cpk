@@ -7,13 +7,16 @@ import { createChildAccount } from "@/lib/admin/actions";
 export default function ChildAccountButton({ studentId }: { studentId: string }) {
   const t = useTranslations("accountCreation");
   const [isPending, startTransition] = useTransition();
+  const [showForm, setShowForm] = useState(false);
+  const [password, setPassword] = useState("");
   const [result, setResult] = useState<
     { success: true; email: string; password: string } | { success: false; error: string } | null
   >(null);
 
-  function handleClick() {
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     startTransition(async () => {
-      const res = await createChildAccount(studentId);
+      const res = await createChildAccount(studentId, password);
       setResult(res);
     });
   }
@@ -29,18 +32,39 @@ export default function ChildAccountButton({ studentId }: { studentId: string })
     );
   }
 
-  return (
-    <div>
+  if (!showForm) {
+    return (
       <button
-        onClick={handleClick}
-        disabled={isPending}
-        className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
+        onClick={() => setShowForm(true)}
+        className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700"
       >
-        {isPending ? t("creating") : t("createChild")}
+        {t("createChild")}
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder={t("choosePassword")}
+        minLength={6}
+        required
+        autoFocus
+        className="rounded-full border border-black/10 bg-white/70 px-3 py-1.5 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
+      />
+      <button
+        type="submit"
+        disabled={isPending}
+        className="rounded-full bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
+      >
+        {isPending ? t("creating") : t("confirm")}
       </button>
       {result?.success === false && (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{result.error}</p>
+        <p className="w-full text-sm text-red-600 dark:text-red-400">{result.error}</p>
       )}
-    </div>
+    </form>
   );
 }
