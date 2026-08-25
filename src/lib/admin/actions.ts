@@ -184,6 +184,15 @@ export async function upsertTimetableEntry(
   return { success: "Créneau ajouté." };
 }
 
+export async function deleteTimetableEntry(entryId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("timetable_entries").delete().eq("id", entryId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/emploi-du-temps");
+  revalidatePath("/emploi-du-temps");
+}
+
 // ---------------------------------------------------------------------------
 // Absences — déclaration + propagation automatique + alerte SMS
 // ---------------------------------------------------------------------------

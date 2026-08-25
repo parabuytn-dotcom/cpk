@@ -39,7 +39,7 @@ export default async function AdminTimetablePage({
             <CsvImportForm classRow={selectedClass} />
             <ManualEntryForm classRow={selectedClass} />
           </div>
-          <TimetableGrid entries={entries} />
+          <TimetableGrid entries={entries} canDelete />
         </div>
       )}
     </div>

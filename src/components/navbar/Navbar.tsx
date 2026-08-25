@@ -36,7 +36,7 @@ export default async function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full px-4 pt-4">
-      <div className="glass-surface mx-auto flex max-w-6xl items-center justify-between rounded-full px-5 py-3 shadow-lg shadow-black/5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-black/5 bg-white px-5 py-3 shadow-lg shadow-black/5 dark:border-white/10 dark:bg-gray-900">
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm text-white shadow-md">
             CPK

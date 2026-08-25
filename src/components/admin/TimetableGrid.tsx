@@ -1,4 +1,5 @@
 import type { TimetableEntryRow } from "@/lib/admin/data";
+import DeleteTimetableEntryButton from "./DeleteTimetableEntryButton";
 
 const DAY_LABELS = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -6,7 +7,13 @@ function slotKey(startTime: string, endTime: string) {
   return `${startTime}-${endTime}`;
 }
 
-export default function TimetableGrid({ entries }: { entries: TimetableEntryRow[] }) {
+export default function TimetableGrid({
+  entries,
+  canDelete = false,
+}: {
+  entries: TimetableEntryRow[];
+  canDelete?: boolean;
+}) {
   if (entries.length === 0) {
     return (
       <div className="glass-surface rounded-3xl px-6 py-10 text-center text-foreground/60">
@@ -65,16 +72,19 @@ export default function TimetableGrid({ entries }: { entries: TimetableEntryRow[
                       {cellEntries.map((entry) => (
                         <div
                           key={entry.id}
-                          className={`rounded-xl px-2 py-1.5 ${
+                          className={`flex items-start justify-between gap-1 rounded-xl px-2 py-1.5 ${
                             entry.isCancelled
                               ? "bg-red-500/10 text-red-600/70 line-through dark:text-red-400/70"
                               : "bg-brand-500/10"
                           }`}
                         >
-                          <p className="font-medium">{entry.subject}</p>
-                          {entry.teacherName && (
-                            <p className="font-normal text-foreground/50">{entry.teacherName}</p>
-                          )}
+                          <div>
+                            <p className="font-medium">{entry.subject}</p>
+                            {entry.teacherName && (
+                              <p className="font-normal text-foreground/50">{entry.teacherName}</p>
+                            )}
+                          </div>
+                          {canDelete && <DeleteTimetableEntryButton entryId={entry.id} />}
                         </div>
                       ))}
                     </div>
