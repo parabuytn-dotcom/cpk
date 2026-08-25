@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendPushToUser } from "@/lib/push/send";
 
 /**
  * Creates an in-site notification for `userId`. Always uses the service-role
@@ -7,8 +8,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * (e.g. someone commenting on your post), so it can't rely on the caller's
  * own RLS session to write into another user's notifications.
  *
- * TODO: Intégrer API Push Mobile — miroir de cette notification en push
- * pour l'app mobile une fois disponible.
+ * Also mirrors it as a push notification (web + Android) to every device
+ * the user has registered — best-effort, never blocks or throws.
  */
 export async function notify(userId: string, type: string, message: string, link?: string) {
   const adminClient = createAdminClient();
@@ -20,6 +21,8 @@ export async function notify(userId: string, type: string, message: string, link
     message,
     link: link ?? null,
   });
+
+  await sendPushToUser(userId, { title: "CPK Learn", body: message, link });
 }
 
 export async function notifyMany(userIds: string[], type: string, message: string, link?: string) {

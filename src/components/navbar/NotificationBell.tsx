@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { markNotificationRead, markAllNotificationsRead } from "@/lib/notifications/actions";
 import { formatDateTime } from "@/lib/formatDate";
+import PushNotificationToggle from "@/components/push/PushNotificationToggle";
 import type { NotificationRow } from "@/lib/notifications/data";
 
 export default function NotificationBell({
@@ -54,6 +55,8 @@ export default function NotificationBell({
               </button>
             )}
           </div>
+
+          <PushNotificationToggle />
 
           {notifications.length === 0 ? (
             <p className="px-1 py-4 text-center text-sm text-foreground/50">{t("empty")}</p>

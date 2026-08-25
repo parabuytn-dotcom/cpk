@@ -848,3 +848,28 @@ update public.students s
 set class_id = c.id
 from public.classes c
 where s.class_id is null and s.class_name = c.name;
+
+-- ----------------------------------------------------------------------------
+-- push_tokens — device/browser push registrations (Firebase Cloud Messaging).
+-- One row per device: the same user logged in on their phone and a browser
+-- gets two rows, both fired on every notification. Tokens are opaque and
+-- rotate on their own; a token rejected by FCM (uninstalled app, revoked
+-- permission) is deleted from here by the send path.
+-- ----------------------------------------------------------------------------
+create table if not exists public.push_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  token text not null unique,
+  platform text not null check (platform in ('web', 'android')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.push_tokens enable row level security;
+
+drop policy if exists "Users manage their own push tokens" on public.push_tokens;
+create policy "Users manage their own push tokens"
+  on public.push_tokens for all
+  using (auth.uid() = user_id or public.is_admin())
+  with check (auth.uid() = user_id or public.is_admin());
+
+create index if not exists idx_push_tokens_user_id on public.push_tokens (user_id);

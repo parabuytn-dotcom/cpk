@@ -177,7 +177,11 @@
   "notificationsUi": {
     "title": "Notifications",
     "markAllRead": "Mark all as read",
-    "empty": "No notification yet."
+    "empty": "No notification yet.",
+    "pushEnable": "🔔 Enable notifications on this device",
+    "pushEnabling": "Enabling…",
+    "pushEnabled": "Notifications enabled on this device ✓",
+    "pushDenied": "Notifications blocked — enable them in your browser/phone settings."
   },
   "accountCreation": {
     "createChild": "Create my child's account",
