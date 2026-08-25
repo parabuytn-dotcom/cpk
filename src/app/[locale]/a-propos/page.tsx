@@ -15,15 +15,13 @@ export default async function AboutPage({
     <div className="mx-auto max-w-2xl">
       <PageHeader title={t("title")} />
 
-      {/* TODO: remplacer photoUrl par le vrai chemin une fois la photo fournie
-          (ex: Supabase Storage ou /public/images/edem.jpg). */}
       <div className="mb-8 flex justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <Avatar name="Melik Messaoudi" photoUrl="/melik-messaoudi.jpg" size={112} />
           <p className="text-sm font-medium">Melik Messaoudi</p>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Avatar name="Edem Aifia" photoUrl={null} size={112} />
+          <Avatar name="Edem Aifia" photoUrl="/edem-aifia.jpg" size={112} />
           <p className="text-sm font-medium">Edem Aifia</p>
         </div>
       </div>
