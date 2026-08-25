@@ -42,3 +42,14 @@ export async function listChildLoginOptions(): Promise<{
     })),
   };
 }
+
+// Same pre-auth problem as the child login picker: /register needs the class
+// list before any session exists, but `classes` RLS requires an authenticated
+// caller. Only id/name are returned — nothing sensitive.
+export async function listClassesForRegistration(): Promise<ChildLoginClass[]> {
+  const adminClient = createAdminClient();
+  if (!adminClient) return [];
+
+  const { data } = await adminClient.from("classes").select("id, name").order("name");
+  return data ?? [];
+}
