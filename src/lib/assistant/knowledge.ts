@@ -57,14 +57,6 @@ d'inventer une réponse.
 - Chacun peut supprimer ses propres publications (icône 🗑 sur la publication) ; l'administration
   peut supprimer n'importe quelle publication.
 
-# Messages
-- Fonctionne comme WhatsApp : un groupe de discussion automatique par classe (parents, élèves et
-  professeurs de cette classe), plus des messages privés en 1-à-1.
-- Les messages privés ne sont possibles qu'entre personnes qui partagent au moins une classe (pas
-  d'annuaire général) — depuis un groupe de classe, cliquer sur un membre puis "Message privé".
-- Les messages arrivent instantanément, sans recharger la page. Une bulle sur l'icône 💬 en haut du
-  site indique le nombre de messages non lus.
-
 # Le Vault (documents de cours)
 - Espace où des élèves désignés "Scribes" (autorisation donnée par l'administration) uploadent
   les cours/leçons du jour pour aider les élèves absents.

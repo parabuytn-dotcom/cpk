@@ -191,13 +191,21 @@
     "save": "Save",
     "saving": "Saving…"
   },
-  "messaging": {
-    "title": "Messages",
-    "empty": "No conversation yet.",
-    "noMessagesYet": "No message yet.",
-    "placeholder": "Type a message…",
-    "send": "Send",
-    "me": "Me"
+  "userProfile": {
+    "follow": "Follow",
+    "following": "Following",
+    "unfollow": "Unfollow",
+    "followers": "Followers",
+    "followersCount": "followers",
+    "followingCount": "following",
+    "posts": "Posts",
+    "noPosts": "No posts yet.",
+    "notFound": "This profile doesn't exist.",
+    "roleParent": "Parent",
+    "roleStudent": "Student",
+    "roleTeacher": "Teacher",
+    "roleStaff": "Staff",
+    "roleAdmin": "Administration"
   },
   "assistant": {
     "title": "CPK Assistant",

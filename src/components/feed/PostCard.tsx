@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import Avatar from "@/components/ui/Avatar";
 import LikeButton from "./LikeButton";
 import CommentSection from "./CommentSection";
@@ -19,11 +20,24 @@ export default async function PostCard({
   return (
     <article className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
       <div className="flex items-center gap-3">
-        <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={40} />
-        <div>
-          <p className="font-semibold">{post.authorName}</p>
-          <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>
-        </div>
+        {post.authorId ? (
+          <Link href={`/profil/${post.authorId}`} className="flex items-center gap-3">
+            <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={40} />
+            <div>
+              <p className="font-semibold hover:underline">{post.authorName}</p>
+              <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>
+            </div>
+          </Link>
+        ) : (
+          <>
+            <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={40} />
+            <div>
+              <p className="font-semibold">{post.authorName}</p>
+              <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>
+            </div>
+          </>
+        )}
+        <div className="flex-1" />
         {canDelete && <DeletePostButton postId={post.id} />}
       </div>
 

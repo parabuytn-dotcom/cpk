@@ -191,13 +191,21 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…"
   },
-  "messaging": {
-    "title": "Messages",
-    "empty": "Aucune conversation pour le moment.",
-    "noMessagesYet": "Aucun message pour le moment.",
-    "placeholder": "Écris un message…",
-    "send": "Envoyer",
-    "me": "Moi"
+  "userProfile": {
+    "follow": "Suivre",
+    "following": "Abonné(e)",
+    "unfollow": "Ne plus suivre",
+    "followers": "Abonnés",
+    "followersCount": "abonnés",
+    "followingCount": "abonnements",
+    "posts": "Publications",
+    "noPosts": "Aucune publication pour le moment.",
+    "notFound": "Ce profil n'existe pas.",
+    "roleParent": "Parent",
+    "roleStudent": "Élève",
+    "roleTeacher": "Professeur",
+    "roleStaff": "Staff",
+    "roleAdmin": "Administration"
   },
   "assistant": {
     "title": "Assistant CPK",

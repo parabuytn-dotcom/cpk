@@ -36,27 +36,34 @@ export default function MobileMenu({
       </button>
 
       {open && (
-        <div className="glass-surface absolute inset-x-4 top-20 z-50 rounded-3xl p-4 shadow-xl">
-          <nav className="flex flex-col gap-1">
-            {items.map((item) => (
+        <>
+          <button
+            aria-label="Fermer le menu"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+          />
+          <div className="fixed inset-x-4 top-20 z-50 rounded-3xl border border-black/5 bg-white p-4 shadow-2xl dark:border-white/10 dark:bg-gray-900">
+            <nav className="flex flex-col gap-1">
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-4 py-3 text-base font-medium transition hover:bg-brand-500/10"
+                >
+                  {item.label}
+                </Link>
+              ))}
               <Link
-                key={item.href}
-                href={item.href}
+                href={authHref}
                 onClick={() => setOpen(false)}
-                className="rounded-xl px-4 py-3 text-base font-medium transition hover:bg-brand-500/10"
+                className="mt-2 rounded-xl bg-brand-600 px-4 py-3 text-center text-base font-semibold text-white shadow-md transition hover:bg-brand-700"
               >
-                {item.label}
+                {authLabel}
               </Link>
-            ))}
-            <Link
-              href={authHref}
-              onClick={() => setOpen(false)}
-              className="mt-2 rounded-xl bg-brand-600 px-4 py-3 text-center text-base font-semibold text-white shadow-md transition hover:bg-brand-700"
-            >
-              {authLabel}
-            </Link>
-          </nav>
-        </div>
+            </nav>
+          </div>
+        </>
       )}
     </div>
   );

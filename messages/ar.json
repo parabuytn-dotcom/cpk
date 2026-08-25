@@ -191,13 +191,21 @@
     "save": "حفظ",
     "saving": "جارٍ الحفظ…"
   },
-  "messaging": {
-    "title": "الرسائل",
-    "empty": "لا توجد محادثة حاليا.",
-    "noMessagesYet": "لا توجد رسالة حاليا.",
-    "placeholder": "اكتب رسالة…",
-    "send": "إرسال",
-    "me": "أنا"
+  "userProfile": {
+    "follow": "متابعة",
+    "following": "متابَع",
+    "unfollow": "إلغاء المتابعة",
+    "followers": "المتابعون",
+    "followersCount": "متابع",
+    "followingCount": "متابَع",
+    "posts": "المنشورات",
+    "noPosts": "لا توجد منشورات حاليا.",
+    "notFound": "هذا الملف الشخصي غير موجود.",
+    "roleParent": "ولي أمر",
+    "roleStudent": "تلميذ",
+    "roleTeacher": "أستاذ",
+    "roleStaff": "طاقم العمل",
+    "roleAdmin": "الإدارة"
   },
   "assistant": {
     "title": "مساعد CPK",
