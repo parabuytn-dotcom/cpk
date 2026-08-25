@@ -4,19 +4,19 @@
 //
 // This file is a static asset — it can't read process.env, so the config
 // below must be filled in by hand with the SAME values as the
-// NEXT_PUBLIC_FIREBASE_* variables in .env.local. It's not secret data (the
+// NEXT_PUBLIC_FIREBASE_* variables in .env. It's not secret data (the
 // Firebase web config is meant to ship in the client bundle), just awkward
 // to keep in sync — update both places if you ever rotate the Firebase project.
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME",
+  apiKey: "AIzaSyA1ad9RZjdJpR3zS6Ki_0FtOzP5Qohvql8",
+  authDomain: "cpkef-53c17.firebaseapp.com",
+  projectId: "cpkef-53c17",
+  storageBucket: "cpkef-53c17.firebasestorage.app",
+  messagingSenderId: "322662188961",
+  appId: "1:322662188961:web:5545879ad253d618aeede0",
 });
 
 const messaging = firebase.messaging();
