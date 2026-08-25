@@ -29,7 +29,9 @@ export async function createPost(_state: FormState, formData: FormData): Promise
     mediaType = media.type.startsWith("video/") ? "video" : "image";
 
     const requiredTag = mediaType === "video" ? "reels_publisher" : "feed_publisher";
-    if (profile.role !== "admin" && !profile.tags.includes(requiredTag)) {
+    const canPost =
+      profile.role === "admin" || profile.role === "teacher" || profile.tags.includes(requiredTag);
+    if (!canPost) {
       return { message: mediaType === "video" ? t("noPermissionVideo") : t("noPermissionImage") };
     }
 
@@ -40,7 +42,11 @@ export async function createPost(_state: FormState, formData: FormData): Promise
       .upload(path, media, { contentType: media.type });
     if (uploadError) return { message: uploadError.message };
     mediaPath = path;
-  } else if (profile.role !== "admin" && !profile.tags.includes("feed_publisher")) {
+  } else if (
+    profile.role !== "admin" &&
+    profile.role !== "teacher" &&
+    !profile.tags.includes("feed_publisher")
+  ) {
     return { message: t("noPermissionFeed") };
   }
 

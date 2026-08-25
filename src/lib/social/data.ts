@@ -4,7 +4,9 @@ import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
 
 export type CommentRow = {
   id: string;
+  authorId: string | null;
   authorName: string;
+  authorAvatarUrl: string | null;
   content: string;
   createdAt: string;
 };
@@ -97,10 +99,13 @@ export async function listFeedPosts(
 
   const commentsByPost = new Map<string, CommentRow[]>();
   for (const comment of comments ?? []) {
+    const commentProfile = comment.author_id ? profiles.get(comment.author_id) : undefined;
     const list = commentsByPost.get(comment.post_id) ?? [];
     list.push({
       id: comment.id,
-      authorName: comment.author_id ? (profiles.get(comment.author_id)?.displayName ?? "?") : "?",
+      authorId: comment.author_id,
+      authorName: commentProfile?.displayName ?? "?",
+      authorAvatarUrl: commentProfile?.avatarUrl ?? null,
       content: comment.content,
       createdAt: comment.created_at,
     });

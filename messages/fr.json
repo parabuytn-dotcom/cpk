@@ -106,7 +106,8 @@
     "teachersTab": "Profs",
     "teachersSubtitle": "Crée un compte de connexion pour chaque professeur.",
     "teachersEmpty": "Aucun professeur pour le moment (ajoute des créneaux d'emploi du temps pour en créer).",
-    "accountExists": "Compte créé"
+    "accountExists": "Compte créé",
+    "assignedClasses": "Classes attribuées (clique pour ajouter/retirer) :"
   },
   "privacy": {
     "title": "Confidentialité de vos données",
@@ -170,7 +171,8 @@
     "reasonPlaceholder": "Motif (optionnel)",
     "declare": "Déclarer mon absence",
     "dueFor": "pour le",
-    "absenceRecorded": "Absence enregistrée. {slots} créneau(x) annulé(s) sur {classes} classe(s)."
+    "absenceRecorded": "Absence enregistrée. {slots} créneau(x) annulé(s) sur {classes} classe(s).",
+    "noClassesAssigned": "Aucune classe ne t'a été attribuée pour le moment. Contacte l'administration."
   },
   "notificationsUi": {
     "title": "Notifications",
@@ -182,7 +184,11 @@
     "create": "Créer le compte",
     "creating": "Création…",
     "createdNote": "Compte créé — note ces identifiants, ils ne seront plus affichés :",
-    "createdNoteSimple": "Compte créé :"
+    "createdNoteSimple": "Compte créé :",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetting": "Réinitialisation…",
+    "resetConfirm": "L'ancien mot de passe ne fonctionnera plus. Continuer ?",
+    "resetNote": "Mot de passe réinitialisé — note ces identifiants, ils ne seront plus affichés :"
   },
   "avatarUpload": {
     "change": "Changer la photo",

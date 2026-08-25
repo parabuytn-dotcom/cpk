@@ -129,25 +129,64 @@ export type TeacherRow = {
   subject: string | null;
   phone: string | null;
   hasAccount: boolean;
+  classIds: string[];
+  classNames: string[];
 };
 
 export async function listTeachers(): Promise<TeacherRow[]> {
   if (!isSupabaseConfigured()) return [];
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("teachers")
-    .select("id, first_name, last_name, subject, phone, user_id")
-    .order("last_name");
+  const [{ data }, { data: assignments }] = await Promise.all([
+    supabase
+      .from("teachers")
+      .select("id, first_name, last_name, subject, phone, user_id")
+      .order("last_name"),
+    supabase.from("teacher_classes").select("teacher_id, classes(id, name)"),
+  ]);
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    subject: row.subject,
-    phone: row.phone,
-    hasAccount: row.user_id !== null,
-  }));
+  const classesByTeacher = new Map<string, ClassRow[]>();
+  for (const row of assignments ?? []) {
+    const cls = Array.isArray(row.classes) ? row.classes[0] : row.classes;
+    if (!cls) continue;
+    classesByTeacher.set(row.teacher_id, [...(classesByTeacher.get(row.teacher_id) ?? []), cls]);
+  }
+
+  return (data ?? []).map((row) => {
+    const assigned = classesByTeacher.get(row.id) ?? [];
+    return {
+      id: row.id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      subject: row.subject,
+      phone: row.phone,
+      hasAccount: row.user_id !== null,
+      classIds: assigned.map((c) => c.id),
+      classNames: assigned.map((c) => c.name),
+    };
+  });
+}
+
+export async function listClassesForTeacher(profileId: string): Promise<ClassRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data: teacher } = await supabase
+    .from("teachers")
+    .select("id")
+    .eq("user_id", profileId)
+    .maybeSingle();
+
+  if (!teacher) return [];
+
+  const { data } = await supabase
+    .from("teacher_classes")
+    .select("classes(id, name)")
+    .eq("teacher_id", teacher.id);
+
+  return (data ?? [])
+    .map((row) => (Array.isArray(row.classes) ? row.classes[0] : row.classes))
+    .filter((c): c is ClassRow => Boolean(c));
 }
 
 export type TimetableEntryRow = {
@@ -437,6 +476,7 @@ export async function getTeacherRowForUser(teacherProfileId: string): Promise<Te
     .maybeSingle();
 
   if (!data) return null;
+  const classes = await listClassesForTeacher(teacherProfileId);
   return {
     id: data.id,
     firstName: data.first_name,
@@ -444,6 +484,8 @@ export async function getTeacherRowForUser(teacherProfileId: string): Promise<Te
     subject: data.subject,
     phone: data.phone,
     hasAccount: true,
+    classIds: classes.map((c) => c.id),
+    classNames: classes.map((c) => c.name),
   };
 }
 

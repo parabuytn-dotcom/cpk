@@ -2,7 +2,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import TeacherAccountButton from "@/components/admin/TeacherAccountButton";
-import { listTeachers } from "@/lib/admin/data";
+import TeacherClassesEditor from "@/components/admin/TeacherClassesEditor";
+import { listTeachers, listClasses } from "@/lib/admin/data";
 
 export default async function AdminTeachersPage({
   params,
@@ -12,7 +13,11 @@ export default async function AdminTeachersPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [t, teachers] = await Promise.all([getTranslations("admin"), listTeachers()]);
+  const [t, teachers, classes] = await Promise.all([
+    getTranslations("admin"),
+    listTeachers(),
+    listClasses(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,6 +46,16 @@ export default async function AdminTeachersPage({
                 </span>
               ) : (
                 <TeacherAccountButton teacherId={teacher.id} />
+              )}
+              {classes.length > 0 && (
+                <div className="w-full">
+                  <p className="mb-1.5 text-xs text-foreground/50">{t("assignedClasses")}</p>
+                  <TeacherClassesEditor
+                    teacherId={teacher.id}
+                    classes={classes}
+                    initialClassIds={teacher.classIds}
+                  />
+                </div>
               )}
             </div>
           ))}

@@ -106,7 +106,8 @@
     "teachersTab": "الأساتذة",
     "teachersSubtitle": "أنشئ حساب دخول لكل أستاذ.",
     "teachersEmpty": "لا يوجد أستاذ بعد (أضف حصصا في جدول الأوقات لإنشائهم).",
-    "accountExists": "تم إنشاء الحساب"
+    "accountExists": "تم إنشاء الحساب",
+    "assignedClasses": "الأقسام المسندة (انقر للإضافة/الإزالة):"
   },
   "privacy": {
     "title": "خصوصية بياناتك",
@@ -170,7 +171,8 @@
     "reasonPlaceholder": "السبب (اختياري)",
     "declare": "التصريح بغيابي",
     "dueFor": "بتاريخ",
-    "absenceRecorded": "تم تسجيل الغياب. تم إلغاء {slots} حصة/حصص في {classes} قسم/أقسام."
+    "absenceRecorded": "تم تسجيل الغياب. تم إلغاء {slots} حصة/حصص في {classes} قسم/أقسام.",
+    "noClassesAssigned": "لم يتم إسناد أي قسم إليك بعد. تواصل مع الإدارة."
   },
   "notificationsUi": {
     "title": "الإشعارات",
@@ -182,7 +184,11 @@
     "create": "إنشاء الحساب",
     "creating": "جارٍ الإنشاء…",
     "createdNote": "تم إنشاء الحساب — احتفظ بهذه المعلومات، لن تظهر مجددا:",
-    "createdNoteSimple": "تم إنشاء الحساب:"
+    "createdNoteSimple": "تم إنشاء الحساب:",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "resetting": "جارٍ إعادة التعيين…",
+    "resetConfirm": "لن تعمل كلمة المرور القديمة بعد الآن. متابعة؟",
+    "resetNote": "تمت إعادة تعيين كلمة المرور — دوّن هذه المعلومات، لن تظهر مجددا:"
   },
   "avatarUpload": {
     "change": "تغيير الصورة",

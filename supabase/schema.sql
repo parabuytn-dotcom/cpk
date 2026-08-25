@@ -814,3 +814,27 @@ create policy "Users unfollow as themselves"
 
 create index if not exists idx_follows_follower_id on public.follows (follower_id);
 create index if not exists idx_follows_followed_id on public.follows (followed_id);
+
+-- ----------------------------------------------------------------------------
+-- teacher_classes — which classes a teacher is assigned to (admin-managed).
+-- Scopes what a teacher can do from their dashboard (post homework for one of
+-- their own classes) instead of every class in the school.
+-- ----------------------------------------------------------------------------
+create table if not exists public.teacher_classes (
+  teacher_id uuid not null references public.teachers (id) on delete cascade,
+  class_id uuid not null references public.classes (id) on delete cascade,
+  primary key (teacher_id, class_id)
+);
+
+alter table public.teacher_classes enable row level security;
+
+drop policy if exists "Anyone authenticated can read teacher classes" on public.teacher_classes;
+create policy "Anyone authenticated can read teacher classes"
+  on public.teacher_classes for select
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Admins manage teacher classes" on public.teacher_classes;
+create policy "Admins manage teacher classes"
+  on public.teacher_classes for all
+  using (public.is_admin())
+  with check (public.is_admin());

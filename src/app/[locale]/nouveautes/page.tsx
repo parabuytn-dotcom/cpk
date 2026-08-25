@@ -25,7 +25,7 @@ export default async function ReleasesPage({
                 {new Date(r.publishedAt).toLocaleDateString("fr-FR")}
               </p>
               <h2 className="mt-1 text-lg font-semibold">{r.title}</h2>
-              <p className="mt-2 text-foreground/75">{r.body}</p>
+              <p className="mt-2 whitespace-pre-wrap text-foreground/75">{r.body}</p>
             </div>
           ))}
         </div>

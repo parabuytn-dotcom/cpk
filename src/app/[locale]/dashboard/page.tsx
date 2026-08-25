@@ -3,13 +3,14 @@ import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import {
   listChildrenForParent,
-  listClasses,
+  listClassesForTeacher,
   listHomeworkForTeacher,
   listHomeworkForClass,
   getStudentClassName,
 } from "@/lib/admin/data";
 import PageHeader from "@/components/ui/PageHeader";
 import ChildAccountButton from "@/components/dashboard/ChildAccountButton";
+import ResetChildPasswordButton from "@/components/dashboard/ResetChildPasswordButton";
 import ProfileProgress from "@/components/dashboard/ProfileProgress";
 import EditProfileForm from "@/components/dashboard/EditProfileForm";
 import HomeworkForm from "@/components/dashboard/HomeworkForm";
@@ -81,9 +82,12 @@ export default async function DashboardPage({
                     <p className="text-sm text-foreground/60">{child.className}</p>
                   </div>
                   {child.hasAccount ? (
-                    <span className="rounded-full bg-green-500/10 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400">
-                      {t("accountExists")}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-green-500/10 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400">
+                        {t("accountExists")}
+                      </span>
+                      <ResetChildPasswordButton studentId={child.id} />
+                    </div>
                   ) : (
                     <ChildAccountButton studentId={child.id} />
                   )}
@@ -104,7 +108,7 @@ export default async function DashboardPage({
 async function TeacherDashboard({ profileId, locale }: { profileId: string; locale: string }) {
   const [t, classes, homework] = await Promise.all([
     getTranslations("homework"),
-    listClasses(),
+    listClassesForTeacher(profileId),
     listHomeworkForTeacher(profileId),
   ]);
 
@@ -112,7 +116,11 @@ async function TeacherDashboard({ profileId, locale }: { profileId: string; loca
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="mb-3 text-lg font-semibold">{t("title")}</h2>
-        <HomeworkForm classes={classes} />
+        {classes.length === 0 ? (
+          <p className="text-sm text-foreground/60">{t("noClassesAssigned")}</p>
+        ) : (
+          <HomeworkForm classes={classes} />
+        )}
       </div>
 
       {homework.length > 0 && (

@@ -432,6 +432,26 @@ export async function createTeacherAccount(
   return { success: true, email, password };
 }
 
+export async function updateTeacherClasses(teacherId: string, classIds: string[]) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { error: deleteError } = await supabase
+    .from("teacher_classes")
+    .delete()
+    .eq("teacher_id", teacherId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (classIds.length > 0) {
+    const { error } = await supabase
+      .from("teacher_classes")
+      .insert(classIds.map((classId) => ({ teacher_id: teacherId, class_id: classId })));
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/profs");
+}
+
 // ---------------------------------------------------------------------------
 // Cahier de texte numérique — devoirs par classe/matière
 // ---------------------------------------------------------------------------
@@ -579,6 +599,54 @@ export async function createChildAccount(
   }
 
   revalidatePath("/dashboard");
+  return { success: true, email, password };
+}
+
+export async function resetChildPassword(
+  studentId: string,
+): Promise<{ success: true; email: string; password: string } | { success: false; error: string }> {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "parent") {
+    return { success: false, error: "Non autorisé." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const supabase = await createClient();
+  const { data: student } = await supabase
+    .from("students")
+    .select("id, parent_id, user_id")
+    .eq("id", studentId)
+    .single();
+
+  if (!student || student.parent_id !== profile.id) {
+    return { success: false, error: "Élève introuvable." };
+  }
+  if (!student.user_id) {
+    return { success: false, error: "Ce compte n'existe pas encore." };
+  }
+
+  const password = generatePassword();
+  const { error } = await adminClient.auth.admin.updateUserById(student.user_id, { password });
+  if (error) return { success: false, error: error.message };
+
+  const { data: userData } = await adminClient.auth.admin.getUserById(student.user_id);
+  const email = userData.user?.email ?? "";
+
+  const {
+    data: { user: parentUser },
+  } = await supabase.auth.getUser();
+  if (parentUser?.email && !parentUser.email.endsWith("@cpk.internal")) {
+    await sendEmail(
+      parentUser.email,
+      "Mot de passe réinitialisé — CPK Learn",
+      `<p>Nouveaux identifiants de connexion :</p><p>Email : ${email}<br/>Mot de passe : ${password}</p>`,
+    );
+  }
+
   return { success: true, email, password };
 }
 

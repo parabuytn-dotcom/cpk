@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { addComment } from "@/lib/social/actions";
+import Avatar from "@/components/ui/Avatar";
 import type { CommentRow } from "@/lib/social/data";
 
 export default function CommentSection({
@@ -18,10 +19,13 @@ export default function CommentSection({
   return (
     <div className="flex flex-col gap-2 border-t border-black/5 pt-3 dark:border-white/10">
       {comments.map((c) => (
-        <p key={c.id} className="text-sm">
-          <span className="font-semibold">{c.authorName}</span>{" "}
-          <span className="text-foreground/80">{c.content}</span>
-        </p>
+        <div key={c.id} className="flex items-start gap-2">
+          <Avatar name={c.authorName} photoUrl={c.authorAvatarUrl} size={24} />
+          <p className="text-sm">
+            <span className="font-semibold">{c.authorName}</span>{" "}
+            <span className="text-foreground/80">{c.content}</span>
+          </p>
+        </div>
       ))}
 
       <form action={action} className="flex gap-2">

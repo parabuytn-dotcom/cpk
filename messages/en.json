@@ -106,7 +106,8 @@
     "teachersTab": "Teachers",
     "teachersSubtitle": "Create a login account for each teacher.",
     "teachersEmpty": "No teacher yet (add timetable slots to create some).",
-    "accountExists": "Account created"
+    "accountExists": "Account created",
+    "assignedClasses": "Assigned classes (click to add/remove):"
   },
   "privacy": {
     "title": "Your data, privacy",
@@ -170,7 +171,8 @@
     "reasonPlaceholder": "Reason (optional)",
     "declare": "Declare my absence",
     "dueFor": "due",
-    "absenceRecorded": "Absence recorded. {slots} slot(s) cancelled across {classes} class(es)."
+    "absenceRecorded": "Absence recorded. {slots} slot(s) cancelled across {classes} class(es).",
+    "noClassesAssigned": "No class has been assigned to you yet. Contact the administration."
   },
   "notificationsUi": {
     "title": "Notifications",
@@ -182,7 +184,11 @@
     "create": "Create account",
     "creating": "Creating…",
     "createdNote": "Account created — note these credentials, they won't be shown again:",
-    "createdNoteSimple": "Account created:"
+    "createdNoteSimple": "Account created:",
+    "resetPassword": "Reset password",
+    "resetting": "Resetting…",
+    "resetConfirm": "The old password will stop working. Continue?",
+    "resetNote": "Password reset — note these credentials, they won't be shown again:"
   },
   "avatarUpload": {
     "change": "Change photo",

@@ -22,8 +22,10 @@ export default async function FeedPage({
   }
 
   const [t, posts] = await Promise.all([getTranslations("feed"), listFeedPosts(profile.id)]);
-  const canPostImage = profile.role === "admin" || profile.tags.includes("feed_publisher");
-  const canPostVideo = profile.role === "admin" || profile.tags.includes("reels_publisher");
+  const canPostImage =
+    profile.role === "admin" || profile.role === "teacher" || profile.tags.includes("feed_publisher");
+  const canPostVideo =
+    profile.role === "admin" || profile.role === "teacher" || profile.tags.includes("reels_publisher");
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
