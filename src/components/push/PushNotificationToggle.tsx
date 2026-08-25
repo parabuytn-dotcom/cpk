@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useTranslations } from "next-intl";
 import { registerPushToken } from "@/lib/push/actions";
@@ -61,9 +61,45 @@ async function registerWeb() {
   return result.success;
 }
 
+// Firebase only routes a push through the service worker's
+// onBackgroundMessage when the tab is NOT focused. With the tab open and
+// active (the common case while testing), the message instead arrives here
+// — without this listener it's received by the SDK but never shown as a
+// notification at all.
+async function listenForegroundMessages() {
+  const { isFirebaseWebConfigured, getFirebaseApp } = await import("@/lib/push/firebaseClient");
+  if (!isFirebaseWebConfigured()) return;
+
+  const app = getFirebaseApp();
+  if (!app) return;
+
+  const { getMessaging, onMessage } = await import("firebase/messaging");
+  const messaging = getMessaging(app);
+
+  onMessage(messaging, (payload) => {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    const { title, body } = payload.notification ?? {};
+    const link = payload.data?.link;
+    const notification = new Notification(title ?? "CPK Learn", { body, icon: "/icon.png" });
+    if (link) {
+      notification.onclick = () => {
+        window.focus();
+        window.location.href = link;
+      };
+    }
+  });
+}
+
 export default function PushNotificationToggle() {
   const t = useTranslations("notificationsUi");
   const [status, setStatus] = useState<Status>("checking");
+  const listening = useRef(false);
+
+  useEffect(() => {
+    if (status !== "granted" || Capacitor.isNativePlatform() || listening.current) return;
+    listening.current = true;
+    listenForegroundMessages();
+  }, [status]);
 
   useEffect(() => {
     let cancelled = false;
