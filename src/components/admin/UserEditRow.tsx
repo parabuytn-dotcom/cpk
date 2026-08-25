@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { updateUserProfile } from "@/lib/admin/actions";
 import { setUserBadge } from "@/lib/badges/actions";
 import Avatar from "@/components/ui/Avatar";
+import DeleteUserButton from "./DeleteUserButton";
 import type { UserRow } from "@/lib/admin/data";
 import type { BadgeRow } from "@/lib/badges/data";
 
@@ -113,6 +114,10 @@ export default function UserEditRow({ user, badges }: { user: UserRow; badges: B
             </label>
           );
         })}
+      </div>
+
+      <div className="flex justify-end border-t border-black/5 pt-3 dark:border-white/10">
+        <DeleteUserButton userId={user.id} />
       </div>
     </div>
   );

@@ -703,6 +703,27 @@ export async function updateUserProfile(
   return { success: "Profil mis à jour." };
 }
 
+export async function deleteUserProfile(profileId: string): Promise<{ error?: string }> {
+  const profile = await requireAdmin();
+  if (profile.id === profileId) {
+    return { error: "Impossible de supprimer ton propre compte." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { error: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  // Deletes the auth.users row, which cascades to `profiles` (and from
+  // there to students/feed_posts/etc. per their own FK rules) — this is a
+  // full account removal, not just hiding the profile.
+  const { error } = await adminClient.auth.admin.deleteUser(profileId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/utilisateurs");
+  return {};
+}
+
 // ---------------------------------------------------------------------------
 // Classes
 // ---------------------------------------------------------------------------
