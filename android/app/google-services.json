@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "322662188961",
+    "project_id": "cpkef-53c17",
+    "storage_bucket": "cpkef-53c17.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322662188961:android:371cc1191263a8c4aeede0",
+        "android_client_info": {
+          "package_name": "tn.cpkef.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAv1gh3ZFP0MrQfd-WHCS-XOfYeoaEsQhE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
