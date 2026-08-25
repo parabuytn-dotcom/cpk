@@ -5,6 +5,7 @@ import { listNotifications, countUnreadNotifications } from "@/lib/notifications
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
 import MobileMenu from "./MobileMenu";
+import LogoutButton from "./LogoutButton";
 
 export default async function Navbar() {
   const t = await getTranslations("nav");
@@ -59,13 +60,21 @@ export default async function Navbar() {
         <div className="flex items-center gap-2">
           {profile && <NotificationBell notifications={notifications} unreadCount={unreadCount} />}
           <LanguageSwitcher />
+          {profile && (
+            <LogoutButton className="hidden text-sm font-medium text-foreground/40 transition hover:text-foreground/70 xl:inline-block" />
+          )}
           <Link
             href={authHref}
             className="hidden rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 xl:inline-block"
           >
             {authLabel}
           </Link>
-          <MobileMenu items={items} authHref={authHref} authLabel={authLabel} />
+          <MobileMenu
+            items={items}
+            authHref={authHref}
+            authLabel={authLabel}
+            showLogout={Boolean(profile)}
+          />
         </div>
       </div>
     </header>

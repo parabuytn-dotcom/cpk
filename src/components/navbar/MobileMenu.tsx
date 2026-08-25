@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
+import LogoutButton from "./LogoutButton";
 
 type NavItem = { href: string; label: string };
 
@@ -9,10 +10,12 @@ export default function MobileMenu({
   items,
   authHref,
   authLabel,
+  showLogout,
 }: {
   items: NavItem[];
   authHref: string;
   authLabel: string;
+  showLogout: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -61,6 +64,9 @@ export default function MobileMenu({
               >
                 {authLabel}
               </Link>
+              {showLogout && (
+                <LogoutButton className="rounded-xl px-4 py-3 text-center text-sm font-medium text-foreground/50 transition hover:bg-black/5 dark:hover:bg-white/10" />
+              )}
             </nav>
           </div>
         </>
