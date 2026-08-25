@@ -52,7 +52,14 @@ export default function ChatWidget() {
   return (
     <div className="fixed bottom-5 right-5 z-50">
       {open && (
-        <div className="glass-surface mb-3 flex h-[28rem] w-80 max-w-[85vw] flex-col overflow-hidden rounded-3xl shadow-2xl">
+        <button
+          aria-label={t("close")}
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm sm:hidden"
+        />
+      )}
+      {open && (
+        <div className="relative z-50 mb-3 flex h-[28rem] w-80 max-w-[85vw] flex-col overflow-hidden rounded-3xl border border-black/5 bg-white shadow-2xl dark:border-white/10 dark:bg-gray-900">
           <div className="flex items-center justify-between border-b border-black/5 px-4 py-3 dark:border-white/10">
             <p className="text-sm font-semibold">{t("title")}</p>
             <button
