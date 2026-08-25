@@ -6,7 +6,7 @@ import {
   listClassesForTeacher,
   listHomeworkForTeacher,
   listHomeworkForClass,
-  getStudentClassName,
+  getStudentClassInfo,
 } from "@/lib/admin/data";
 import PageHeader from "@/components/ui/PageHeader";
 import ChildAccountButton from "@/components/dashboard/ChildAccountButton";
@@ -144,11 +144,13 @@ async function TeacherDashboard({ profileId, locale }: { profileId: string; loca
 }
 
 async function StudentDashboard({ profileId }: { profileId: string }) {
-  const [t, className] = await Promise.all([
+  const [t, classInfo] = await Promise.all([
     getTranslations("homework"),
-    getStudentClassName(profileId),
+    getStudentClassInfo(profileId),
   ]);
-  const homework = className ? await listHomeworkForClass(className, profileId) : [];
+  const homework = classInfo
+    ? await listHomeworkForClass(classInfo.classId, classInfo.className, profileId)
+    : [];
 
   return (
     <div>

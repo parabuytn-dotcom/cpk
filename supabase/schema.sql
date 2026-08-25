@@ -838,3 +838,13 @@ create policy "Admins manage teacher classes"
   on public.teacher_classes for all
   using (public.is_admin())
   with check (public.is_admin());
+
+-- ----------------------------------------------------------------------------
+-- Backfill class_id on students rows created before that column was added
+-- (or otherwise left null) — homework lookup now matches on class_id first,
+-- falling back to class_name only for rows this can't reach.
+-- ----------------------------------------------------------------------------
+update public.students s
+set class_id = c.id
+from public.classes c
+where s.class_id is null and s.class_name = c.name;

@@ -492,7 +492,11 @@ export async function createHomework(_state: FormState, formData: FormData): Pro
   const { data: students } = await supabase
     .from("students")
     .select("user_id")
-    .eq("class_name", validated.data.className)
+    .or(
+      validated.data.classId
+        ? `class_id.eq.${validated.data.classId},class_name.eq.${validated.data.className}`
+        : `class_name.eq.${validated.data.className}`,
+    )
     .not("user_id", "is", null);
 
   const studentIds = (students ?? []).map((s) => s.user_id).filter(Boolean) as string[];

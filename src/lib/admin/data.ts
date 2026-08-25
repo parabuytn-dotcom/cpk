@@ -414,17 +414,24 @@ export async function listHomeworkForTeacher(teacherProfileId: string): Promise<
 }
 
 export async function listHomeworkForClass(
+  classId: string | null,
   className: string,
   studentId?: string,
 ): Promise<(HomeworkRow & { completed: boolean })[]> {
   if (!isSupabaseConfigured()) return [];
 
   const supabase = await createClient();
-  const { data: homework } = await supabase
+  // Matched by class_id when we have one (robust to a class being renamed
+  // later), falling back to the denormalized class_name text for older rows
+  // created before students/homework carried a class_id.
+  let query = supabase
     .from("homework")
     .select("id, class_name, subject, description, due_date, priority")
-    .eq("class_name", className)
     .order("due_date", { ascending: true });
+  query = classId
+    ? query.or(`class_id.eq.${classId},class_name.eq.${className}`)
+    : query.eq("class_name", className);
+  const { data: homework } = await query;
 
   if (!homework || homework.length === 0) return [];
 
@@ -452,17 +459,20 @@ export async function listHomeworkForClass(
   }));
 }
 
-export async function getStudentClassName(studentProfileId: string): Promise<string | null> {
+export async function getStudentClassInfo(
+  studentProfileId: string,
+): Promise<{ classId: string | null; className: string } | null> {
   if (!isSupabaseConfigured()) return null;
 
   const supabase = await createClient();
   const { data } = await supabase
     .from("students")
-    .select("class_name")
+    .select("class_id, class_name")
     .eq("user_id", studentProfileId)
     .maybeSingle();
 
-  return data?.class_name ?? null;
+  if (!data) return null;
+  return { classId: data.class_id, className: data.class_name };
 }
 
 export async function getTeacherRowForUser(teacherProfileId: string): Promise<TeacherRow | null> {
