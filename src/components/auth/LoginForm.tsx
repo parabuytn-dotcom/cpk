@@ -8,14 +8,16 @@ import ChildLoginPicker from "./ChildLoginPicker";
 import type { ChildLoginClass, ChildLoginStudent } from "@/lib/auth/data";
 
 export default function LoginForm({
+  initialMethod = "phone",
   childLoginClasses,
   childLoginStudents,
 }: {
+  initialMethod?: "phone" | "email" | "child";
   childLoginClasses: ChildLoginClass[];
   childLoginStudents: ChildLoginStudent[];
 }) {
   const t = useTranslations("auth");
-  const [method, setMethod] = useState<"phone" | "email" | "child">("phone");
+  const [method, setMethod] = useState<"phone" | "email" | "child">(initialMethod);
   const [phoneState, phoneAction, phonePending] = useActionState(loginWithPhone, undefined);
   const [emailState, emailAction, emailPending] = useActionState(loginWithEmail, undefined);
 

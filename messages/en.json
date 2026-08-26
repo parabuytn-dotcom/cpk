@@ -19,6 +19,31 @@
     "subtitle": "The digital portal connecting parents, students, and administration.",
     "cta": "Go to my space"
   },
+  "onboarding": {
+    "title": "Welcome to CPK Learn",
+    "subtitle": "How do you want to start?",
+    "tutorialTitle": "Tutorial",
+    "tutorialComingSoon": "Video coming soon.",
+    "skip": "Skip",
+    "option": {
+      "document": {
+        "title": "Log in with my document",
+        "subtitle": "Got a sheet with your password on it? This is for you."
+      },
+      "creer": {
+        "title": "Create an account",
+        "subtitle": "First visit, no account yet."
+      },
+      "connecter": {
+        "title": "Log in",
+        "subtitle": "I already have an account (email or phone)."
+      },
+      "enfant": {
+        "title": "I'm a student",
+        "subtitle": "Pick your class and your name."
+      }
+    }
+  },
   "auth": {
     "loginTitle": "Login",
     "registerTitle": "Create an account",

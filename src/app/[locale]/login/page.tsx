@@ -10,13 +10,24 @@ export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ method?: string }>;
 }) {
   const { locale } = await params;
+  const { method } = await searchParams;
   setRequestLocale(locale);
 
   const { classes, students } = await listChildLoginOptions();
 
-  return <LoginForm childLoginClasses={classes} childLoginStudents={students} />;
+  const initialMethod = method === "email" || method === "child" ? method : "phone";
+
+  return (
+    <LoginForm
+      initialMethod={initialMethod}
+      childLoginClasses={classes}
+      childLoginStudents={students}
+    />
+  );
 }
