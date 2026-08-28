@@ -32,7 +32,7 @@ export default async function FeedPage({
       <PageHeader title={t("title")} />
 
       {(canPostImage || canPostVideo) && (
-        <PostComposer canPostImage={canPostImage} canPostVideo={canPostVideo} />
+        <PostComposer userId={profile.id} canPostImage={canPostImage} canPostVideo={canPostVideo} />
       )}
 
       {posts.length === 0 ? (

@@ -1,31 +1,67 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { updateAvatar } from "@/lib/auth/actions";
+import { updateAvatarUrl } from "@/lib/auth/actions";
+import { createClient } from "@/lib/supabase/client";
 import Avatar from "@/components/ui/Avatar";
 
 export default function AvatarUpload({
+  userId,
   name,
   avatarUrl,
 }: {
+  userId: string;
   name: string;
   avatarUrl: string | null;
 }) {
   const t = useTranslations("avatarUpload");
-  const [state, action, pending] = useActionState(updateAvatar, undefined);
+  const [state, action, actionPending] = useActionState(updateAvatarUrl, undefined);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const pending = uploading || actionPending;
+
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Le fichier doit être une image.");
+      return;
+    }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+    const supabase = createClient();
+    const { error } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { contentType: file.type });
+    setUploading(false);
+
+    if (error) {
+      setUploadError(error.message);
+      return;
+    }
+
+    const publicUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+    const payload = new FormData();
+    payload.set("avatarUrl", publicUrl);
+    startTransition(() => action(payload));
+  }
 
   return (
-    <form action={action} className="flex items-center gap-4">
+    <div className="flex items-center gap-4">
       <Avatar name={name} photoUrl={avatarUrl} size={64} />
       <div>
         <input
           ref={inputRef}
           type="file"
-          name="avatar"
           accept="image/*"
-          onChange={() => inputRef.current?.form?.requestSubmit()}
+          onChange={handleChange}
           className="hidden"
         />
         <button
@@ -36,10 +72,12 @@ export default function AvatarUpload({
         >
           {pending ? t("uploading") : t("change")}
         </button>
-        {state?.message && (
-          <p className="mt-1 text-xs text-red-600 dark:text-red-400">{state.message}</p>
+        {(uploadError || state?.message) && (
+          <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+            {uploadError ?? state?.message}
+          </p>
         )}
       </div>
-    </form>
+    </div>
   );
 }

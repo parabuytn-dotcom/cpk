@@ -53,6 +53,7 @@ export default async function DashboardPage({
               : profile.role)}
         </p>
         <AvatarUpload
+          userId={profile.id}
           name={profile.fullName ?? profile.parentFirstName ?? profile.role}
           avatarUrl={profile.avatarUrl}
         />

@@ -684,7 +684,8 @@ create policy "Publishers write feed media"
       public.is_admin()
       or exists (
         select 1 from public.profiles
-        where id = auth.uid() and (tags && array['feed_publisher', 'reels_publisher'])
+        where id = auth.uid()
+          and (role = 'teacher' or tags && array['feed_publisher', 'reels_publisher'])
       )
     )
   );

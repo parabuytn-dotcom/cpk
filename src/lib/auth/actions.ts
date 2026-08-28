@@ -1,6 +1,5 @@
 "use server";
 
-import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
@@ -313,32 +312,24 @@ export async function markValidationSeen() {
   await supabase.from("profiles").update({ validation_seen: true }).eq("id", user.id);
 }
 
-export async function updateAvatar(_state: FormState, formData: FormData): Promise<FormState> {
+// The file itself is uploaded client-side, straight to Supabase Storage (see
+// AvatarUpload) — Next.js Server Actions cap request bodies at 1MB by
+// default, and Vercel's own serverless function limit (4.5MB) can't be
+// raised at all, so a typical phone photo sent through this action directly
+// would routinely fail. Only the resulting public URL arrives here.
+export async function updateAvatarUrl(_state: FormState, formData: FormData): Promise<FormState> {
   const profile = await getCurrentProfile();
   if (!profile) return { message: "Non connecté." };
 
-  const file = formData.get("avatar");
-  if (!(file instanceof File) || file.size === 0) {
-    return { message: "Choisis une image." };
-  }
-  if (!file.type.startsWith("image/")) {
-    return { message: "Le fichier doit être une image." };
+  const avatarUrl = formData.get("avatarUrl");
+  if (typeof avatarUrl !== "string" || !avatarUrl) {
+    return { message: "Photo invalide." };
   }
 
   const supabase = await createClient();
-  const ext = file.name.split(".").pop() ?? "jpg";
-  const path = `${profile.id}/${randomBytes(6).toString("hex")}.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
-    .upload(path, file, { contentType: file.type });
-  if (uploadError) return { message: uploadError.message };
-
-  const publicUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
-
   const { error } = await supabase
     .from("profiles")
-    .update({ avatar_url: publicUrl })
+    .update({ avatar_url: avatarUrl })
     .eq("id", profile.id);
   if (error) return { message: error.message };
 

@@ -1,25 +1,66 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { createPost } from "@/lib/social/actions";
+import { createClient } from "@/lib/supabase/client";
 
 export default function PostComposer({
+  userId,
   canPostImage,
   canPostVideo,
 }: {
+  userId: string;
   canPostImage: boolean;
   canPostVideo: boolean;
 }) {
   const t = useTranslations("feed");
-  const [state, action, pending] = useActionState(createPost, undefined);
+  const [state, formAction, actionPending] = useActionState(createPost, undefined);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   const accept = canPostVideo ? "image/*,video/*" : canPostImage ? "image/*" : undefined;
+  const pending = uploading || actionPending;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setUploadError(null);
+
+    const form = e.currentTarget;
+    const content = new FormData(form).get("content") as string;
+    const fileInput = form.elements.namedItem("media") as HTMLInputElement | null;
+    const file = fileInput?.files?.[0];
+
+    const payload = new FormData();
+    payload.set("content", content);
+
+    if (file) {
+      setUploading(true);
+      const mediaType = file.type.startsWith("video/") ? "video" : "image";
+      const ext = file.name.split(".").pop() ?? "bin";
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      const supabase = createClient();
+      const { error } = await supabase.storage
+        .from("feed-media")
+        .upload(path, file, { contentType: file.type });
+      setUploading(false);
+
+      if (error) {
+        setUploadError(error.message);
+        return;
+      }
+      payload.set("mediaType", mediaType);
+      payload.set("mediaPath", path);
+    }
+
+    startTransition(() => formAction(payload));
+    form.reset();
+  }
 
   return (
     <form
-      action={action}
-      encType="multipart/form-data"
+      onSubmit={handleSubmit}
       className="glass-surface flex flex-col gap-3 rounded-3xl p-5"
     >
       <textarea
@@ -42,8 +83,8 @@ export default function PostComposer({
       >
         {pending ? t("publishing") : t("publish")}
       </button>
-      {state?.message && (
-        <p className="text-sm text-red-600 dark:text-red-400">{state.message}</p>
+      {(uploadError || state?.message) && (
+        <p className="text-sm text-red-600 dark:text-red-400">{uploadError ?? state?.message}</p>
       )}
     </form>
   );

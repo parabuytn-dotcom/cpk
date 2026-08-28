@@ -1,6 +1,5 @@
 "use server";
 
-import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +8,11 @@ import { checkJournalisteCpk } from "@/lib/badges/engine";
 import { notify } from "@/lib/notifications/engine";
 import { createPostSchema, createCommentSchema, type FormState } from "./schemas";
 
+// The media file itself is uploaded client-side, straight to Supabase Storage
+// (see PostComposer) — Next.js Server Actions cap request bodies at 1MB by
+// default, and Vercel's own serverless function limit (4.5MB) can't be
+// raised at all, so any real photo (let alone a reel) sent through this
+// action directly would fail. Only the resulting storage path arrives here.
 export async function createPost(_state: FormState, formData: FormData): Promise<FormState> {
   const t = await getTranslations("feed");
   const profile = await getCurrentProfile();
@@ -19,29 +23,18 @@ export async function createPost(_state: FormState, formData: FormData): Promise
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const supabase = await createClient();
-  const media = formData.get("media");
+  const mediaTypeRaw = formData.get("mediaType");
+  const mediaPathRaw = formData.get("mediaPath");
+  const mediaType = mediaTypeRaw === "video" || mediaTypeRaw === "image" ? mediaTypeRaw : null;
+  const mediaPath = typeof mediaPathRaw === "string" && mediaPathRaw ? mediaPathRaw : null;
 
-  let mediaType: "image" | "video" | null = null;
-  let mediaPath: string | null = null;
-
-  if (media instanceof File && media.size > 0) {
-    mediaType = media.type.startsWith("video/") ? "video" : "image";
-
+  if (mediaType) {
     const requiredTag = mediaType === "video" ? "reels_publisher" : "feed_publisher";
     const canPost =
       profile.role === "admin" || profile.role === "teacher" || profile.tags.includes(requiredTag);
     if (!canPost) {
       return { message: mediaType === "video" ? t("noPermissionVideo") : t("noPermissionImage") };
     }
-
-    const ext = media.name.split(".").pop() ?? "bin";
-    const path = `${profile.id}/${randomBytes(6).toString("hex")}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("feed-media")
-      .upload(path, media, { contentType: media.type });
-    if (uploadError) return { message: uploadError.message };
-    mediaPath = path;
   } else if (
     profile.role !== "admin" &&
     profile.role !== "teacher" &&
@@ -50,6 +43,7 @@ export async function createPost(_state: FormState, formData: FormData): Promise
     return { message: t("noPermissionFeed") };
   }
 
+  const supabase = await createClient();
   const { error } = await supabase.from("feed_posts").insert({
     author_id: profile.id,
     content: validated.data.content,
