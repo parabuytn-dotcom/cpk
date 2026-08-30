@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import PageHeader from "@/components/ui/PageHeader";
-import StatCard from "@/components/admin/StatCard";
+import StatsBarChart from "@/components/admin/StatsBarChart";
 import { getDashboardStats } from "@/lib/admin/data";
 
 export default async function AdminPage({
@@ -33,17 +33,16 @@ export default async function AdminPage({
     <div className="flex flex-col gap-8">
       <PageHeader title={t("title")} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label={t("statTotalUsers")} value={stats.totalUsers} icon="👥" accent="blue" />
-        <StatCard label={t("statOnline")} value={stats.onlineUsers} icon="🟢" accent="green" />
-        <StatCard label={t("statOffline")} value={stats.offlineUsers} icon="⚪" accent="slate" />
-        <StatCard label={t("statPendingAccounts")} value={stats.pendingAccounts} icon="⏳" accent="amber" />
-        <StatCard label={t("statPendingHelp")} value={stats.pendingHelp} icon="🆘" accent="rose" />
-        <StatCard
-          label={t("statPendingSuggestions")}
-          value={stats.pendingSuggestions}
-          icon="💡"
-          accent="violet"
+      <div className="rounded-3xl border border-black/5 bg-white p-6 dark:border-white/10 dark:bg-gray-900">
+        <StatsBarChart
+          bars={[
+            { label: t("statTotalUsers"), value: stats.totalUsers },
+            { label: t("statOnline"), value: stats.onlineUsers },
+            { label: t("statOffline"), value: stats.offlineUsers },
+            { label: t("statPendingAccounts"), value: stats.pendingAccounts },
+            { label: t("statPendingHelp"), value: stats.pendingHelp },
+            { label: t("statPendingSuggestions"), value: stats.pendingSuggestions },
+          ]}
         />
       </div>
 
