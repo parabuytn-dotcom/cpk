@@ -238,7 +238,12 @@
     "placeholder": "Describe your idea in detail…",
     "send": "Send",
     "sending": "Sending…",
-    "untitled": "Untitled suggestion"
+    "untitled": "Untitled suggestion",
+    "voteHint": "You have only one active vote at a time — you can change your mind whenever you want.",
+    "voteButton": "Vote",
+    "voted": "Your vote ✓",
+    "votesCount": "{count} vote(s)",
+    "wonBadge": "🏆 Idea of the month"
   },
   "accountCreation": {
     "createChild": "Create my child's account",

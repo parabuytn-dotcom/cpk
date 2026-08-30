@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { getSuggestionDetail } from "@/lib/suggestions/data";
+import { getSuggestionDetail, getMyVote } from "@/lib/suggestions/data";
 import Avatar from "@/components/ui/Avatar";
+import SuggestionVoteButton from "@/components/suggestions/SuggestionVoteButton";
 import { formatDate } from "@/lib/formatDate";
 
 export default async function IdeaDetailPage({
@@ -27,6 +28,8 @@ export default async function IdeaDetailPage({
 
   if (!suggestion) notFound();
 
+  const myVote = await getMyVote(profile.id);
+
   return (
     <div className="mx-auto max-w-xl">
       <Link href="/idees" className="text-sm text-brand-600 hover:underline dark:text-brand-400">
@@ -45,6 +48,13 @@ export default async function IdeaDetailPage({
         </div>
 
         <p className="whitespace-pre-wrap text-foreground/85">{suggestion.content}</p>
+
+        <SuggestionVoteButton
+          suggestionId={suggestion.id}
+          initialVotes={suggestion.votes}
+          initialIsMine={myVote === suggestion.id}
+          wonAt={suggestion.wonAt}
+        />
       </div>
     </div>
   );

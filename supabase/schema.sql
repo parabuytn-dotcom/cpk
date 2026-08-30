@@ -976,3 +976,67 @@ create policy "Admins manage suggestions"
 
 create index if not exists idx_suggestions_status on public.suggestions (status);
 create index if not exists idx_suggestions_author_id on public.suggestions (author_id);
+
+-- `won_at` is set once a suggestion has been featured as a monthly winner
+-- (see suggestion_votes below), so it's excluded from future monthly draws.
+alter table public.suggestions add column if not exists won_at timestamptz;
+
+-- ----------------------------------------------------------------------------
+-- suggestion_votes — one active vote per user, across ALL suggestions (not
+-- one-per-suggestion): `user_id` is the primary key, so voting for a new
+-- suggestion is a plain upsert that moves the existing row, which is exactly
+-- how a user "changes their mind". At the end of each month a cron job
+-- (see /api/cron/suggestions) posts the suggestion with the most votes to the
+-- feed as "Daily Upgrades" and clears this table for the next month.
+-- ----------------------------------------------------------------------------
+create table if not exists public.suggestion_votes (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  suggestion_id uuid not null references public.suggestions (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.suggestion_votes enable row level security;
+
+drop policy if exists "Users read their own vote" on public.suggestion_votes;
+create policy "Users read their own vote"
+  on public.suggestion_votes for select
+  using (auth.uid() = user_id or public.is_admin());
+
+drop policy if exists "Users cast their own vote" on public.suggestion_votes;
+create policy "Users cast their own vote"
+  on public.suggestion_votes for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users change their own vote" on public.suggestion_votes;
+create policy "Users change their own vote"
+  on public.suggestion_votes for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users remove their own vote" on public.suggestion_votes;
+create policy "Users remove their own vote"
+  on public.suggestion_votes for delete
+  using (auth.uid() = user_id);
+
+create index if not exists idx_suggestion_votes_suggestion_id on public.suggestion_votes (suggestion_id);
+
+-- Vote counts must be visible to everyone (to rank suggestions publicly), but
+-- the votes table itself only exposes each user's own row via RLS above — so
+-- counting goes through this security-definer RPC, same pattern as
+-- get_public_profiles.
+create or replace function public.get_suggestion_vote_counts()
+returns table (suggestion_id uuid, votes bigint)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select suggestion_id, count(*)::bigint as votes
+  from public.suggestion_votes
+  group by suggestion_id;
+$$;
+
+-- Lets a post render as a system account ("Daily Upgrades") instead of a real
+-- profile: `author_id` stays null (already renders as non-clickable in
+-- PostCard), and `system_label` supplies the display name.
+alter table public.feed_posts add column if not exists system_label text;

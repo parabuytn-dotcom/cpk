@@ -238,7 +238,12 @@
     "placeholder": "صف فكرتك بالتفصيل…",
     "send": "إرسال",
     "sending": "جارٍ الإرسال…",
-    "untitled": "اقتراح بدون عنوان"
+    "untitled": "اقتراح بدون عنوان",
+    "voteHint": "لديك صوت واحد فقط في كل مرة — يمكنك تغيير رأيك متى شئت.",
+    "voteButton": "صوّت",
+    "voted": "صوتك ✓",
+    "votesCount": "{count} صوت/أصوات",
+    "wonBadge": "🏆 فكرة الشهر"
   },
   "accountCreation": {
     "createChild": "إنشاء حساب ابني/ابنتي",

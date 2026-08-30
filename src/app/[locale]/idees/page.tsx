@@ -1,12 +1,11 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { listValidatedSuggestions } from "@/lib/suggestions/data";
+import { listValidatedSuggestions, getMyVote } from "@/lib/suggestions/data";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import SuggestionComposer from "@/components/suggestions/SuggestionComposer";
-import { formatDate } from "@/lib/formatDate";
+import SuggestionVoteList from "@/components/suggestions/SuggestionVoteList";
 
 export default async function IdeasPage({
   params,
@@ -22,9 +21,10 @@ export default async function IdeasPage({
     return null;
   }
 
-  const [t, suggestions] = await Promise.all([
+  const [t, suggestions, myVote] = await Promise.all([
     getTranslations("suggestions"),
     listValidatedSuggestions(),
+    getMyVote(profile.id),
   ]);
 
   return (
@@ -36,18 +36,10 @@ export default async function IdeasPage({
       {suggestions.length === 0 ? (
         <EmptyState message={t("empty")} />
       ) : (
-        <div className="flex flex-col gap-3">
-          {suggestions.map((s) => (
-            <Link
-              key={s.id}
-              href={`/idees/${s.id}`}
-              className="glass-surface flex items-center justify-between gap-4 rounded-2xl px-6 py-5 transition hover:shadow-lg"
-            >
-              <p className="text-lg font-semibold">{s.title}</p>
-              <p className="shrink-0 text-xs text-foreground/50">{formatDate(locale, s.createdAt)}</p>
-            </Link>
-          ))}
-        </div>
+        <>
+          <p className="text-xs text-foreground/50">{t("voteHint")}</p>
+          <SuggestionVoteList suggestions={suggestions} initialMyVote={myVote} locale={locale} />
+        </>
       )}
     </div>
   );

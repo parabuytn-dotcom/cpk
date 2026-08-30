@@ -67,7 +67,7 @@ export async function listFeedPosts(
 
   let query = supabase
     .from("feed_posts")
-    .select("id, author_id, content, media_type, media_path, created_at")
+    .select("id, author_id, content, media_type, media_path, system_label, created_at")
     .order("created_at", { ascending: false })
     .limit(authorId ? 100 : 50);
   if (authorId) query = query.eq("author_id", authorId);
@@ -122,7 +122,7 @@ export async function listFeedPosts(
     return {
       id: post.id,
       authorId: post.author_id,
-      authorName: profile?.displayName ?? "?",
+      authorName: post.system_label ?? profile?.displayName ?? "?",
       authorAvatarUrl: profile?.avatarUrl ?? null,
       content: post.content,
       mediaType: post.media_type,
