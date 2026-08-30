@@ -24,6 +24,12 @@
     "subtitle": "كيف تريد أن تبدأ؟",
     "tutorialTitle": "شرح",
     "tutorialComingSoon": "الفيديو قريبا.",
+    "scanQrOption": "📷 مسح رمز QR",
+    "loginWithCredentialsOption": "🔑 تسجيل الدخول بالمعرّفات",
+    "scanTitle": "مسح رمز QR",
+    "scanHint": "وجّه الكاميرا نحو رمز QR الموجود على وثيقتك.",
+    "scanCameraError": "تعذّر الوصول إلى الكاميرا. تحقّق من أذونات المتصفح.",
+    "scanInvalid": "رمز QR هذا غير معروف لدى CPK Learn.",
     "skip": "تخطي",
     "option": {
       "document": {
@@ -132,7 +138,8 @@
     "teachersSubtitle": "أنشئ حساب دخول لكل أستاذ.",
     "teachersEmpty": "لا يوجد أستاذ بعد (أضف حصصا في جدول الأوقات لإنشائهم).",
     "accountExists": "تم إنشاء الحساب",
-    "assignedClasses": "الأقسام المسندة (انقر للإضافة/الإزالة):"
+    "assignedClasses": "الأقسام المسندة (انقر للإضافة/الإزالة):",
+    "documentsTab": "الوثائق"
   },
   "privacy": {
     "title": "خصوصية بياناتك",

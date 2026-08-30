@@ -302,6 +302,32 @@ export async function logout() {
   redirect({ href: "/login", locale: await getLocale() });
 }
 
+export async function changePassword(_state: FormState, formData: FormData): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { message: "Non connecté." };
+
+  const password = formData.get("password");
+  const confirm = formData.get("confirm");
+  if (typeof password !== "string" || password.length < 6) {
+    return { message: "Le mot de passe doit contenir au moins 6 caractères." };
+  }
+  if (password !== confirm) {
+    return { message: "Les mots de passe ne correspondent pas." };
+  }
+
+  const supabase = await createClient();
+  const { error: updateAuthError } = await supabase.auth.updateUser({ password });
+  if (updateAuthError) return { message: updateAuthError.message };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ must_change_password: false })
+    .eq("id", profile.id);
+  if (error) return { message: error.message };
+
+  redirect({ href: "/dashboard", locale: await getLocale() });
+}
+
 export async function markValidationSeen() {
   const supabase = await createClient();
   const {

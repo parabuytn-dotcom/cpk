@@ -18,7 +18,7 @@ export default async function proxy(request: NextRequest) {
   const i18nResponse = handleI18nRouting(request);
 
   // 2. Refresh the Supabase auth session on the resulting response
-  const { response, user, role } = await updateSession(request, i18nResponse);
+  const { response, user, role, mustChangePassword } = await updateSession(request, i18nResponse);
 
   // 3. Protect /admin routes (optimistic check — real authorization happens
   //    again in the admin layout/data access layer, see AGENTS/docs guidance).
@@ -30,6 +30,13 @@ export default async function proxy(request: NextRequest) {
       loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
+  }
+
+  // 4. Force a password change before anything else — set on first login
+  //    for accounts bootstrapped from a printed "document" (QR or
+  //    identifiant+password), whether scanned or typed in.
+  if (user && mustChangePassword && pathWithoutLocale !== "/changer-mot-de-passe") {
+    return NextResponse.redirect(new URL("/changer-mot-de-passe", request.url));
   }
 
   return response;

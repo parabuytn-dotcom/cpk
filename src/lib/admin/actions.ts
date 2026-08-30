@@ -21,8 +21,10 @@ import {
   releaseSchema,
   helpRequestSchema,
   homeworkSchema,
+  documentAccountSchema,
   type FormState,
 } from "./schemas";
+import { buildDocumentsPdf, qrLoginUrl, type DocumentEntry } from "./documentPdf";
 
 // ---------------------------------------------------------------------------
 // Comptes — validation des inscriptions parents
@@ -658,6 +660,107 @@ export async function resetChildPassword(
   }
 
   return { success: true, email, password };
+}
+
+// ---------------------------------------------------------------------------
+// Comptes "document" — créés en lot par l'admin, imprimés en fiches (PDF)
+// avec QR code, à distribuer aux parents (Bloc "fiche de renseignement").
+// ---------------------------------------------------------------------------
+
+export async function createDocumentAccounts(
+  entries: { fullName: string; phone: string; childFirstName: string; childClass: string }[],
+): Promise<{ success: true; pdfBase64: string } | { success: false; error: string }> {
+  await requireAdmin();
+
+  if (entries.length === 0) {
+    return { success: false, error: "Ajoute au moins une personne." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const validatedEntries = [];
+  for (const entry of entries) {
+    const validated = documentAccountSchema.safeParse(entry);
+    if (!validated.success) {
+      return {
+        success: false,
+        error: `${entry.fullName || "(sans nom)"} : ${validated.error.issues[0]?.message ?? "Donnée invalide."}`,
+      };
+    }
+    validatedEntries.push(validated.data);
+  }
+
+  const documentEntries: DocumentEntry[] = [];
+
+  for (const entry of validatedEntries) {
+    const { data: existingPhone } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("phone", entry.phone)
+      .maybeSingle();
+    if (existingPhone) {
+      return { success: false, error: `Le numéro ${entry.phone} est déjà utilisé par un compte.` };
+    }
+
+    const password = generatePassword();
+    const qrToken = randomBytes(24).toString("hex");
+    const email = `doc.${randomBytes(4).toString("hex")}@cpk.internal`;
+
+    const { data: created, error } = await adminClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+    if (error || !created.user) {
+      return { success: false, error: error?.message ?? "Échec de la création du compte." };
+    }
+
+    const { error: profileError } = await adminClient.from("profiles").insert({
+      id: created.user.id,
+      role: "parent",
+      status: "validated",
+      full_name: entry.fullName,
+      phone: entry.phone,
+      qr_login_token: qrToken,
+      must_change_password: true,
+    });
+    if (profileError) {
+      return { success: false, error: profileError.message };
+    }
+
+    const { data: classRow } = await adminClient
+      .from("classes")
+      .select("id")
+      .eq("name", entry.childClass)
+      .maybeSingle();
+
+    const { error: studentError } = await adminClient.from("students").insert({
+      parent_id: created.user.id,
+      first_name: entry.childFirstName,
+      class_name: entry.childClass,
+      class_id: classRow?.id ?? null,
+    });
+    if (studentError) {
+      return { success: false, error: studentError.message };
+    }
+
+    documentEntries.push({
+      fullName: entry.fullName,
+      phone: entry.phone,
+      password,
+      qrUrl: qrLoginUrl(qrToken),
+    });
+  }
+
+  const pdfBytes = await buildDocumentsPdf(documentEntries);
+  const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
+
+  revalidatePath("/admin/documents");
+  revalidatePath("/admin/utilisateurs");
+  return { success: true, pdfBase64 };
 }
 
 // ---------------------------------------------------------------------------

@@ -874,3 +874,14 @@ create policy "Users manage their own push tokens"
   with check (auth.uid() = user_id or public.is_admin());
 
 create index if not exists idx_push_tokens_user_id on public.push_tokens (user_id);
+
+-- ----------------------------------------------------------------------------
+-- Printed "document" accounts — admin creates a batch of parent accounts
+-- upfront, prints a slip per person (name, phone, QR code) via /admin/documents.
+-- qr_login_token is single-use (cleared the moment it's scanned); the
+-- printed password is never stored, only shown once at PDF-generation time.
+-- must_change_password forces a password change on first login regardless
+-- of whether they came in via QR or by typing the printed credentials.
+-- ----------------------------------------------------------------------------
+alter table public.profiles add column if not exists qr_login_token text unique;
+alter table public.profiles add column if not exists must_change_password boolean not null default false;

@@ -41,14 +41,31 @@ export default async function OnboardingTutorialPage({
         </div>
       </div>
 
-      <div className="flex justify-center">
-        <Link
-          href={DESTINATIONS[method]}
-          className="rounded-full bg-brand-600 px-8 py-3 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:shadow-xl"
-        >
-          {t("skip")}
-        </Link>
-      </div>
+      {method === "document" ? (
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/scanner-qr"
+            className="rounded-full bg-brand-600 px-6 py-3 text-center font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:shadow-xl"
+          >
+            {t("scanQrOption")}
+          </Link>
+          <Link
+            href="/login?method=phone"
+            className="rounded-full border border-black/10 px-6 py-3 text-center font-semibold transition hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+          >
+            {t("loginWithCredentialsOption")}
+          </Link>
+        </div>
+      ) : (
+        <div className="flex justify-center">
+          <Link
+            href={DESTINATIONS[method]}
+            className="rounded-full bg-brand-600 px-8 py-3 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:shadow-xl"
+          >
+            {t("skip")}
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

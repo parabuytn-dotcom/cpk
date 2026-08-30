@@ -24,6 +24,12 @@
     "subtitle": "How do you want to start?",
     "tutorialTitle": "Tutorial",
     "tutorialComingSoon": "Video coming soon.",
+    "scanQrOption": "📷 Scan the QR code",
+    "loginWithCredentialsOption": "🔑 Log in with credentials",
+    "scanTitle": "Scan the QR code",
+    "scanHint": "Point the camera at the QR code on your document.",
+    "scanCameraError": "Couldn't access the camera. Check the browser's permissions.",
+    "scanInvalid": "This QR code isn't recognized by CPK Learn.",
     "skip": "Skip",
     "option": {
       "document": {
@@ -132,7 +138,8 @@
     "teachersSubtitle": "Create a login account for each teacher.",
     "teachersEmpty": "No teacher yet (add timetable slots to create some).",
     "accountExists": "Account created",
-    "assignedClasses": "Assigned classes (click to add/remove):"
+    "assignedClasses": "Assigned classes (click to add/remove):",
+    "documentsTab": "Documents"
   },
   "privacy": {
     "title": "Your data, privacy",

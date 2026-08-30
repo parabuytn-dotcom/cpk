@@ -14,7 +14,7 @@ export async function updateSession(request: NextRequest, response: NextResponse
   // Supabase isn't configured yet (.env.local not filled in) — treat every
   // request as anonymous instead of crashing the whole site on every route.
   if (!supabaseUrl || !supabaseAnonKey) {
-    return { response, user: null, role: null };
+    return { response, user: null, role: null, mustChangePassword: false };
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -36,14 +36,16 @@ export async function updateSession(request: NextRequest, response: NextResponse
   } = await supabase.auth.getUser();
 
   let role: string | null = null;
+  let mustChangePassword = false;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, must_change_password")
       .eq("id", user.id)
       .single();
     role = profile?.role ?? null;
+    mustChangePassword = profile?.must_change_password ?? false;
   }
 
-  return { response, user, role };
+  return { response, user, role, mustChangePassword };
 }

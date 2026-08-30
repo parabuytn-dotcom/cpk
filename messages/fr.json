@@ -25,6 +25,12 @@
     "tutorialTitle": "Tutoriel",
     "tutorialComingSoon": "Vidéo bientôt disponible.",
     "skip": "Passer",
+    "scanQrOption": "📷 Scanner le code QR",
+    "loginWithCredentialsOption": "🔑 Se connecter avec les identifiants",
+    "scanTitle": "Scanner le code QR",
+    "scanHint": "Pointe la caméra vers le QR code de ta fiche.",
+    "scanCameraError": "Impossible d'accéder à la caméra. Vérifie les autorisations du navigateur.",
+    "scanInvalid": "Ce QR code n'est pas reconnu par CPK Learn.",
     "option": {
       "document": {
         "title": "Se connecter avec mon document",
@@ -132,7 +138,8 @@
     "teachersSubtitle": "Crée un compte de connexion pour chaque professeur.",
     "teachersEmpty": "Aucun professeur pour le moment (ajoute des créneaux d'emploi du temps pour en créer).",
     "accountExists": "Compte créé",
-    "assignedClasses": "Classes attribuées (clique pour ajouter/retirer) :"
+    "assignedClasses": "Classes attribuées (clique pour ajouter/retirer) :",
+    "documentsTab": "Documents"
   },
   "privacy": {
     "title": "Confidentialité de vos données",

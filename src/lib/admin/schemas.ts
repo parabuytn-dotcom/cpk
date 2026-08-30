@@ -73,6 +73,16 @@ export const homeworkSchema = z.object({
   priority: z.enum(["low", "medium", "high"]),
 });
 
+export const documentAccountSchema = z.object({
+  fullName: z.string().trim().min(1, "Nom requis."),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\d{8}$/, "Numéro invalide (8 chiffres)."),
+  childFirstName: z.string().trim().min(1, "Prénom de l'enfant requis."),
+  childClass: z.string().trim().min(1, "Classe requise."),
+});
+
 export type FormState =
   | {
       errors?: Record<string, string[]>;
