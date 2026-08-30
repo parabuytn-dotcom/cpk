@@ -32,4 +32,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required on Android 13+ (API 33) for any notification to actually
+         display — without it, PushNotifications.requestPermissions() can't
+         grant real OS permission and FCM messages arrive but are never shown. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

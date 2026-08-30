@@ -235,7 +235,8 @@
     "pushEnable": "🔔 Enable notifications on this device",
     "pushEnabling": "Enabling…",
     "pushEnabled": "Notifications enabled on this device ✓",
-    "pushDenied": "Notifications blocked — enable them in your browser/phone settings."
+    "pushDenied": "Notifications blocked — enable them in your browser/phone settings.",
+    "pushIosAddToHome": "📲 On iPhone, notifications only work after adding this site to your Home Screen: tap Safari's Share icon, then \"Add to Home Screen\"."
   },
   "suggestions": {
     "title": "Suggestion box",

@@ -5,7 +5,27 @@ import { Capacitor } from "@capacitor/core";
 import { useTranslations } from "next-intl";
 import { registerPushToken } from "@/lib/push/actions";
 
-type Status = "checking" | "idle" | "unsupported" | "denied" | "registering" | "granted" | "error";
+type Status =
+  | "checking"
+  | "idle"
+  | "unsupported"
+  | "ios-add-to-home"
+  | "denied"
+  | "registering"
+  | "granted"
+  | "error";
+
+// iOS Safari only exposes the Notification/Push API to a site that's been
+// added to the home screen and launched from there (standalone display
+// mode) — in a regular browser tab `window.Notification` doesn't exist at
+// all, on any iOS version. This isn't a bug to work around; the only fix is
+// telling the user how to add the site to their home screen.
+function isIosSafariTab() {
+  if (typeof navigator === "undefined") return false;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = (window.navigator as { standalone?: boolean }).standalone === true;
+  return isIOS && !isStandalone;
+}
 
 async function registerNative(): Promise<boolean> {
   const { PushNotifications } = await import("@capacitor/push-notifications");
@@ -121,7 +141,7 @@ export default function PushNotificationToggle() {
       }
 
       if (typeof Notification === "undefined") {
-        setStatus("unsupported");
+        setStatus(isIosSafariTab() ? "ios-add-to-home" : "unsupported");
       } else if (Notification.permission === "granted") {
         setStatus("granted");
       } else if (Notification.permission === "denied") {
@@ -151,6 +171,14 @@ export default function PushNotificationToggle() {
 
   if (status === "granted") {
     return <p className="px-1 py-2 text-xs text-foreground/50">{t("pushEnabled")}</p>;
+  }
+
+  if (status === "ios-add-to-home") {
+    return (
+      <p className="mb-2 rounded-xl bg-brand-500/10 px-3 py-2 text-xs text-brand-700 dark:text-brand-400">
+        {t("pushIosAddToHome")}
+      </p>
+    );
   }
 
   return (

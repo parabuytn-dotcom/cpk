@@ -235,7 +235,8 @@
     "pushEnable": "🔔 Activer les notifications sur cet appareil",
     "pushEnabling": "Activation…",
     "pushEnabled": "Notifications activées sur cet appareil ✓",
-    "pushDenied": "Notifications bloquées — active-les dans les réglages de ton navigateur/téléphone."
+    "pushDenied": "Notifications bloquées — active-les dans les réglages de ton navigateur/téléphone.",
+    "pushIosAddToHome": "📲 Sur iPhone, les notifications ne sont possibles qu'après avoir ajouté ce site à l'écran d'accueil : appuie sur l'icône Partager de Safari, puis « Sur l'écran d'accueil »."
   },
   "suggestions": {
     "title": "Boîte à idées",
