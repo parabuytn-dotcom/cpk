@@ -61,7 +61,7 @@ export default function PostComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="glass-surface flex flex-col gap-3 rounded-3xl p-5"
+      className="flex flex-col gap-3 rounded-3xl border border-black/5 bg-white p-5 dark:border-white/10 dark:bg-gray-900"
     >
       <textarea
         name="content"

@@ -20,7 +20,7 @@ export default async function PostCard({
   const shareUrl = `${SITE_URL}/${locale}/feed/${post.id}`;
 
   return (
-    <article className="glass-surface flex flex-col overflow-hidden rounded-3xl">
+    <article className="flex flex-col overflow-hidden rounded-3xl border border-black/5 bg-white dark:border-white/10 dark:bg-gray-900">
       <div className="flex items-center gap-3 px-4 py-3">
         {post.authorId ? (
           <Link href={`/profil/${post.authorId}`} className="flex min-w-0 flex-1 items-center gap-3">
