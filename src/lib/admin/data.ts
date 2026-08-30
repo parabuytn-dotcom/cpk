@@ -585,3 +585,12 @@ export async function listChildrenForParent(parentId: string): Promise<ChildRow[
     hasAccount: row.user_id !== null,
   }));
 }
+
+export async function getSiteSetting(key: string): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  const supabase = await createClient();
+  const { data } = await supabase.from("site_settings").select("value").eq("key", key).maybeSingle();
+
+  return data?.value ?? null;
+}

@@ -1,6 +1,7 @@
 import "server-only";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
+import { SITE_URL } from "@/lib/siteUrl";
 
 export type DocumentEntry = {
   fullName: string;
@@ -8,9 +9,6 @@ export type DocumentEntry = {
   password: string;
   qrUrl: string;
 };
-
-// TODO: swap for https://cpkef.tn once the domain is live.
-const SITE_URL = "https://cpk-platform.vercel.app";
 
 const PAGE_WIDTH = 595.28; // A4 at 72 DPI
 const PAGE_HEIGHT = 841.89;

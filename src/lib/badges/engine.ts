@@ -22,31 +22,6 @@ async function awardBadge(userId: string, code: string) {
     .maybeSingle(); // errors on conflict are ignored — "already has it" isn't a failure.
 }
 
-/** "Scanner Fou" — 10 cours uploadés (le décompte de validation = simplement uploadés ici). */
-export async function checkScannerFou(userId: string) {
-  const supabase = await createClient();
-  const { count } = await supabase
-    .from("course_resources")
-    .select("id", { count: "exact", head: true })
-    .eq("uploaded_by", userId);
-
-  if ((count ?? 0) >= 10) await awardBadge(userId, "scanner_fou");
-}
-
-/** "Sauveur de Classe" — un cours de cet utilisateur consulté par plus de 20 élèves. */
-export async function checkSauveurDeClasse(resourceId: string) {
-  const supabase = await createClient();
-  const { data: resource } = await supabase
-    .from("course_resources")
-    .select("uploaded_by, view_count")
-    .eq("id", resourceId)
-    .single();
-
-  if (resource?.uploaded_by && resource.view_count > 20) {
-    await awardBadge(resource.uploaded_by, "sauveur_de_classe");
-  }
-}
-
 /** "Toujours à Jour" — devoirs cochés 5 jours consécutifs. */
 export async function checkToujoursAJour(studentId: string) {
   const supabase = await createClient();

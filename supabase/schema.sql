@@ -520,59 +520,13 @@ create policy "Users delete their own comments"
   using (auth.uid() = author_id or public.is_admin());
 
 -- ----------------------------------------------------------------------------
--- course_resources — "Vault" (Bloc 4, schéma créé maintenant).
+-- course_resources ("Vault") removed — the feature was dropped from the app.
+-- The `course-resources` storage bucket (and any files already in it) is
+-- left alone below rather than force-deleted; remove it manually from the
+-- Supabase dashboard if you want to reclaim that storage.
 -- ----------------------------------------------------------------------------
-create table if not exists public.course_resources (
-  id uuid primary key default gen_random_uuid(),
-  class_id uuid references public.classes (id) on delete cascade,
-  class_name text not null,
-  subject text not null,
-  file_path text not null,
-  file_name text not null,
-  uploaded_by uuid references public.profiles (id),
-  view_count integer not null default 0,
-  created_at timestamptz not null default now()
-);
-
-alter table public.course_resources enable row level security;
-
-drop policy if exists "Anyone authenticated can read course resources" on public.course_resources;
-create policy "Anyone authenticated can read course resources"
-  on public.course_resources for select
-  using (auth.role() = 'authenticated');
-
-drop policy if exists "Scribes can upload course resources" on public.course_resources;
-create policy "Scribes can upload course resources"
-  on public.course_resources for insert
-  with check (
-    public.is_admin()
-    or exists (
-      select 1 from public.profiles
-      where id = auth.uid() and 'scribe' = any(tags)
-    )
-  );
-
-drop policy if exists "Admins manage course resources" on public.course_resources;
-create policy "Admins manage course resources"
-  on public.course_resources for all
-  using (public.is_admin())
-  with check (public.is_admin());
-
-drop policy if exists "Uploaders delete their own course resources" on public.course_resources;
-create policy "Uploaders delete their own course resources"
-  on public.course_resources for delete
-  using (auth.uid() = uploaded_by or public.is_admin());
-
--- Atomic view counter, used when a student opens a resource — avoids the
--- read-then-write race of a plain update from the client.
-create or replace function public.increment_resource_views(resource_id uuid)
-returns void
-language sql
-security definer
-set search_path = public
-as $$
-  update public.course_resources set view_count = view_count + 1 where id = resource_id;
-$$;
+drop function if exists public.increment_resource_views(uuid);
+drop table if exists public.course_resources cascade;
 
 -- ----------------------------------------------------------------------------
 -- badges / user_badges — gamification (Bloc 5, schéma créé maintenant).
@@ -629,14 +583,10 @@ create policy "Admins manage user badges"
   with check (public.is_admin());
 
 -- ----------------------------------------------------------------------------
--- Storage — photos de staff (publiques) et documents du Vault (privés).
+-- Storage — photos de staff (publiques).
 -- ----------------------------------------------------------------------------
 insert into storage.buckets (id, name, public)
   values ('staff-photos', 'staff-photos', true)
-  on conflict (id) do nothing;
-
-insert into storage.buckets (id, name, public)
-  values ('course-resources', 'course-resources', false)
   on conflict (id) do nothing;
 
 insert into storage.buckets (id, name, public)
@@ -654,21 +604,11 @@ create policy "Admins write staff photos"
   using (bucket_id = 'staff-photos' and public.is_admin())
   with check (bucket_id = 'staff-photos' and public.is_admin());
 
+-- The "Vault" storage policies (course-resources bucket) were removed along
+-- with the feature; drop them explicitly since old policy names would
+-- otherwise linger on storage.objects forever.
 drop policy if exists "Authenticated read course resources" on storage.objects;
-create policy "Authenticated read course resources"
-  on storage.objects for select
-  using (bucket_id = 'course-resources' and auth.role() = 'authenticated');
-
 drop policy if exists "Scribes write course resources" on storage.objects;
-create policy "Scribes write course resources"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'course-resources'
-    and (
-      public.is_admin()
-      or exists (select 1 from public.profiles where id = auth.uid() and 'scribe' = any(tags))
-    )
-  );
 
 drop policy if exists "Public read feed media" on storage.objects;
 create policy "Public read feed media"
@@ -695,7 +635,6 @@ create index if not exists idx_post_comments_post_id on public.post_comments (po
 create index if not exists idx_homework_class_id on public.homework (class_id);
 create index if not exists idx_homework_completions_student_id on public.homework_completions (student_id);
 create index if not exists idx_feed_posts_created_at on public.feed_posts (created_at);
-create index if not exists idx_course_resources_class_id on public.course_resources (class_id);
 create index if not exists idx_user_badges_user_id on public.user_badges (user_id);
 
 -- ----------------------------------------------------------------------------
@@ -1040,3 +979,26 @@ $$;
 -- profile: `author_id` stays null (already renders as non-clickable in
 -- PostCard), and `system_label` supplies the display name.
 alter table public.feed_posts add column if not exists system_label text;
+
+-- ----------------------------------------------------------------------------
+-- site_settings — generic admin-editable key/value store. First use: the
+-- external training link shown on "Plus de nous" (/admin/parametres).
+-- ----------------------------------------------------------------------------
+create table if not exists public.site_settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.site_settings enable row level security;
+
+drop policy if exists "Anyone can read site settings" on public.site_settings;
+create policy "Anyone can read site settings"
+  on public.site_settings for select
+  using (true);
+
+drop policy if exists "Admins manage site settings" on public.site_settings;
+create policy "Admins manage site settings"
+  on public.site_settings for all
+  using (public.is_admin())
+  with check (public.is_admin());

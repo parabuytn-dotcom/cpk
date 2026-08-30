@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { addComment } from "@/lib/social/actions";
@@ -15,11 +15,27 @@ export default function CommentSection({
   comments: CommentRow[];
 }) {
   const t = useTranslations("feed");
+  const [expanded, setExpanded] = useState(false);
   const [, action, pending] = useActionState(addComment, undefined);
 
+  // `comments` is oldest-first, so the last item is the most recent one —
+  // collapsed view shows just that, same as Instagram's "view all N comments".
+  const visibleComments = expanded ? comments : comments.slice(-1);
+  const hiddenCount = comments.length - visibleComments.length;
+
   return (
-    <div className="flex flex-col gap-2 border-t border-black/5 pt-3 dark:border-white/10">
-      {comments.map((c) => (
+    <div className="flex flex-col gap-2">
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="text-left text-sm text-foreground/50 hover:underline"
+        >
+          {t("viewAllComments", { count: comments.length })}
+        </button>
+      )}
+
+      {visibleComments.map((c) => (
         <div key={c.id} className="flex items-start gap-2">
           {c.authorId ? (
             <Link href={`/profil/${c.authorId}`} className="shrink-0">
@@ -41,9 +57,10 @@ export default function CommentSection({
         </div>
       ))}
 
-      <form action={action} className="flex gap-2">
+      <form action={action} className="flex gap-2 pt-1">
         <input type="hidden" name="postId" value={postId} />
         <input
+          id={`comment-input-${postId}`}
           name="content"
           placeholder={t("commentPlaceholder")}
           required

@@ -60,6 +60,7 @@ export async function getPublicProfiles(
 export async function listFeedPosts(
   currentUserId?: string,
   authorId?: string,
+  postId?: string,
 ): Promise<FeedPostRow[]> {
   if (!isSupabaseConfigured()) return [];
 
@@ -69,8 +70,9 @@ export async function listFeedPosts(
     .from("feed_posts")
     .select("id, author_id, content, media_type, media_path, system_label, created_at")
     .order("created_at", { ascending: false })
-    .limit(authorId ? 100 : 50);
+    .limit(authorId || postId ? 100 : 50);
   if (authorId) query = query.eq("author_id", authorId);
+  if (postId) query = query.eq("id", postId);
   const { data: posts } = await query;
 
   if (!posts || posts.length === 0) return [];
@@ -133,4 +135,12 @@ export async function listFeedPosts(
       comments: commentsByPost.get(post.id) ?? [],
     };
   });
+}
+
+export async function getFeedPost(
+  postId: string,
+  currentUserId?: string,
+): Promise<FeedPostRow | null> {
+  const [post] = await listFeedPosts(currentUserId, undefined, postId);
+  return post ?? null;
 }

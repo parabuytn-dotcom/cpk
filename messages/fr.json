@@ -4,7 +4,6 @@
     "timetable": "Emploi du temps",
     "exams": "Devoirs",
     "feed": "Feed",
-    "vault": "Le Vault",
     "ideas": "Idées",
     "staff": "Le Staff",
     "about": "Plus de nous",
@@ -95,7 +94,9 @@
   },
   "about": {
     "title": "Plus de nous",
-    "story": "L'histoire de la plateforme CPK, c'est avant tout celle de deux passionnés de technologies, Melik Messaoudi et Edem Aifia. Constatant que la communication entre l'administration, les parents et les élèves manquait d'un pont numérique moderne, ils ont décidé de prendre les choses en main. Armés de leur vision et de lignes de code, ils ont conçu cet espace de A à Z. Leur objectif ? Prouver que la jeunesse tunisienne peut créer des outils professionnels, sécurisés et sur-mesure pour moderniser l'éducation."
+    "story": "L'histoire de la plateforme CPK, c'est avant tout celle de deux passionnés de technologies, Melik Messaoudi et Edem Aifia. Constatant que la communication entre l'administration, les parents et les élèves manquait d'un pont numérique moderne, ils ont décidé de prendre les choses en main. Armés de leur vision et de lignes de code, ils ont conçu cet espace de A à Z. Leur objectif ? Prouver que la jeunesse tunisienne peut créer des outils professionnels, sécurisés et sur-mesure pour moderniser l'éducation.",
+    "trainingTitle": "Apprends à faire comme nous",
+    "trainingDescription": "Découvre notre formation pour apprendre à créer des plateformes comme celle-ci."
   },
   "help": {
     "title": "Aide & Assistance",
@@ -142,7 +143,14 @@
     "accountExists": "Compte créé",
     "assignedClasses": "Classes attribuées (clique pour ajouter/retirer) :",
     "documentsTab": "Documents",
-    "ideasTab": "Idées"
+    "ideasTab": "Idées",
+    "parametresTab": "Réglages",
+    "parametresSubtitle": "Réglages généraux du site.",
+    "trainingUrlLabel": "Lien vers la formation (affiché sur \"Plus de nous\")",
+    "trainingUrlPlaceholder": "https://...",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré."
   },
   "privacy": {
     "title": "Confidentialité de vos données",
@@ -164,29 +172,21 @@
     "publish": "Publier",
     "publishing": "Publication…",
     "like": "J'aime",
+    "comment": "Commenter",
+    "share": "Partager",
+    "linkCopied": "Lien copié !",
+    "likesCount": "{count} mention(s) J'aime",
+    "viewAllComments": "Voir les {count} commentaires",
     "commentPlaceholder": "Écrire un commentaire…",
     "send": "Envoyer",
+    "options": "Options",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer cette publication ?",
     "empty": "Rien à afficher pour le moment.",
     "noPermissionImage": "Tu n'as pas la permission de publier des images.",
     "noPermissionVideo": "Tu n'as pas la permission de publier des vidéos (reels).",
     "noPermissionFeed": "Tu n'as pas la permission de publier sur le feed.",
     "loginFirst": "Connecte-toi d'abord."
-  },
-  "vault": {
-    "title": "Le Vault",
-    "subtitle": "Espace de partage des cours — les Scribes uploadent les leçons du jour pour les absents.",
-    "selectClass": "Choisir une classe",
-    "subject": "Matière",
-    "addToVault": "Ajouter au Vault",
-    "uploading": "Envoi…",
-    "open": "Ouvrir",
-    "delete": "Supprimer",
-    "confirmDelete": "Supprimer ce document ?",
-    "noPermission": "Tu n'as pas la permission d'uploader (réservé aux Scribes).",
-    "chooseFile": "Choisis un fichier à uploader.",
-    "noResources": "Aucun document pour cette classe pour le moment.",
-    "views": "vue(s)",
-    "successAdded": "Cours ajouté au Vault."
   },
   "homework": {
     "title": "Cahier de texte",

@@ -4,7 +4,6 @@
     "timetable": "Timetable",
     "exams": "Exams",
     "feed": "Feed",
-    "vault": "The Vault",
     "ideas": "Ideas",
     "staff": "The Staff",
     "about": "About Us",
@@ -95,7 +94,9 @@
   },
   "about": {
     "title": "About Us",
-    "story": "The story of the CPK platform is, above all, that of two technology enthusiasts, Melik Messaoudi and Edem Aifia. Noticing that communication between administration, parents, and students lacked a modern digital bridge, they decided to take matters into their own hands. Armed with their vision and lines of code, they built this space from scratch. Their goal? To prove that Tunisian youth can create professional, secure, tailor-made tools to modernize education."
+    "story": "The story of the CPK platform is, above all, that of two technology enthusiasts, Melik Messaoudi and Edem Aifia. Noticing that communication between administration, parents, and students lacked a modern digital bridge, they decided to take matters into their own hands. Armed with their vision and lines of code, they built this space from scratch. Their goal? To prove that Tunisian youth can create professional, secure, tailor-made tools to modernize education.",
+    "trainingTitle": "Learn to build like we did",
+    "trainingDescription": "Check out our training to learn how to build platforms like this one."
   },
   "help": {
     "title": "Help & Support",
@@ -142,7 +143,14 @@
     "accountExists": "Account created",
     "assignedClasses": "Assigned classes (click to add/remove):",
     "documentsTab": "Documents",
-    "ideasTab": "Ideas"
+    "ideasTab": "Ideas",
+    "parametresTab": "Settings",
+    "parametresSubtitle": "General site settings.",
+    "trainingUrlLabel": "Training link (shown on \"About Us\")",
+    "trainingUrlPlaceholder": "https://...",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved."
   },
   "privacy": {
     "title": "Your data, privacy",
@@ -164,29 +172,21 @@
     "publish": "Post",
     "publishing": "Posting…",
     "like": "Like",
+    "comment": "Comment",
+    "share": "Share",
+    "linkCopied": "Link copied!",
+    "likesCount": "{count} like(s)",
+    "viewAllComments": "View all {count} comments",
     "commentPlaceholder": "Write a comment…",
     "send": "Send",
+    "options": "Options",
+    "delete": "Delete",
+    "confirmDelete": "Delete this post?",
     "empty": "Nothing to show yet.",
     "noPermissionImage": "You don't have permission to post images.",
     "noPermissionVideo": "You don't have permission to post videos (reels).",
     "noPermissionFeed": "You don't have permission to post on the feed.",
     "loginFirst": "Log in first."
-  },
-  "vault": {
-    "title": "The Vault",
-    "subtitle": "Shared course space — Scribes upload the day's lessons for those who were absent.",
-    "selectClass": "Choose a class",
-    "subject": "Subject",
-    "addToVault": "Add to the Vault",
-    "uploading": "Uploading…",
-    "open": "Open",
-    "delete": "Delete",
-    "confirmDelete": "Delete this document?",
-    "noPermission": "You don't have permission to upload (Scribes only).",
-    "chooseFile": "Choose a file to upload.",
-    "noResources": "No document for this class yet.",
-    "views": "view(s)",
-    "successAdded": "Course added to the Vault."
   },
   "homework": {
     "title": "Homework log",

@@ -1129,3 +1129,26 @@ export async function publishRelease(_state: FormState, formData: FormData): Pro
   revalidatePath("/nouveautes");
   return { success: "Publié." };
 }
+
+// ---------------------------------------------------------------------------
+// site_settings — réglages génériques (ex : lien externe "Plus de nous").
+// ---------------------------------------------------------------------------
+
+export async function updateSiteSetting(_state: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+
+  const key = formData.get("key");
+  const value = formData.get("value");
+  if (typeof key !== "string" || !key.trim()) return { message: "Clé manquante." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key: key.trim(), value: typeof value === "string" ? value.trim() : "" });
+
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/parametres");
+  revalidatePath("/a-propos");
+  return { success: "Enregistré." };
+}

@@ -2,10 +2,11 @@ import Image from "next/image";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import Avatar from "@/components/ui/Avatar";
-import LikeButton from "./LikeButton";
+import PostActionsRow from "./PostActionsRow";
 import CommentSection from "./CommentSection";
 import DeletePostButton from "./DeletePostButton";
-import { formatDateTime } from "@/lib/formatDate";
+import { formatRelativeTime } from "@/lib/formatDate";
+import { SITE_URL } from "@/lib/siteUrl";
 import type { FeedPostRow } from "@/lib/social/data";
 
 export default async function PostCard({
@@ -16,48 +17,52 @@ export default async function PostCard({
   canDelete: boolean;
 }) {
   const locale = await getLocale();
+  const shareUrl = `${SITE_URL}/${locale}/feed/${post.id}`;
 
   return (
-    <article className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
-      <div className="flex items-center gap-3">
+    <article className="glass-surface flex flex-col overflow-hidden rounded-3xl">
+      <div className="flex items-center gap-3 px-4 py-3">
         {post.authorId ? (
-          <Link href={`/profil/${post.authorId}`} className="flex items-center gap-3">
-            <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={40} />
-            <div>
-              <p className="font-semibold hover:underline">{post.authorName}</p>
-              <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>
-            </div>
+          <Link href={`/profil/${post.authorId}`} className="flex min-w-0 flex-1 items-center gap-3">
+            <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={36} />
+            <p className="truncate text-sm font-semibold hover:underline">{post.authorName}</p>
           </Link>
         ) : (
-          <>
-            <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={40} />
-            <div>
-              <p className="font-semibold">{post.authorName}</p>
-              <p className="text-xs text-foreground/50">{formatDateTime(locale, post.createdAt)}</p>
-            </div>
-          </>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Avatar name={post.authorName} photoUrl={post.authorAvatarUrl} size={36} />
+            <p className="truncate text-sm font-semibold">{post.authorName}</p>
+          </div>
         )}
-        <div className="flex-1" />
         {canDelete && <DeletePostButton postId={post.id} />}
       </div>
 
-      <p className="whitespace-pre-wrap text-foreground/90">{post.content}</p>
-
       {post.mediaUrl && post.mediaType === "image" && (
-        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black/5">
+        <div className="relative aspect-square w-full bg-black/5">
           <Image src={post.mediaUrl} alt="" fill className="object-cover" />
         </div>
       )}
 
       {post.mediaUrl && post.mediaType === "video" && (
-        <video src={post.mediaUrl} controls className="w-full rounded-2xl bg-black" />
+        <video src={post.mediaUrl} controls className="aspect-square w-full bg-black object-contain" />
       )}
 
-      <div className="flex items-center gap-2">
-        <LikeButton postId={post.id} initialLiked={post.likedByMe} initialCount={post.likeCount} />
-      </div>
+      <div className="flex flex-col gap-2 px-4 py-3">
+        <PostActionsRow
+          postId={post.id}
+          initialLiked={post.likedByMe}
+          initialCount={post.likeCount}
+          commentAnchor={`#comment-input-${post.id}`}
+          shareUrl={shareUrl}
+        />
 
-      <CommentSection postId={post.id} comments={post.comments} />
+        <p className="whitespace-pre-wrap text-sm">
+          <span className="font-semibold">{post.authorName}</span> {post.content}
+        </p>
+
+        <CommentSection postId={post.id} comments={post.comments} />
+
+        <p className="text-xs uppercase text-foreground/40">{formatRelativeTime(locale, post.createdAt)}</p>
+      </div>
     </article>
   );
 }

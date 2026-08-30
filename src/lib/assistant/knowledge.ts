@@ -57,16 +57,10 @@ d'inventer une réponse.
 - Chacun peut supprimer ses propres publications (icône 🗑 sur la publication) ; l'administration
   peut supprimer n'importe quelle publication.
 
-# Le Vault (documents de cours)
-- Espace où des élèves désignés "Scribes" (autorisation donnée par l'administration) uploadent
-  les cours/leçons du jour pour aider les élèves absents.
-- Accessible classe par classe depuis le menu "Le Vault".
-
 # Badges
-- Des badges récompensent l'engagement : Scanner Fou (10 cours uploadés), Sauveur de Classe (un
-  cours vu par plus de 20 élèves), Toujours à Jour (devoirs cochés 5 jours de suite), Journaliste
-  CPK (publications régulières sur le feed), Junior Dev et Fondateur (attribués manuellement par
-  l'administration). Visibles sur le tableau de bord.
+- Des badges récompensent l'engagement : Toujours à Jour (devoirs cochés 5 jours de suite),
+  Journaliste CPK (publications régulières sur le feed), Junior Dev et Fondateur (attribués
+  manuellement par l'administration). Visibles sur le tableau de bord.
 
 # Mon profil
 - Depuis le tableau de bord, chacun peut modifier son nom, son téléphone, son CIN, son email de

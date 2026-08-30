@@ -23,6 +23,7 @@ export default async function AdminPage({
     { href: "/admin/aide", label: t("helpTab") },
     { href: "/admin/idees", label: t("ideasTab") },
     { href: "/admin/nouveautes", label: t("releasesTab") },
+    { href: "/admin/parametres", label: t("parametresTab") },
   ];
 
   return (
