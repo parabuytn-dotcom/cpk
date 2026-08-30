@@ -19,6 +19,7 @@ export default async function Navbar() {
           { href: "/devoirs", label: t("exams") },
           { href: "/feed", label: t("feed") },
           { href: "/cours", label: t("vault") },
+          { href: "/idees", label: t("ideas") },
         ]
       : []),
     { href: "/staff", label: t("staff") },

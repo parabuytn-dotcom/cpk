@@ -28,6 +28,7 @@ export default async function AdminLayout({
     { href: "/admin/profs", label: t("teachersTab") },
     { href: "/admin/staff", label: t("staffTab") },
     { href: "/admin/aide", label: t("helpTab") },
+    { href: "/admin/idees", label: t("ideasTab") },
     { href: "/admin/nouveautes", label: t("releasesTab") },
   ];
 

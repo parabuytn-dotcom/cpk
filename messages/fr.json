@@ -5,6 +5,7 @@
     "exams": "Devoirs",
     "feed": "Feed",
     "vault": "Le Vault",
+    "ideas": "Idées",
     "staff": "Le Staff",
     "about": "Plus de nous",
     "releases": "Nouveautés",
@@ -140,7 +141,8 @@
     "teachersEmpty": "Aucun professeur pour le moment (ajoute des créneaux d'emploi du temps pour en créer).",
     "accountExists": "Compte créé",
     "assignedClasses": "Classes attribuées (clique pour ajouter/retirer) :",
-    "documentsTab": "Documents"
+    "documentsTab": "Documents",
+    "ideasTab": "Idées"
   },
   "privacy": {
     "title": "Confidentialité de vos données",
@@ -227,6 +229,16 @@
     "pushEnabling": "Activation…",
     "pushEnabled": "Notifications activées sur cet appareil ✓",
     "pushDenied": "Notifications bloquées — active-les dans les réglages de ton navigateur/téléphone."
+  },
+  "suggestions": {
+    "title": "Boîte à idées",
+    "subtitle": "Propose une amélioration pour la vie scolaire — une fois validée par l'administration, elle apparaît ici pour tout le monde.",
+    "empty": "Aucune idée validée pour le moment.",
+    "submitButton": "Soumettre une proposition",
+    "placeholder": "Décris ton idée en détail…",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "untitled": "Proposition sans titre"
   },
   "accountCreation": {
     "createChild": "Créer le compte de mon enfant",

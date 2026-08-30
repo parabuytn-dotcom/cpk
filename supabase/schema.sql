@@ -940,3 +940,39 @@ select
 from public.profiles p
 where p.role = 'teacher'
   and not exists (select 1 from public.teachers t where t.user_id = p.id);
+
+-- ----------------------------------------------------------------------------
+-- suggestions — "Boîte à idées". Anyone can submit free-form text; it's only
+-- visible to its author and admins until an admin gives it a public title
+-- and validates it, at which point it becomes visible to everyone.
+-- ----------------------------------------------------------------------------
+create table if not exists public.suggestions (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid references public.profiles (id) on delete set null,
+  content text not null,
+  title text,
+  status text not null default 'pending' check (status in ('pending', 'validated', 'rejected')),
+  validated_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table public.suggestions enable row level security;
+
+drop policy if exists "Read validated suggestions or your own" on public.suggestions;
+create policy "Read validated suggestions or your own"
+  on public.suggestions for select
+  using (status = 'validated' or auth.uid() = author_id or public.is_admin());
+
+drop policy if exists "Users submit their own suggestions" on public.suggestions;
+create policy "Users submit their own suggestions"
+  on public.suggestions for insert
+  with check (auth.uid() = author_id);
+
+drop policy if exists "Admins manage suggestions" on public.suggestions;
+create policy "Admins manage suggestions"
+  on public.suggestions for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create index if not exists idx_suggestions_status on public.suggestions (status);
+create index if not exists idx_suggestions_author_id on public.suggestions (author_id);

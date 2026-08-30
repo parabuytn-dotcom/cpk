@@ -5,6 +5,7 @@
     "exams": "Exams",
     "feed": "Feed",
     "vault": "The Vault",
+    "ideas": "Ideas",
     "staff": "The Staff",
     "about": "About Us",
     "releases": "Releases",
@@ -140,7 +141,8 @@
     "teachersEmpty": "No teacher yet (add timetable slots to create some).",
     "accountExists": "Account created",
     "assignedClasses": "Assigned classes (click to add/remove):",
-    "documentsTab": "Documents"
+    "documentsTab": "Documents",
+    "ideasTab": "Ideas"
   },
   "privacy": {
     "title": "Your data, privacy",
@@ -227,6 +229,16 @@
     "pushEnabling": "Enabling…",
     "pushEnabled": "Notifications enabled on this device ✓",
     "pushDenied": "Notifications blocked — enable them in your browser/phone settings."
+  },
+  "suggestions": {
+    "title": "Suggestion box",
+    "subtitle": "Suggest an improvement for school life — once validated by the administration, it appears here for everyone.",
+    "empty": "No validated idea yet.",
+    "submitButton": "Submit a suggestion",
+    "placeholder": "Describe your idea in detail…",
+    "send": "Send",
+    "sending": "Sending…",
+    "untitled": "Untitled suggestion"
   },
   "accountCreation": {
     "createChild": "Create my child's account",

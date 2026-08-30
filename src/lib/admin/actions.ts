@@ -1059,6 +1059,49 @@ export async function updateHelpRequestStatus(requestId: string, status: string)
 }
 
 // ---------------------------------------------------------------------------
+// Boîte à idées — propositions des parents/élèves, validées par l'admin
+// ---------------------------------------------------------------------------
+
+export async function validateSuggestion(suggestionId: string, title: string) {
+  await requireAdmin();
+
+  if (!title.trim()) throw new Error("Un titre est requis.");
+
+  const supabase = await createClient();
+  const { data: suggestion, error } = await supabase
+    .from("suggestions")
+    .update({ title: title.trim(), status: "validated", validated_at: new Date().toISOString() })
+    .eq("id", suggestionId)
+    .select("author_id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  if (suggestion?.author_id) {
+    await notify(
+      suggestion.author_id,
+      "suggestion_validated",
+      `Ta proposition « ${title.trim()} » a été validée !`,
+      `/idees/${suggestionId}`,
+    );
+  }
+
+  revalidatePath("/admin/idees");
+  revalidatePath("/idees");
+}
+
+export async function rejectSuggestion(suggestionId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("suggestions")
+    .update({ status: "rejected" })
+    .eq("id", suggestionId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/idees");
+}
+
+// ---------------------------------------------------------------------------
 // Nouveautés — changelog publiable par l'admin
 // ---------------------------------------------------------------------------
 

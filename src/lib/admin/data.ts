@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
+import { getPublicProfiles } from "@/lib/social/data";
 
 export type PendingProfile = {
   id: string;
@@ -361,6 +362,36 @@ export async function listHelpRequests(): Promise<HelpRequestRow[]> {
     subject: row.subject,
     description: row.description,
     status: row.status,
+    createdAt: row.created_at,
+  }));
+}
+
+export type PendingSuggestionRow = {
+  id: string;
+  content: string;
+  authorName: string;
+  createdAt: string;
+};
+
+export async function listPendingSuggestions(): Promise<PendingSuggestionRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("suggestions")
+    .select("id, content, author_id, created_at")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  if (!data || data.length === 0) return [];
+
+  const authorIds = data.map((row) => row.author_id).filter((id): id is string => Boolean(id));
+  const profiles = await getPublicProfiles(supabase, authorIds);
+
+  return data.map((row) => ({
+    id: row.id,
+    content: row.content,
+    authorName: row.author_id ? (profiles.get(row.author_id)?.displayName ?? "Anonyme") : "Anonyme",
     createdAt: row.created_at,
   }));
 }
