@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { createPost } from "@/lib/social/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -15,10 +15,18 @@ export default function PostComposer({
   canPostVideo: boolean;
 }) {
   const t = useTranslations("feed");
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, actionPending] = useActionState(createPost, undefined);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  // Only clear the form once the post is actually confirmed saved — clearing
+  // it right on submit (regardless of outcome) meant a failed post (e.g. a
+  // permissions error) silently wiped out what the user had typed.
+  useEffect(() => {
+    if (state?.success !== undefined) formRef.current?.reset();
+  }, [state]);
 
   const accept = canPostVideo ? "image/*,video/*" : canPostImage ? "image/*" : undefined;
   const pending = uploading || actionPending;
@@ -55,11 +63,11 @@ export default function PostComposer({
     }
 
     startTransition(() => formAction(payload));
-    form.reset();
   }
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 rounded-3xl border border-black/5 bg-white p-5 dark:border-white/10 dark:bg-gray-900"
     >

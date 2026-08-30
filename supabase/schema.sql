@@ -439,6 +439,10 @@ create policy "Anyone authenticated can read the feed"
 -- Publishing text/image posts requires the 'feed_publisher' tag; video posts
 -- ("reels") require the separate 'reels_publisher' tag, since video eats far
 -- more storage. Admins can always post either kind.
+-- Teachers are allowed here (mirroring the "Publishers write feed media"
+-- storage policy below) — the frontend's canPostImage/canPostVideo checks in
+-- FeedPage already grant them the composer for both image and video, so the
+-- insert policy has to match or their post is silently rejected by RLS.
 drop policy if exists "Publishers can post to the feed" on public.feed_posts;
 create policy "Publishers can post to the feed"
   on public.feed_posts for insert
@@ -446,11 +450,17 @@ create policy "Publishers can post to the feed"
     public.is_admin()
     or (
       (media_type is null or media_type = 'image')
-      and exists (select 1 from public.profiles where id = auth.uid() and 'feed_publisher' = any(tags))
+      and exists (
+        select 1 from public.profiles
+        where id = auth.uid() and (role = 'teacher' or 'feed_publisher' = any(tags))
+      )
     )
     or (
       media_type = 'video'
-      and exists (select 1 from public.profiles where id = auth.uid() and 'reels_publisher' = any(tags))
+      and exists (
+        select 1 from public.profiles
+        where id = auth.uid() and (role = 'teacher' or 'reels_publisher' = any(tags))
+      )
     )
   );
 
