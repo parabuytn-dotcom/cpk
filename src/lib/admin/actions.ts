@@ -867,7 +867,42 @@ export async function updateUserProfile(
 
   if (error) return { message: error.message };
 
+  // A profile switched to "teacher" here (as opposed to via the normal
+  // /admin/profs flow, which always creates the teachers row first) has
+  // nothing in the teachers table yet — and that table is what
+  // /admin/profs, class assignment, and the dashboard's homework/exam
+  // forms are all keyed on. Without this, a teacher account created purely
+  // by changing a profile's role would never be assignable to a class.
+  if (validated.data.role === "teacher") {
+    const { data: existingTeacher } = await supabase
+      .from("teachers")
+      .select("id")
+      .eq("user_id", validated.data.profileId)
+      .maybeSingle();
+
+    if (!existingTeacher) {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("full_name, parent_first_name, parent_last_name")
+        .eq("id", validated.data.profileId)
+        .single();
+
+      const displayName =
+        profileRow?.full_name ?? profileRow?.parent_first_name ?? "Professeur";
+      const [firstName, ...rest] = displayName.trim().split(/\s+/);
+      const lastName = rest.join(" ") || profileRow?.parent_last_name || firstName;
+
+      await supabase.from("teachers").insert({
+        first_name: firstName,
+        last_name: lastName,
+        phone: validated.data.phone || null,
+        user_id: validated.data.profileId,
+      });
+    }
+  }
+
   revalidatePath("/admin/utilisateurs");
+  revalidatePath("/admin/profs");
   return { success: "Profil mis à jour." };
 }
 

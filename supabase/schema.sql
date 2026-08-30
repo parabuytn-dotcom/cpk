@@ -920,3 +920,23 @@ create policy "Teachers and admins manage exams"
 
 create index if not exists idx_exams_class_id on public.exams (class_id);
 create index if not exists idx_exams_exam_date on public.exams (exam_date);
+
+-- ----------------------------------------------------------------------------
+-- Backfill: create a teachers row for any profile with role='teacher' that
+-- doesn't have one yet — e.g. an account whose role was set to "teacher"
+-- directly in /admin/utilisateurs before that flow auto-created this row.
+-- Without a teachers row, that account can't be assigned classes and never
+-- shows up in /admin/profs.
+-- ----------------------------------------------------------------------------
+insert into public.teachers (first_name, last_name, user_id)
+select
+  split_part(coalesce(p.full_name, 'Professeur'), ' ', 1) as first_name,
+  case
+    when position(' ' in coalesce(p.full_name, '')) > 0
+      then trim(substring(p.full_name from position(' ' in p.full_name) + 1))
+    else split_part(coalesce(p.full_name, 'Professeur'), ' ', 1)
+  end as last_name,
+  p.id
+from public.profiles p
+where p.role = 'teacher'
+  and not exists (select 1 from public.teachers t where t.user_id = p.id);
