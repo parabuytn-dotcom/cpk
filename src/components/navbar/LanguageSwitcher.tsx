@@ -25,7 +25,7 @@ export default function LanguageSwitcher() {
         aria-label="Langue / Language / اللغة"
         value={locale}
         onChange={(e) => onSelect(e.target.value as Locale)}
-        className="cursor-pointer appearance-none rounded-full border border-white/30 bg-white/40 px-3 py-1.5 text-sm font-medium text-foreground shadow-sm backdrop-blur-md transition hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20"
+        className="cursor-pointer appearance-none rounded-full border border-white/30 bg-white/80 px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-white/95 dark:bg-white/10 dark:hover:bg-white/20"
       >
         {routing.locales.map((l) => (
           <option key={l} value={l}>

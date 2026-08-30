@@ -25,7 +25,7 @@ export default function MobileMenu({
         aria-label="Menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-full border border-white/30 bg-white/40 backdrop-blur-md transition dark:bg-white/10"
+        className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-full border border-white/30 bg-white/80 transition dark:bg-white/10"
       >
         <span
           className={`block h-0.5 w-5 bg-current transition-transform ${open ? "translate-y-2 rotate-45" : ""}`}
