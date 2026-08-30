@@ -8,6 +8,7 @@ import Navbar from "@/components/navbar/Navbar";
 import { Link } from "@/i18n/navigation";
 import PendingBanner from "@/components/auth/PendingBanner";
 import ValidatedModal from "@/components/auth/ValidatedModal";
+import OnboardingTour, { type TourStep } from "@/components/onboarding/OnboardingTour";
 import { getCurrentProfile } from "@/lib/auth/session";
 import ChatWidget from "@/components/assistant/ChatWidget";
 import "../globals.css";
@@ -50,7 +51,10 @@ export default async function LocaleLayout({
 
   const dir = rtlLocales.includes(locale as Locale) ? "rtl" : "ltr";
   const font = locale === "ar" ? cairo : inter;
-  const showValidatedModal = profile?.status === "validated" && !profile.validationSeen;
+  const showOnboardingTour =
+    Boolean(profile) && !profile!.onboardingTourSeen && !profile!.mustChangePassword;
+  const showValidatedModal =
+    profile?.status === "validated" && !profile.validationSeen && !showOnboardingTour;
 
   return (
     <html lang={locale} dir={dir}>
@@ -69,6 +73,7 @@ export default async function LocaleLayout({
               {footer("privacy")}
             </Link>
           </footer>
+          {showOnboardingTour && <OnboardingTourContainer />}
           {showValidatedModal && <ValidatedModalContainer />}
           <ChatWidget />
         </NextIntlClientProvider>
@@ -84,6 +89,33 @@ async function ValidatedModalContainer() {
       title={t("validatedTitle")}
       body={t("validatedBody")}
       closeLabel={t("validatedClose")}
+    />
+  );
+}
+
+async function OnboardingTourContainer() {
+  const t = await getTranslations("onboardingTour");
+
+  const steps: TourStep[] = [
+    { emoji: "👋", title: t("welcomeTitle"), body: t("welcomeBody"), from: "#818cf8", to: "#6366f1" },
+    { emoji: "📋", title: t("dashboardTitle"), body: t("dashboardBody"), from: "#38bdf8", to: "#0ea5e9" },
+    { emoji: "🗓️", title: t("timetableTitle"), body: t("timetableBody"), from: "#34d399", to: "#0d9488" },
+    { emoji: "📚", title: t("homeworkTitle"), body: t("homeworkBody"), from: "#fbbf24", to: "#f97316" },
+    { emoji: "📸", title: t("feedTitle"), body: t("feedBody"), from: "#f472b6", to: "#e11d48" },
+    { emoji: "💡", title: t("ideasTitle"), body: t("ideasBody"), from: "#c084fc", to: "#a21caf" },
+    { emoji: "🔔", title: t("notificationsTitle"), body: t("notificationsBody"), from: "#60a5fa", to: "#4f46e5" },
+    { emoji: "🎉", title: t("finishTitle"), body: t("finishBody"), from: "#34d399", to: "#0d9488" },
+  ];
+
+  return (
+    <OnboardingTour
+      steps={steps}
+      labels={{
+        next: t("next"),
+        previous: t("previous"),
+        skip: t("skip"),
+        start: t("start"),
+      }}
     />
   );
 }

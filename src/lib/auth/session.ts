@@ -19,6 +19,7 @@ export type CurrentProfile = {
   avatarUrl: string | null;
   validationSeen: boolean;
   mustChangePassword: boolean;
+  onboardingTourSeen: boolean;
 };
 
 /** Returns the signed-in user's profile, or null if there is no session. */
@@ -39,7 +40,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, role, status, full_name, parent_first_name, parent_last_name, phone, cin, contact_email, registration_method, tags, avatar_url, validation_seen, must_change_password",
+      "id, role, status, full_name, parent_first_name, parent_last_name, phone, cin, contact_email, registration_method, tags, avatar_url, validation_seen, must_change_password, onboarding_tour_seen",
     )
     .eq("id", user.id)
     .single();
@@ -61,5 +62,6 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     avatarUrl: profile.avatar_url,
     validationSeen: profile.validation_seen,
     mustChangePassword: profile.must_change_password,
+    onboardingTourSeen: profile.onboarding_tour_seen,
   };
 }

@@ -338,6 +338,16 @@ export async function markValidationSeen() {
   await supabase.from("profiles").update({ validation_seen: true }).eq("id", user.id);
 }
 
+export async function markOnboardingTourSeen() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("profiles").update({ onboarding_tour_seen: true }).eq("id", user.id);
+}
+
 // The file itself is uploaded client-side, straight to Supabase Storage (see
 // AvatarUpload) — Next.js Server Actions cap request bodies at 1MB by
 // default, and Vercel's own serverless function limit (4.5MB) can't be

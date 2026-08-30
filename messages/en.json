@@ -308,5 +308,27 @@
   "footer": {
     "rights": "All rights reserved.",
     "privacy": "Privacy"
+  },
+  "onboardingTour": {
+    "skip": "Skip",
+    "previous": "Back",
+    "next": "Next",
+    "start": "Get started",
+    "welcomeTitle": "Welcome to CPK Learn 👋",
+    "welcomeBody": "Your account is ready! Let's take a quick tour of the features — it only takes a minute.",
+    "dashboardTitle": "Your personal space",
+    "dashboardBody": "Find your children, teacher absences, and all your important info at a glance.",
+    "timetableTitle": "Timetable",
+    "timetableBody": "Check the class timetable, updated automatically whenever a class is cancelled.",
+    "homeworkTitle": "Homework & exams",
+    "homeworkBody": "See homework to do, and test/exam dates, sorted by subject.",
+    "feedTitle": "The Feed",
+    "feedBody": "Follow school life: photos, reels, likes and comments, just like social media.",
+    "ideasTitle": "Suggestion box",
+    "ideasBody": "Suggest an improvement and vote for your favorite ideas — the month's top idea gets featured on the Feed.",
+    "notificationsTitle": "Notifications",
+    "notificationsBody": "Turn on notifications so you never miss anything, even with the site closed.",
+    "finishTitle": "You're all set! 🎉",
+    "finishBody": "Explore at your own pace — help is always available at the bottom of every page."
   }
 }

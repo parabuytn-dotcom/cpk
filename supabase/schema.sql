@@ -1012,3 +1012,10 @@ create policy "Admins manage site settings"
 alter table public.profiles add column if not exists last_seen_at timestamptz;
 
 create index if not exists idx_profiles_last_seen_at on public.profiles (last_seen_at);
+
+-- ----------------------------------------------------------------------------
+-- onboarding_tour_seen — one-time animated feature tour shown right after a
+-- new account's first login (see OnboardingTour). Same pattern as
+-- validation_seen: set once, never shown again.
+-- ----------------------------------------------------------------------------
+alter table public.profiles add column if not exists onboarding_tour_seen boolean not null default false;

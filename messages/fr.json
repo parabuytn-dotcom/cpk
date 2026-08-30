@@ -308,5 +308,27 @@
   "footer": {
     "rights": "Tous droits réservés.",
     "privacy": "Confidentialité"
+  },
+  "onboardingTour": {
+    "skip": "Passer",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "start": "Commencer",
+    "welcomeTitle": "Bienvenue sur CPK Learn 👋",
+    "welcomeBody": "Ton compte est prêt ! Faisons un petit tour des fonctionnalités, ça prend une minute.",
+    "dashboardTitle": "Ton espace personnel",
+    "dashboardBody": "Retrouve tes enfants, les absences de profs et toutes tes informations importantes en un coup d'œil.",
+    "timetableTitle": "Emploi du temps",
+    "timetableBody": "Consulte l'emploi du temps de la classe, mis à jour automatiquement dès qu'un cours est annulé.",
+    "homeworkTitle": "Cahier de texte & devoirs",
+    "homeworkBody": "Vois les devoirs à faire, et les dates de contrôles et de synthèses, classés par matière.",
+    "feedTitle": "Le Feed",
+    "feedBody": "Suis la vie du collège : photos, reels, likes et commentaires, comme sur les réseaux sociaux.",
+    "ideasTitle": "Boîte à idées",
+    "ideasBody": "Propose une amélioration et vote pour tes idées préférées — la plus votée du mois est mise en avant sur le Feed.",
+    "notificationsTitle": "Notifications",
+    "notificationsBody": "Active les notifications pour ne rien manquer, même quand le site est fermé.",
+    "finishTitle": "Tu es prêt(e) ! 🎉",
+    "finishBody": "Explore à ton rythme — l'aide reste toujours disponible en bas de chaque page."
   }
 }
