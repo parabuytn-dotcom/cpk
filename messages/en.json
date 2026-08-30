@@ -150,7 +150,14 @@
     "trainingUrlPlaceholder": "https://...",
     "save": "Save",
     "saving": "Saving…",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "statTotalUsers": "Users",
+    "statOnline": "Online",
+    "statOffline": "Offline",
+    "statPendingAccounts": "Pending accounts",
+    "statPendingHelp": "Pending help",
+    "statPendingSuggestions": "Pending ideas",
+    "shortcuts": "Shortcuts"
   },
   "privacy": {
     "title": "Your data, privacy",

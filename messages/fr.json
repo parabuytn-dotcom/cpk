@@ -150,7 +150,14 @@
     "trainingUrlPlaceholder": "https://...",
     "save": "Enregistrer",
     "saving": "Enregistrement…",
-    "saved": "Enregistré."
+    "saved": "Enregistré.",
+    "statTotalUsers": "Utilisateurs",
+    "statOnline": "En ligne",
+    "statOffline": "Hors ligne",
+    "statPendingAccounts": "Comptes en attente",
+    "statPendingHelp": "Aide en attente",
+    "statPendingSuggestions": "Idées en attente",
+    "shortcuts": "Raccourcis"
   },
   "privacy": {
     "title": "Confidentialité de vos données",

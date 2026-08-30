@@ -586,6 +586,64 @@ export async function listChildrenForParent(parentId: string): Promise<ChildRow[
   }));
 }
 
+export type DashboardStats = {
+  totalUsers: number;
+  onlineUsers: number;
+  offlineUsers: number;
+  pendingAccounts: number;
+  pendingHelp: number;
+  pendingSuggestions: number;
+};
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  if (!isSupabaseConfigured()) {
+    return {
+      totalUsers: 0,
+      onlineUsers: 0,
+      offlineUsers: 0,
+      pendingAccounts: 0,
+      pendingHelp: 0,
+      pendingSuggestions: 0,
+    };
+  }
+
+  const supabase = await createClient();
+  const onlineSince = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
+  const [totalUsers, onlineUsers, pendingAccounts, pendingHelp, pendingSuggestions] =
+    await Promise.all([
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gte("last_seen_at", onlineSince),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("help_requests")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "closed"),
+      supabase
+        .from("suggestions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
+
+  const total = totalUsers.count ?? 0;
+  const online = onlineUsers.count ?? 0;
+
+  return {
+    totalUsers: total,
+    onlineUsers: online,
+    offlineUsers: Math.max(total - online, 0),
+    pendingAccounts: pendingAccounts.count ?? 0,
+    pendingHelp: pendingHelp.count ?? 0,
+    pendingSuggestions: pendingSuggestions.count ?? 0,
+  };
+}
+
 export async function getSiteSetting(key: string): Promise<string | null> {
   if (!isSupabaseConfigured()) return null;
 

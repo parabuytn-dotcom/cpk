@@ -1002,3 +1002,13 @@ create policy "Admins manage site settings"
   on public.site_settings for all
   using (public.is_admin())
   with check (public.is_admin());
+
+-- ----------------------------------------------------------------------------
+-- Presence — `last_seen_at` is bumped by a client-side heartbeat every ~60s
+-- while a session is open; "online" = last_seen_at within the last 2 minutes.
+-- No RLS change needed: the existing "Users can update their own profile"
+-- policy already covers writing this column on your own row.
+-- ----------------------------------------------------------------------------
+alter table public.profiles add column if not exists last_seen_at timestamptz;
+
+create index if not exists idx_profiles_last_seen_at on public.profiles (last_seen_at);

@@ -150,7 +150,14 @@
     "trainingUrlPlaceholder": "https://...",
     "save": "حفظ",
     "saving": "جارٍ الحفظ…",
-    "saved": "تم الحفظ."
+    "saved": "تم الحفظ.",
+    "statTotalUsers": "المستخدمون",
+    "statOnline": "متصل",
+    "statOffline": "غير متصل",
+    "statPendingAccounts": "حسابات في الانتظار",
+    "statPendingHelp": "مساعدة في الانتظار",
+    "statPendingSuggestions": "أفكار في الانتظار",
+    "shortcuts": "اختصارات"
   },
   "privacy": {
     "title": "خصوصية بياناتك",
