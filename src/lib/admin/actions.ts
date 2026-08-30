@@ -21,6 +21,7 @@ import {
   releaseSchema,
   helpRequestSchema,
   homeworkSchema,
+  examSchema,
   documentAccountSchema,
   type FormState,
 } from "./schemas";
@@ -535,6 +536,70 @@ export async function toggleHomeworkCompletion(homeworkId: string, completed: bo
   }
 
   revalidatePath("/dashboard");
+}
+
+// ---------------------------------------------------------------------------
+// Devoirs (contrôle / synthèse) — calendrier d'examens par classe
+// ---------------------------------------------------------------------------
+
+export async function createExam(_state: FormState, formData: FormData): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile || (profile.role !== "teacher" && profile.role !== "admin")) {
+    return { message: "Non autorisé." };
+  }
+
+  const validated = examSchema.safeParse({
+    classId: formData.get("classId") ?? "",
+    className: formData.get("className"),
+    subject: formData.get("subject"),
+    type: formData.get("type"),
+    examDate: formData.get("examDate"),
+    description: formData.get("description") ?? "",
+    teacherNotes: formData.get("teacherNotes") ?? "",
+  });
+
+  if (!validated.success) {
+    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("exams").insert({
+    class_id: validated.data.classId || null,
+    class_name: validated.data.className,
+    subject: validated.data.subject,
+    type: validated.data.type,
+    exam_date: validated.data.examDate,
+    description: validated.data.description || null,
+    teacher_notes: validated.data.teacherNotes || null,
+    created_by: profile.id,
+  });
+
+  if (error) return { message: error.message };
+
+  const { data: students } = await supabase
+    .from("students")
+    .select("user_id")
+    .or(
+      validated.data.classId
+        ? `class_id.eq.${validated.data.classId},class_name.eq.${validated.data.className}`
+        : `class_name.eq.${validated.data.className}`,
+    )
+    .not("user_id", "is", null);
+
+  const studentIds = (students ?? []).map((s) => s.user_id).filter(Boolean) as string[];
+  if (studentIds.length > 0) {
+    const typeLabel = validated.data.type === "synthese" ? "de synthèse" : "de contrôle";
+    await notifyMany(
+      studentIds,
+      "exam",
+      `Nouveau devoir ${typeLabel} de ${validated.data.subject} le ${new Date(validated.data.examDate).toLocaleDateString("fr-FR")}.`,
+      "/devoirs",
+    );
+  }
+
+  revalidatePath("/devoirs");
+  revalidatePath("/dashboard");
+  return { success: "Devoir ajouté au calendrier." };
 }
 
 // ---------------------------------------------------------------------------

@@ -459,6 +459,35 @@ export async function listHomeworkForClass(
   }));
 }
 
+export type ExamRow = {
+  id: string;
+  subject: string;
+  type: "controle" | "synthese";
+  examDate: string;
+  description: string | null;
+  teacherNotes: string | null;
+};
+
+export async function listExamsForClass(classId: string): Promise<ExamRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exams")
+    .select("id, subject, type, exam_date, description, teacher_notes")
+    .eq("class_id", classId)
+    .order("exam_date", { ascending: true });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    subject: row.subject,
+    type: row.type,
+    examDate: row.exam_date,
+    description: row.description,
+    teacherNotes: row.teacher_notes,
+  }));
+}
+
 export async function getStudentClassInfo(
   studentProfileId: string,
 ): Promise<{ classId: string | null; className: string } | null> {

@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "timetable": "Timetable",
+    "exams": "Exams",
     "feed": "Feed",
     "vault": "The Vault",
     "staff": "The Staff",
@@ -195,8 +196,8 @@
     "priorityHigh": "High priority",
     "submit": "Add homework",
     "added": "Homework added.",
-    "myHomework": "My homework",
-    "noHomework": "No homework yet.",
+    "myHomework": "My tasks",
+    "noHomework": "No task yet.",
     "iAmAbsent": "I'm absent",
     "start": "Start",
     "end": "End",
@@ -205,6 +206,18 @@
     "dueFor": "due",
     "absenceRecorded": "Absence recorded. {slots} slot(s) cancelled across {classes} class(es).",
     "noClassesAssigned": "No class has been assigned to you yet. Contact the administration."
+  },
+  "exams": {
+    "title": "Exams",
+    "selectClass": "Choose a class",
+    "empty": "Select a class to see its exam calendar.",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "close": "Close",
+    "typeControle": "Test",
+    "typeSynthese": "Final exam",
+    "subjectLabel": "Topic",
+    "notesLabel": "Teacher's notes"
   },
   "notificationsUi": {
     "title": "Notifications",

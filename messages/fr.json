@@ -2,6 +2,7 @@
   "nav": {
     "home": "Accueil",
     "timetable": "Emploi du temps",
+    "exams": "Devoirs",
     "feed": "Feed",
     "vault": "Le Vault",
     "staff": "Le Staff",
@@ -195,8 +196,8 @@
     "priorityHigh": "Priorité haute",
     "submit": "Ajouter le devoir",
     "added": "Devoir ajouté.",
-    "myHomework": "Mes devoirs",
-    "noHomework": "Aucun devoir pour le moment.",
+    "myHomework": "Mes tâches",
+    "noHomework": "Aucune tâche pour le moment.",
     "iAmAbsent": "Je suis absent(e)",
     "start": "Début",
     "end": "Fin",
@@ -205,6 +206,18 @@
     "dueFor": "pour le",
     "absenceRecorded": "Absence enregistrée. {slots} créneau(x) annulé(s) sur {classes} classe(s).",
     "noClassesAssigned": "Aucune classe ne t'a été attribuée pour le moment. Contacte l'administration."
+  },
+  "exams": {
+    "title": "Devoirs",
+    "selectClass": "Choisir une classe",
+    "empty": "Sélectionne une classe pour voir son calendrier de devoirs.",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "close": "Fermer",
+    "typeControle": "Devoir de contrôle",
+    "typeSynthese": "Devoir de synthèse",
+    "subjectLabel": "Sujet",
+    "notesLabel": "Notes du professeur"
   },
   "notificationsUi": {
     "title": "Notifications",

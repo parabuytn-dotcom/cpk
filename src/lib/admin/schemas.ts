@@ -73,6 +73,16 @@ export const homeworkSchema = z.object({
   priority: z.enum(["low", "medium", "high"]),
 });
 
+export const examSchema = z.object({
+  classId: z.string().uuid().optional().or(z.literal("")),
+  className: z.string().trim().min(1, "Classe requise."),
+  subject: z.string().trim().min(1, "Matière requise."),
+  type: z.enum(["controle", "synthese"]),
+  examDate: z.string().min(1, "Date requise."),
+  description: z.string().trim().optional().or(z.literal("")),
+  teacherNotes: z.string().trim().optional().or(z.literal("")),
+});
+
 export const documentAccountSchema = z.object({
   fullName: z.string().trim().min(1, "Nom requis."),
   phone: z

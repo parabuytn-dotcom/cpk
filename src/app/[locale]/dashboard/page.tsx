@@ -14,6 +14,7 @@ import ResetChildPasswordButton from "@/components/dashboard/ResetChildPasswordB
 import ProfileProgress from "@/components/dashboard/ProfileProgress";
 import EditProfileForm from "@/components/dashboard/EditProfileForm";
 import HomeworkForm from "@/components/dashboard/HomeworkForm";
+import ExamForm from "@/components/dashboard/ExamForm";
 import TeacherAbsenceForm from "@/components/dashboard/TeacherAbsenceForm";
 import HomeworkChecklist from "@/components/dashboard/HomeworkChecklist";
 import BadgesRow from "@/components/dashboard/BadgesRow";
@@ -138,6 +139,8 @@ async function TeacherDashboard({ profileId, locale }: { profileId: string; loca
           ))}
         </div>
       )}
+
+      {classes.length > 0 && <ExamForm classes={classes} />}
 
       <TeacherAbsenceForm />
     </div>

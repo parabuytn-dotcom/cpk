@@ -885,3 +885,38 @@ create index if not exists idx_push_tokens_user_id on public.push_tokens (user_i
 -- ----------------------------------------------------------------------------
 alter table public.profiles add column if not exists qr_login_token text unique;
 alter table public.profiles add column if not exists must_change_password boolean not null default false;
+
+-- ----------------------------------------------------------------------------
+-- exams — "devoirs" in the Tunisian sense (devoir de contrôle / devoir de
+-- synthèse), i.e. exam dates, not to be confused with the homework/cahier de
+-- texte table above (checklist of tasks). Shown to students/parents as a
+-- calendar on /devoirs.
+-- ----------------------------------------------------------------------------
+create table if not exists public.exams (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references public.classes (id) on delete cascade,
+  class_name text not null,
+  subject text not null,
+  type text not null check (type in ('controle', 'synthese')),
+  exam_date date not null,
+  description text,
+  teacher_notes text,
+  created_by uuid references public.profiles (id),
+  created_at timestamptz not null default now()
+);
+
+alter table public.exams enable row level security;
+
+drop policy if exists "Anyone authenticated can read exams" on public.exams;
+create policy "Anyone authenticated can read exams"
+  on public.exams for select
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Teachers and admins manage exams" on public.exams;
+create policy "Teachers and admins manage exams"
+  on public.exams for all
+  using (public.is_admin() or auth.uid() = created_by)
+  with check (public.is_admin() or auth.uid() = created_by);
+
+create index if not exists idx_exams_class_id on public.exams (class_id);
+create index if not exists idx_exams_exam_date on public.exams (exam_date);

@@ -2,6 +2,7 @@
   "nav": {
     "home": "الرئيسية",
     "timetable": "جدول الحصص",
+    "exams": "الفروض",
     "feed": "Feed",
     "vault": "المخزن",
     "staff": "الطاقم",
@@ -205,6 +206,18 @@
     "dueFor": "بتاريخ",
     "absenceRecorded": "تم تسجيل الغياب. تم إلغاء {slots} حصة/حصص في {classes} قسم/أقسام.",
     "noClassesAssigned": "لم يتم إسناد أي قسم إليك بعد. تواصل مع الإدارة."
+  },
+  "exams": {
+    "title": "الفروض",
+    "selectClass": "اختر قسما",
+    "empty": "اختر قسما لعرض جدول الفروض الخاص به.",
+    "previousMonth": "الشهر السابق",
+    "nextMonth": "الشهر الموالي",
+    "close": "إغلاق",
+    "typeControle": "فرض مراقبة",
+    "typeSynthese": "فرض تأليفي",
+    "subjectLabel": "الموضوع",
+    "notesLabel": "ملاحظات الأستاذ"
   },
   "notificationsUi": {
     "title": "الإشعارات",
