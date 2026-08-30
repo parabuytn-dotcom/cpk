@@ -5,43 +5,55 @@ export type SmsTrigger = "teacher_absence" | "generated_password" | "manual";
 
 export type SendSmsResult = { success: true } | { success: false; error: string };
 
+const DEFAULT_GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/messages";
+const COUNTRY_CODE = "216";
+
+function toInternational(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return digits.startsWith(COUNTRY_CODE) ? digits : `${COUNTRY_CODE}${digits}`;
+}
+
 /**
- * Sends an SMS through the configurable local gateway (e.g. an Android phone
- * running an "SMS Gateway" app exposing an HTTP API) and logs the attempt in
- * `sms_logs`. The gateway itself — and the physical phone/SIM behind
- * SMS_SENDER_NUMBER — is operated outside of this codebase; this service only
- * talks to whatever URL is configured in SMS_GATEWAY_URL.
+ * Sends an SMS through "SMS Gateway for Android" (capcom6) running in Cloud
+ * mode on the school's phone — POST https://api.sms-gate.app/3rdparty/v1/messages
+ * with HTTP Basic auth (the Username/Password shown in the app's Settings
+ * tab), and logs the attempt in `sms_logs`. The physical phone/SIM is
+ * operated outside of this codebase; SMS_GATEWAY_URL only needs overriding
+ * if the school ever self-hosts its own relay instead of the public one.
  */
 export async function sendSms(
   phone: string,
   message: string,
   trigger: SmsTrigger = "manual",
 ): Promise<SendSmsResult> {
-  const gatewayUrl = process.env.SMS_GATEWAY_URL;
-  const gatewayToken = process.env.SMS_GATEWAY_TOKEN;
+  const gatewayUrl = process.env.SMS_GATEWAY_URL || DEFAULT_GATEWAY_URL;
+  const username = process.env.SMS_GATEWAY_USERNAME;
+  const password = process.env.SMS_GATEWAY_PASSWORD;
 
   let result: SendSmsResult;
 
-  if (!gatewayUrl) {
-    result = { success: false, error: "SMS_GATEWAY_URL is not configured." };
+  if (!username || !password) {
+    result = { success: false, error: "SMS_GATEWAY_USERNAME/PASSWORD is not configured." };
   } else {
     try {
       const response = await fetch(gatewayUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(gatewayToken ? { Authorization: `Bearer ${gatewayToken}` } : {}),
+          Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
         },
         body: JSON.stringify({
-          to: phone,
-          message,
-          from: process.env.SMS_SENDER_NUMBER,
+          textMessage: { text: message },
+          phoneNumbers: [toInternational(phone)],
         }),
       });
 
-      result = response.ok
-        ? { success: true }
-        : { success: false, error: `Gateway responded with ${response.status}` };
+      if (response.ok) {
+        result = { success: true };
+      } else {
+        const body = await response.text();
+        result = { success: false, error: `Gateway responded with ${response.status}: ${body}` };
+      }
     } catch (error) {
       result = {
         success: false,
@@ -51,9 +63,6 @@ export async function sendSms(
   }
 
   await logSmsAttempt(phone, message, trigger, result);
-
-  // TODO: Intégrer API Push Mobile — miroir de cette notification en push
-  // pour l'app mobile une fois disponible.
 
   return result;
 }
