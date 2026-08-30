@@ -47,6 +47,10 @@ export default async function PostCard({
       )}
 
       <div className="flex flex-col gap-2 px-4 py-3">
+        <p className="whitespace-pre-wrap text-sm">
+          <span className="font-semibold">{post.authorName}</span> {post.content}
+        </p>
+
         <PostActionsRow
           postId={post.id}
           initialLiked={post.likedByMe}
@@ -54,10 +58,6 @@ export default async function PostCard({
           commentAnchor={`#comment-input-${post.id}`}
           shareUrl={shareUrl}
         />
-
-        <p className="whitespace-pre-wrap text-sm">
-          <span className="font-semibold">{post.authorName}</span> {post.content}
-        </p>
 
         <CommentSection postId={post.id} comments={post.comments} />
 
