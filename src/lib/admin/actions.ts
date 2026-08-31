@@ -1324,3 +1324,25 @@ export async function updateSiteSetting(_state: FormState, formData: FormData): 
   revalidatePath("/a-propos");
   return { success: "Enregistré." };
 }
+
+export async function updateDownloadSettings(_state: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+
+  const mode = formData.get("downloadMode");
+  if (mode !== "apk" && mode !== "playstore") {
+    return { message: "Mode invalide." };
+  }
+  const playstoreUrlRaw = formData.get("playstoreUrl");
+  const playstoreUrl = typeof playstoreUrlRaw === "string" ? playstoreUrlRaw.trim() : "";
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("site_settings").upsert([
+    { key: "download_mode", value: mode },
+    { key: "playstore_url", value: playstoreUrl },
+  ]);
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/parametres");
+  revalidatePath("/");
+  return { success: "Enregistré." };
+}

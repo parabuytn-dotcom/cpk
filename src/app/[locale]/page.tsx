@@ -1,7 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { getSiteSetting } from "@/lib/admin/data";
 import FirstVisitRedirect from "@/components/FirstVisitRedirect";
+import DownloadAppButton from "@/components/DownloadAppButton";
 
 // Whether to show the first-visit onboarding redirect depends on the
 // signed-in state at request time — must not be baked in at build time.
@@ -14,7 +16,12 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, profile] = await Promise.all([getTranslations("home"), getCurrentProfile()]);
+  const [t, profile, downloadMode, playstoreUrl] = await Promise.all([
+    getTranslations("home"),
+    getCurrentProfile(),
+    getSiteSetting("download_mode"),
+    getSiteSetting("playstore_url"),
+  ]);
 
   return (
     <div className="flex flex-col items-center gap-6 py-16 text-center">
@@ -32,6 +39,10 @@ cpkef.tn
       >
         {t("cta")}
       </Link>
+      <DownloadAppButton
+        downloadMode={downloadMode === "playstore" ? "playstore" : "apk"}
+        playstoreUrl={playstoreUrl ?? ""}
+      />
     </div>
   );
 }
