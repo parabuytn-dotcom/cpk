@@ -23,6 +23,8 @@ import {
   homeworkSchema,
   examSchema,
   documentAccountSchema,
+  createAccountSchema,
+  makeupSessionSchema,
   type FormState,
 } from "./schemas";
 import { buildDocumentsPdf, qrLoginUrl, type DocumentEntry } from "./documentPdf";
@@ -45,6 +47,84 @@ export async function validateAccount(profileId: string) {
   await notify(profileId, "account_validated", "Ton compte a été validé ! Tu as maintenant accès à toutes les fonctionnalités.", "/dashboard");
 
   revalidatePath("/admin/comptes");
+}
+
+// Lets an admin create a parent or teacher account directly, with no
+// pre-existing pending registration or CSV-imported `teachers` row needed —
+// unlike /admin/profs, which only creates a *login* for a teacher who
+// already exists in the `teachers` table.
+export async function createAccount(_state: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+
+  const validated = createAccountSchema.safeParse({
+    role: formData.get("role"),
+    fullName: formData.get("fullName"),
+    phone: formData.get("phone"),
+    password: formData.get("password"),
+    subject: formData.get("subject"),
+  });
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: existingPhone } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("phone", validated.data.phone)
+    .maybeSingle();
+  if (existingPhone) {
+    return { message: `Le numéro ${validated.data.phone} est déjà utilisé par un compte.` };
+  }
+
+  const email = `doc.${randomBytes(4).toString("hex")}@cpk.internal`;
+  const { data: created, error } = await adminClient.auth.admin.createUser({
+    email,
+    password: validated.data.password,
+    email_confirm: true,
+  });
+  if (error || !created.user) {
+    return { message: error?.message ?? "Échec de la création du compte." };
+  }
+
+  const { error: profileError } = await adminClient.from("profiles").insert({
+    id: created.user.id,
+    role: validated.data.role,
+    status: "validated",
+    full_name: validated.data.fullName,
+    phone: validated.data.phone,
+  });
+  if (profileError) {
+    return { message: profileError.message };
+  }
+
+  if (validated.data.role === "teacher") {
+    const [firstName, ...rest] = validated.data.fullName.trim().split(/\s+/);
+    const lastName = rest.join(" ") || firstName;
+
+    const { error: teacherError } = await adminClient.from("teachers").insert({
+      first_name: firstName,
+      last_name: lastName,
+      subject: validated.data.subject || null,
+      phone: validated.data.phone,
+      user_id: created.user.id,
+    });
+    if (teacherError) {
+      return { message: teacherError.message };
+    }
+  }
+
+  revalidatePath("/admin/comptes");
+  revalidatePath("/admin/profs");
+  revalidatePath("/admin/utilisateurs");
+  revalidatePath("/admin/emploi-du-temps");
+  return {
+    success: `Compte créé — identifiant : ${validated.data.phone}, mot de passe : ${validated.data.password}`,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -161,7 +241,7 @@ export async function upsertTimetableEntry(
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
     subject: formData.get("subject"),
-    teacherName: formData.get("teacherName"),
+    teacherId: formData.get("teacherId"),
   });
 
   if (!validated.success) {
@@ -169,7 +249,6 @@ export async function upsertTimetableEntry(
   }
 
   const supabase = await createClient();
-  const teacherId = await findOrCreateTeacherByName(supabase, validated.data.teacherName);
 
   const { error } = await supabase.from("timetable_entries").insert({
     class_id: validated.data.classId,
@@ -178,7 +257,7 @@ export async function upsertTimetableEntry(
     start_time: validated.data.startTime,
     end_time: validated.data.endTime,
     subject: validated.data.subject,
-    teacher_id: teacherId,
+    teacher_id: validated.data.teacherId,
   });
 
   if (error) return { message: error.message };
@@ -514,6 +593,81 @@ export async function createHomework(_state: FormState, formData: FormData): Pro
 
   revalidatePath("/dashboard");
   return { success: t("added") };
+}
+
+// Teacher-only — a one-off "rattrapage" session for one of their own
+// classes, shown on /emploi-du-temps alongside the recurring weekly grid.
+export async function createMakeupSession(_state: FormState, formData: FormData): Promise<FormState> {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "teacher") {
+    return { message: "Non autorisé." };
+  }
+
+  const supabase = await createClient();
+  const { data: teacher } = await supabase
+    .from("teachers")
+    .select("id")
+    .eq("user_id", profile.id)
+    .maybeSingle();
+  if (!teacher) {
+    return { message: "Aucune fiche professeur liée à ce compte." };
+  }
+
+  const validated = makeupSessionSchema.safeParse({
+    classId: formData.get("classId"),
+    className: formData.get("className"),
+    subject: formData.get("subject"),
+    sessionDate: formData.get("sessionDate"),
+    startTime: formData.get("startTime"),
+    endTime: formData.get("endTime"),
+    reason: formData.get("reason") ?? undefined,
+  });
+  if (!validated.success) {
+    return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  const { error } = await supabase.from("makeup_sessions").insert({
+    class_id: validated.data.classId,
+    class_name: validated.data.className,
+    teacher_id: teacher.id,
+    subject: validated.data.subject,
+    session_date: validated.data.sessionDate,
+    start_time: validated.data.startTime,
+    end_time: validated.data.endTime,
+    reason: validated.data.reason || null,
+    created_by: profile.id,
+  });
+  if (error) return { message: error.message };
+
+  const { data: students } = await supabase
+    .from("students")
+    .select("user_id")
+    .eq("class_id", validated.data.classId)
+    .not("user_id", "is", null);
+
+  const studentIds = (students ?? []).map((s) => s.user_id).filter(Boolean) as string[];
+  if (studentIds.length > 0) {
+    await notifyMany(
+      studentIds,
+      "makeup_session",
+      `Séance de rattrapage ajoutée : ${validated.data.subject} le ${new Date(validated.data.sessionDate).toLocaleDateString("fr-FR")}.`,
+      "/emploi-du-temps",
+    );
+  }
+
+  revalidatePath("/emploi-du-temps");
+  return { success: "Séance de rattrapage ajoutée." };
+}
+
+export async function deleteMakeupSession(sessionId: string) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Non connecté.");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("makeup_sessions").delete().eq("id", sessionId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/emploi-du-temps");
 }
 
 export async function toggleHomeworkCompletion(homeworkId: string, completed: boolean) {

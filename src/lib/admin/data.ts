@@ -683,3 +683,41 @@ export async function listDonations(): Promise<DonationRow[]> {
     createdAt: row.created_at,
   }));
 }
+
+export type MakeupSessionRow = {
+  id: string;
+  subject: string;
+  teacherName: string | null;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  reason: string | null;
+};
+
+// Only upcoming sessions — a "rattrapage" from last month isn't useful to
+// show on the timetable anymore.
+export async function listMakeupSessionsForClass(classId: string): Promise<MakeupSessionRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("makeup_sessions")
+    .select("id, subject, session_date, start_time, end_time, reason, teachers(first_name, last_name)")
+    .eq("class_id", classId)
+    .gte("session_date", today)
+    .order("session_date", { ascending: true });
+
+  return (data ?? []).map((row) => {
+    const teacher = Array.isArray(row.teachers) ? row.teachers[0] : row.teachers;
+    return {
+      id: row.id,
+      subject: row.subject,
+      teacherName: teacher ? `${teacher.first_name} ${teacher.last_name}` : null,
+      sessionDate: row.session_date,
+      startTime: row.start_time,
+      endTime: row.end_time,
+      reason: row.reason,
+    };
+  });
+}

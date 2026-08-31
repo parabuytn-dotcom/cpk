@@ -20,12 +20,12 @@ export default async function Navbar() {
           { href: "/devoirs", label: t("exams") },
           { href: "/feed", label: t("feed") },
           { href: "/idees", label: t("ideas") },
-          { href: "/dons", label: t("donations") },
         ]
       : []),
     { href: "/staff", label: t("staff") },
     { href: "/a-propos", label: t("about") },
     { href: "/nouveautes", label: t("releases") },
+    ...(profile ? [{ href: "/dons", label: t("donations") }] : []),
   ];
 
   const authHref = profile

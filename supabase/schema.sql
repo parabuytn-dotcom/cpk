@@ -1065,3 +1065,49 @@ create policy "Donors create their own donations"
 
 create index if not exists idx_donations_donor_id on public.donations (donor_id);
 create index if not exists idx_donations_status on public.donations (status);
+
+-- ----------------------------------------------------------------------------
+-- makeup_sessions — one-off "rattrapage" sessions a teacher adds for one of
+-- their classes on a specific date, shown alongside the recurring weekly
+-- grid on /emploi-du-temps (not part of timetable_entries, which is only for
+-- the recurring weekly schedule).
+-- ----------------------------------------------------------------------------
+create table if not exists public.makeup_sessions (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references public.classes (id) on delete cascade,
+  class_name text not null,
+  teacher_id uuid references public.teachers (id) on delete set null,
+  subject text not null,
+  session_date date not null,
+  start_time time not null,
+  end_time time not null,
+  reason text,
+  created_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.makeup_sessions enable row level security;
+
+drop policy if exists "Anyone authenticated can read makeup sessions" on public.makeup_sessions;
+create policy "Anyone authenticated can read makeup sessions"
+  on public.makeup_sessions for select
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Teachers add their own makeup sessions" on public.makeup_sessions;
+create policy "Teachers add their own makeup sessions"
+  on public.makeup_sessions for insert
+  with check (
+    public.is_admin()
+    or exists (select 1 from public.teachers where id = teacher_id and user_id = auth.uid())
+  );
+
+drop policy if exists "Teachers delete their own makeup sessions" on public.makeup_sessions;
+create policy "Teachers delete their own makeup sessions"
+  on public.makeup_sessions for delete
+  using (
+    public.is_admin()
+    or exists (select 1 from public.teachers where id = teacher_id and user_id = auth.uid())
+  );
+
+create index if not exists idx_makeup_sessions_class_id on public.makeup_sessions (class_id);
+create index if not exists idx_makeup_sessions_session_date on public.makeup_sessions (session_date);

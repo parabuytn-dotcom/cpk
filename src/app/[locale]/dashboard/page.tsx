@@ -16,6 +16,7 @@ import EditProfileForm from "@/components/dashboard/EditProfileForm";
 import HomeworkForm from "@/components/dashboard/HomeworkForm";
 import ExamForm from "@/components/dashboard/ExamForm";
 import TeacherAbsenceForm from "@/components/dashboard/TeacherAbsenceForm";
+import MakeupSessionForm from "@/components/dashboard/MakeupSessionForm";
 import HomeworkChecklist from "@/components/dashboard/HomeworkChecklist";
 import BadgesRow from "@/components/dashboard/BadgesRow";
 import AvatarUpload from "@/components/dashboard/AvatarUpload";
@@ -141,6 +142,8 @@ async function TeacherDashboard({ profileId, locale }: { profileId: string; loca
       )}
 
       {classes.length > 0 && <ExamForm classes={classes} />}
+
+      {classes.length > 0 && <MakeupSessionForm classes={classes} />}
 
       <TeacherAbsenceForm />
     </div>

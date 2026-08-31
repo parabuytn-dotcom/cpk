@@ -7,7 +7,18 @@ export const timetableEntrySchema = z.object({
   startTime: z.string().regex(/^\d{2}:\d{2}$/, "Format attendu HH:MM"),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "Format attendu HH:MM"),
   subject: z.string().trim().min(1),
-  teacherName: z.string().trim().min(1),
+  teacherId: z.string().uuid("Choisis un professeur."),
+});
+
+export const createAccountSchema = z.object({
+  role: z.enum(["parent", "teacher"]),
+  fullName: z.string().trim().min(1, "Nom requis."),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\d{8}$/, "Numéro invalide (8 chiffres)."),
+  password: z.string().min(6, "6 caractères minimum."),
+  subject: z.string().trim().optional().or(z.literal("")),
 });
 
 export const teacherAbsenceSchema = z
@@ -62,6 +73,16 @@ export const releaseSchema = z.object({
 export const helpRequestSchema = z.object({
   subject: z.string().trim().min(1, "Objet requis."),
   description: z.string().trim().min(1, "Description requise."),
+});
+
+export const makeupSessionSchema = z.object({
+  classId: z.string().uuid(),
+  className: z.string().trim().min(1, "Classe requise."),
+  subject: z.string().trim().min(1, "Matière requise."),
+  sessionDate: z.string().min(1, "Date requise."),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "Format attendu HH:MM"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "Format attendu HH:MM"),
+  reason: z.string().trim().optional().or(z.literal("")),
 });
 
 export const homeworkSchema = z.object({

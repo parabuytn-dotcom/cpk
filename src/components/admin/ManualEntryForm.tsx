@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { upsertTimetableEntry } from "@/lib/admin/actions";
-import type { ClassRow } from "@/lib/admin/data";
+import type { ClassRow, TeacherRow } from "@/lib/admin/data";
 
 const DAYS = [
   { value: 1, label: "Lundi" },
@@ -14,7 +14,13 @@ const DAYS = [
   { value: 7, label: "Dimanche" },
 ];
 
-export default function ManualEntryForm({ classRow }: { classRow: ClassRow }) {
+export default function ManualEntryForm({
+  classRow,
+  teachers,
+}: {
+  classRow: ClassRow;
+  teachers: TeacherRow[];
+}) {
   const [state, action, pending] = useActionState(upsertTimetableEntry, undefined);
 
   return (
@@ -51,12 +57,21 @@ export default function ManualEntryForm({ classRow }: { classRow: ClassRow }) {
         required
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
       />
-      <input
-        name="teacherName"
-        placeholder="Professeur (Prénom Nom)"
+      <select
+        name="teacherId"
         required
+        defaultValue=""
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 sm:col-span-2 dark:border-white/10 dark:bg-white/5"
-      />
+      >
+        <option value="" disabled>
+          Choisir un professeur…
+        </option>
+        {teachers.map((teacher) => (
+          <option key={teacher.id} value={teacher.id}>
+            {teacher.firstName} {teacher.lastName}
+          </option>
+        ))}
+      </select>
 
       <button
         type="submit"

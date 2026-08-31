@@ -5,6 +5,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import Avatar from "@/components/ui/Avatar";
 import { listPendingProfiles } from "@/lib/admin/data";
 import { validateAccount } from "@/lib/admin/actions";
+import CreateAccountForm from "@/components/admin/CreateAccountForm";
 
 export default async function AdminAccountsPage({
   params,
@@ -21,6 +22,11 @@ export default async function AdminAccountsPage({
   return (
     <div>
       <PageHeader title={t("accounts")} subtitle={t("accountsSubtitle")} />
+
+      <div className="mb-6">
+        <h2 className="mb-3 text-lg font-semibold">Créer un compte</h2>
+        <CreateAccountForm />
+      </div>
 
       {pending.length === 0 ? (
         <EmptyState message={t("accountsEmpty")} />

@@ -4,7 +4,7 @@ import ClassSelector from "@/components/admin/ClassSelector";
 import CsvImportForm from "@/components/admin/CsvImportForm";
 import ManualEntryForm from "@/components/admin/ManualEntryForm";
 import TimetableGrid from "@/components/admin/TimetableGrid";
-import { listClasses, listTimetableEntries } from "@/lib/admin/data";
+import { listClasses, listTimetableEntries, listTeachers } from "@/lib/admin/data";
 
 export default async function AdminTimetablePage({
   params,
@@ -17,7 +17,11 @@ export default async function AdminTimetablePage({
   const { classId } = await searchParams;
   setRequestLocale(locale);
 
-  const [t, classes] = await Promise.all([getTranslations("admin"), listClasses()]);
+  const [t, classes, teachers] = await Promise.all([
+    getTranslations("admin"),
+    listClasses(),
+    listTeachers(),
+  ]);
   const selectedClass = classes.find((c) => c.id === classId);
   const entries = classId ? await listTimetableEntries(classId) : [];
 
@@ -37,7 +41,7 @@ export default async function AdminTimetablePage({
         <div className="flex flex-col gap-6">
           <div className="grid gap-6 md:grid-cols-2">
             <CsvImportForm classRow={selectedClass} />
-            <ManualEntryForm classRow={selectedClass} />
+            <ManualEntryForm classRow={selectedClass} teachers={teachers} />
           </div>
           <TimetableGrid entries={entries} canDelete />
         </div>
