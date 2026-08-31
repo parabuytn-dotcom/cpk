@@ -20,6 +20,9 @@ export default async function Navbar() {
           { href: "/devoirs", label: t("exams") },
           { href: "/feed", label: t("feed") },
           { href: "/idees", label: t("ideas") },
+          ...(profile.role === "student" || profile.role === "admin"
+            ? [{ href: "/groupes", label: t("groups") }]
+            : []),
         ]
       : []),
     { href: "/staff", label: t("staff") },

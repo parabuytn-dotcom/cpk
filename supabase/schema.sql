@@ -1111,3 +1111,102 @@ create policy "Teachers delete their own makeup sessions"
 
 create index if not exists idx_makeup_sessions_class_id on public.makeup_sessions (class_id);
 create index if not exists idx_makeup_sessions_session_date on public.makeup_sessions (session_date);
+
+-- ----------------------------------------------------------------------------
+-- Group projects — students create a group for their own class, invite
+-- classmates directly (the creator becomes 'owner' and is the only one who
+-- can add/remove members or delete the group), get a persistent text chat,
+-- and a per-group Jitsi Meet room (room_slug) for voice/video calls.
+--
+-- All writes to `groups`/`group_members` go through server actions using the
+-- service-role client with an explicit owner/admin check in application
+-- code (see src/lib/groups/actions.ts) — simpler and safer than replicating
+-- "only the owner" authorization as RLS policies, especially for the
+-- necessary bootstrap step (inserting the creator as the first 'owner' row).
+-- RLS below only needs to gate SELECT for these two tables. `group_messages`
+-- is written directly by members through the regular client, so it does get
+-- a real INSERT policy.
+-- ----------------------------------------------------------------------------
+create or replace function public.is_group_member(gid uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.group_members
+    where group_id = gid and user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_group_owner(gid uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.group_members
+    where group_id = gid and user_id = auth.uid() and role = 'owner'
+  );
+$$;
+
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  class_id uuid references public.classes (id) on delete cascade,
+  class_name text not null,
+  room_slug text not null unique,
+  created_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.groups enable row level security;
+
+drop policy if exists "Members or admin can view groups" on public.groups;
+create policy "Members or admin can view groups"
+  on public.groups for select
+  using (public.is_group_member(id) or public.is_admin());
+
+create table if not exists public.group_members (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  role text not null default 'member' check (role in ('owner', 'member')),
+  joined_at timestamptz not null default now(),
+  unique (group_id, user_id)
+);
+
+alter table public.group_members enable row level security;
+
+drop policy if exists "Members can view group membership" on public.group_members;
+create policy "Members can view group membership"
+  on public.group_members for select
+  using (public.is_group_member(group_id) or public.is_admin());
+
+create table if not exists public.group_messages (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups (id) on delete cascade,
+  author_id uuid references public.profiles (id) on delete set null,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.group_messages enable row level security;
+
+drop policy if exists "Members can read group messages" on public.group_messages;
+create policy "Members can read group messages"
+  on public.group_messages for select
+  using (public.is_group_member(group_id) or public.is_admin());
+
+drop policy if exists "Members can send group messages" on public.group_messages;
+create policy "Members can send group messages"
+  on public.group_messages for insert
+  with check (auth.uid() = author_id and (public.is_group_member(group_id) or public.is_admin()));
+
+create index if not exists idx_group_members_group_id on public.group_members (group_id);
+create index if not exists idx_group_members_user_id on public.group_members (user_id);
+create index if not exists idx_group_messages_group_id on public.group_messages (group_id);
+create index if not exists idx_groups_class_id on public.groups (class_id);
