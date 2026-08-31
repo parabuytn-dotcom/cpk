@@ -296,6 +296,44 @@ export async function loginAsChild(
   return signInAndRedirect(userData.user.email, validated.data.password);
 }
 
+// Used after a QR "document" token's first-time auto-login window has
+// closed (must_change_password is already false) — the printed QR alone no
+// longer signs anyone in; it just identifies the account, and the parent
+// still has to supply the password they chose during their first login.
+export async function loginWithQrToken(_state: FormState, formData: FormData): Promise<FormState> {
+  const token = formData.get("token");
+  const password = formData.get("password");
+  if (typeof token !== "string" || !token) {
+    return { message: "Code QR invalide." };
+  }
+  if (typeof password !== "string" || !password) {
+    return { message: "Mot de passe requis." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("qr_login_token", token)
+    .maybeSingle();
+  if (!profile) {
+    return { message: "Code QR invalide." };
+  }
+
+  const { data: userData, error: userError } = await adminClient.auth.admin.getUserById(
+    profile.id,
+  );
+  if (userError || !userData.user?.email) {
+    return { message: "Compte introuvable." };
+  }
+
+  return signInAndRedirect(userData.user.email, password);
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

@@ -4,10 +4,16 @@ import { useState, useTransition } from "react";
 import { createDocumentAccounts } from "@/lib/admin/actions";
 import type { ClassRow } from "@/lib/admin/data";
 
-type Row = { fullName: string; phone: string; childFirstName: string; childClass: string };
+type Row = {
+  fullName: string;
+  cin: string;
+  phone: string;
+  childFirstName: string;
+  childClass: string;
+};
 
 function emptyRow(defaultClass: string): Row {
-  return { fullName: "", phone: "", childFirstName: "", childClass: defaultClass };
+  return { fullName: "", cin: "", phone: "", childFirstName: "", childClass: defaultClass };
 }
 
 export default function DocumentAccountsForm({ classes }: { classes: ClassRow[] }) {
@@ -61,12 +67,19 @@ export default function DocumentAccountsForm({ classes }: { classes: ClassRow[] 
         {rows.map((row, index) => (
           <div
             key={index}
-            className="grid gap-2 rounded-2xl border border-black/10 p-3 sm:grid-cols-[1.3fr_1fr_1fr_1fr_auto] dark:border-white/10"
+            className="grid gap-2 rounded-2xl border border-black/10 p-3 sm:grid-cols-[1.3fr_1fr_1fr_1fr_1fr_auto] dark:border-white/10"
           >
             <input
               value={row.fullName}
               onChange={(e) => updateRow(index, "fullName", e.target.value)}
               placeholder="Nom et prénom (parent)"
+              className="rounded-xl border border-black/10 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
+            />
+            <input
+              value={row.cin}
+              onChange={(e) => updateRow(index, "cin", e.target.value)}
+              placeholder="CIN (8 chiffres)"
+              maxLength={8}
               className="rounded-xl border border-black/10 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
             />
             <input

@@ -85,6 +85,7 @@ export const examSchema = z.object({
 
 export const documentAccountSchema = z.object({
   fullName: z.string().trim().min(1, "Nom requis."),
+  cin: z.string().trim().length(8, "CIN invalide (8 chiffres)."),
   phone: z
     .string()
     .trim()

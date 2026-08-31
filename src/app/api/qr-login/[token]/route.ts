@@ -3,13 +3,23 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Exchanges a long-lived, single-use QR token (printed on a "document" —
- * see /admin/documents) for a real Supabase session. The token itself never
+ * Exchanges a long-lived QR token (printed on a "document" — see
+ * /admin/documents) for a real Supabase session. The token itself never
  * touches Supabase Auth: we look up who it belongs to with the service-role
  * client, mint a short-lived Supabase magic link for them on the spot, and
  * immediately verify it server-side so its own (short) expiry never matters —
  * only our own qr_login_token, which we control, needs to survive for weeks
  * on a piece of paper.
+ *
+ * The token is NOT single-use — it stays valid for the life of the printed
+ * document. What changes after the first successful use is the *behavior*:
+ * `must_change_password` only flips to false once the parent actually
+ * completes the forced password change (see changePassword()), so a scan
+ * that happens before that (e.g. they closed the tab mid-flow) still counts
+ * as "first time" and logs them straight in. Once the password has really
+ * been changed, later scans stop auto-logging in — they redirect to a page
+ * that asks for the password the parent chose, so the printed QR alone is no
+ * longer sufficient on its own.
  */
 export async function GET(
   request: NextRequest,
@@ -24,10 +34,14 @@ export async function GET(
 
   const { data: profile } = await adminClient
     .from("profiles")
-    .select("id")
+    .select("id, must_change_password")
     .eq("qr_login_token", token)
     .maybeSingle();
   if (!profile) return fail();
+
+  if (!profile.must_change_password) {
+    return NextResponse.redirect(new URL(`/qr-login/${token}`, origin));
+  }
 
   const { data: userData, error: userError } = await adminClient.auth.admin.getUserById(
     profile.id,
@@ -48,9 +62,6 @@ export async function GET(
     type: "email",
   });
   if (verifyError) return fail();
-
-  // Single-use: clear the token now that it has been consumed.
-  await adminClient.from("profiles").update({ qr_login_token: null }).eq("id", profile.id);
 
   return NextResponse.redirect(new URL("/changer-mot-de-passe", origin));
 }

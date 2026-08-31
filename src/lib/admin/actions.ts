@@ -733,7 +733,13 @@ export async function resetChildPassword(
 // ---------------------------------------------------------------------------
 
 export async function createDocumentAccounts(
-  entries: { fullName: string; phone: string; childFirstName: string; childClass: string }[],
+  entries: {
+    fullName: string;
+    cin: string;
+    phone: string;
+    childFirstName: string;
+    childClass: string;
+  }[],
 ): Promise<{ success: true; pdfBase64: string } | { success: false; error: string }> {
   await requireAdmin();
 
@@ -770,6 +776,15 @@ export async function createDocumentAccounts(
       return { success: false, error: `Le numéro ${entry.phone} est déjà utilisé par un compte.` };
     }
 
+    const { data: existingCin } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("cin", entry.cin)
+      .maybeSingle();
+    if (existingCin) {
+      return { success: false, error: `La CIN ${entry.cin} est déjà utilisée par un compte.` };
+    }
+
     const password = generatePassword();
     const qrToken = randomBytes(24).toString("hex");
     const email = `doc.${randomBytes(4).toString("hex")}@cpk.internal`;
@@ -788,6 +803,7 @@ export async function createDocumentAccounts(
       role: "parent",
       status: "validated",
       full_name: entry.fullName,
+      cin: entry.cin,
       phone: entry.phone,
       qr_login_token: qrToken,
       must_change_password: true,
@@ -814,6 +830,8 @@ export async function createDocumentAccounts(
 
     documentEntries.push({
       fullName: entry.fullName,
+      cin: entry.cin,
+      childFirstName: entry.childFirstName,
       phone: entry.phone,
       password,
       qrUrl: qrLoginUrl(qrToken),
