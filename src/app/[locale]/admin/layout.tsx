@@ -31,6 +31,7 @@ export default async function AdminLayout({
     { href: "/admin/idees", label: t("ideasTab") },
     { href: "/admin/nouveautes", label: t("releasesTab") },
     { href: "/admin/parametres", label: t("parametresTab") },
+    { href: "/admin/dons", label: t("donationsTab") },
   ];
 
   return (

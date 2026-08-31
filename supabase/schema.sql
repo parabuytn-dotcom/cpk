@@ -1029,3 +1029,39 @@ create index if not exists idx_profiles_last_seen_at on public.profiles (last_se
 -- validation_seen: set once, never shown again.
 -- ----------------------------------------------------------------------------
 alter table public.profiles add column if not exists onboarding_tour_seen boolean not null default false;
+
+-- ----------------------------------------------------------------------------
+-- donations — parent/staff support payments via Konnect (Tunisian payment
+-- gateway). `amount` is in millimes (Konnect's unit; 1 TND = 1000). A row is
+-- inserted as 'pending' when the payment is initiated, then flipped to
+-- 'completed'/'failed' by the webhook route AFTER it independently confirms
+-- the real status via Konnect's Get Payment Details API — never trust the
+-- webhook call's own payload, it only carries a payment_ref to look up.
+-- ----------------------------------------------------------------------------
+create table if not exists public.donations (
+  id uuid primary key default gen_random_uuid(),
+  donor_id uuid references public.profiles (id) on delete set null,
+  amount integer not null check (amount > 0),
+  payment_ref text unique,
+  status text not null default 'pending' check (status in ('pending', 'completed', 'failed')),
+  created_at timestamptz not null default now(),
+  confirmed_at timestamptz
+);
+
+alter table public.donations enable row level security;
+
+drop policy if exists "Donors view their own donations or admin" on public.donations;
+create policy "Donors view their own donations or admin"
+  on public.donations for select
+  using (auth.uid() = donor_id or public.is_admin());
+
+drop policy if exists "Donors create their own donations" on public.donations;
+create policy "Donors create their own donations"
+  on public.donations for insert
+  with check (auth.uid() = donor_id);
+
+-- Status updates happen only via the webhook route, using the service-role
+-- client (bypasses RLS) — no user-facing update policy needed.
+
+create index if not exists idx_donations_donor_id on public.donations (donor_id);
+create index if not exists idx_donations_status on public.donations (status);

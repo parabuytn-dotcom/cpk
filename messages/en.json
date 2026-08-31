@@ -5,6 +5,7 @@
     "exams": "Exams",
     "feed": "Feed",
     "ideas": "Ideas",
+    "donations": "Donate",
     "staff": "The Staff",
     "about": "About Us",
     "releases": "Releases",
@@ -151,6 +152,8 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Saved.",
+    "donationsTab": "Donations",
+    "donationsEmpty": "No donation yet.",
     "statTotalUsers": "Users",
     "statOnline": "Online",
     "statOffline": "Offline",
@@ -305,6 +308,20 @@
     "send": "Send",
     "close": "Close",
     "error": "The assistant couldn't reply, try again in a moment."
+  },
+  "donations": {
+    "title": "Make a donation",
+    "subtitle": "Your support helps fund hosting, SMS, and the platform's development.",
+    "customAmount": "Amount (TND)",
+    "donate": "Donate",
+    "redirecting": "Redirecting…",
+    "securedBy": "Secure payment via Konnect 🇹🇳",
+    "successTitle": "Thank you for your donation! 💙",
+    "successBody": "Your contribution was received and helps us a lot.",
+    "backHome": "Back to home",
+    "failedTitle": "Payment didn't go through",
+    "failedBody": "No amount was charged. You can try again anytime.",
+    "tryAgain": "Try again"
   },
   "footer": {
     "rights": "All rights reserved.",

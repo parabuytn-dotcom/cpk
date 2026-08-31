@@ -652,3 +652,34 @@ export async function getSiteSetting(key: string): Promise<string | null> {
 
   return data?.value ?? null;
 }
+
+export type DonationRow = {
+  id: string;
+  donorName: string;
+  amount: number; // millimes
+  status: string;
+  createdAt: string;
+};
+
+export async function listDonations(): Promise<DonationRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("donations")
+    .select("id, donor_id, amount, status, created_at")
+    .order("created_at", { ascending: false });
+
+  if (!data || data.length === 0) return [];
+
+  const donorIds = data.map((row) => row.donor_id).filter((id): id is string => Boolean(id));
+  const profiles = await getPublicProfiles(supabase, donorIds);
+
+  return data.map((row) => ({
+    id: row.id,
+    donorName: row.donor_id ? (profiles.get(row.donor_id)?.displayName ?? "Anonyme") : "Anonyme",
+    amount: row.amount,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+}

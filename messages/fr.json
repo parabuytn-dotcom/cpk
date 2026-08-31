@@ -5,6 +5,7 @@
     "exams": "Devoirs",
     "feed": "Feed",
     "ideas": "Idées",
+    "donations": "Faire un don",
     "staff": "Le Staff",
     "about": "Plus de nous",
     "releases": "Nouveautés",
@@ -151,6 +152,8 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "saved": "Enregistré.",
+    "donationsTab": "Dons",
+    "donationsEmpty": "Aucun don pour le moment.",
     "statTotalUsers": "Utilisateurs",
     "statOnline": "En ligne",
     "statOffline": "Hors ligne",
@@ -305,6 +308,20 @@
     "send": "Envoyer",
     "close": "Fermer",
     "error": "L'assistant n'a pas pu répondre, réessaie dans un instant."
+  },
+  "donations": {
+    "title": "Faire un don",
+    "subtitle": "Ton soutien aide à financer l'hébergement, les SMS et le développement de la plateforme.",
+    "customAmount": "Montant (DT)",
+    "donate": "Faire un don",
+    "redirecting": "Redirection…",
+    "securedBy": "Paiement sécurisé par Konnect 🇹🇳",
+    "successTitle": "Merci pour ton don ! 💙",
+    "successBody": "Ta contribution a bien été reçue et nous aide énormément.",
+    "backHome": "Retour à l'accueil",
+    "failedTitle": "Le paiement n'a pas abouti",
+    "failedBody": "Aucun montant n'a été prélevé. Tu peux réessayer quand tu veux.",
+    "tryAgain": "Réessayer"
   },
   "footer": {
     "rights": "Tous droits réservés.",
