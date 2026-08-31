@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Avatar from "@/components/ui/Avatar";
 import JitsiCall from "./JitsiCall";
@@ -22,6 +23,7 @@ export default function GroupRoom({
   classmates: ClassmateRow[];
   locale: string;
 }) {
+  const t = useTranslations("groups");
   const router = useRouter();
   const [view, setView] = useState<"chat" | "call">("chat");
   const [showAddMember, setShowAddMember] = useState(false);
@@ -64,7 +66,7 @@ export default function GroupRoom({
 
   function handleRemoveMember(memberId: string) {
     const isSelf = memberId === currentUserId;
-    if (!confirm(isSelf ? "Quitter ce groupe ?" : "Retirer ce membre du groupe ?")) return;
+    if (!confirm(isSelf ? t("confirmLeave") : t("confirmRemoveMember"))) return;
     setError(null);
     startTransition(async () => {
       try {
@@ -76,7 +78,7 @@ export default function GroupRoom({
   }
 
   function handleDeleteGroup() {
-    if (!confirm("Supprimer définitivement ce groupe ? Cette action est irréversible.")) return;
+    if (!confirm(t("confirmDeleteGroup"))) return;
     startTransition(async () => {
       try {
         await deleteGroup(group.id);
@@ -90,7 +92,7 @@ export default function GroupRoom({
   return (
     <div className="flex flex-col gap-4">
       <Link href="/groupes" className="text-sm text-brand-600 hover:underline dark:text-brand-400">
-        ← Mes groupes
+        ← {t("backToGroups")}
       </Link>
 
       <div className="glass-surface flex flex-col gap-4 rounded-3xl p-6">
@@ -106,7 +108,7 @@ export default function GroupRoom({
               disabled={isPending}
               className="rounded-full border border-red-500/30 px-4 py-2 text-xs font-medium text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
             >
-              Supprimer le groupe
+              {t("deleteGroup")}
             </button>
           )}
         </div>
@@ -140,7 +142,7 @@ export default function GroupRoom({
               onClick={() => setShowAddMember((v) => !v)}
               className="rounded-full border border-dashed border-black/20 px-4 py-1.5 text-sm font-medium text-foreground/60 transition hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
             >
-              + Ajouter
+              {t("addMember")}
             </button>
           )}
         </div>
@@ -148,7 +150,7 @@ export default function GroupRoom({
         {showAddMember && (
           <div className="flex flex-wrap items-center gap-2">
             {classmates.length === 0 ? (
-              <p className="text-sm text-foreground/50">Tous tes camarades de classe sont déjà dans ce groupe.</p>
+              <p className="text-sm text-foreground/50">{t("allClassmatesAdded")}</p>
             ) : (
               <>
                 <select
@@ -168,7 +170,7 @@ export default function GroupRoom({
                   disabled={isPending}
                   className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
                 >
-                  Ajouter
+                  {t("add")}
                 </button>
               </>
             )}
@@ -188,7 +190,7 @@ export default function GroupRoom({
               : "bg-black/5 text-foreground/70 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
           }`}
         >
-          💬 Chat
+          💬 {t("chatTab")}
         </button>
         <button
           type="button"
@@ -199,7 +201,7 @@ export default function GroupRoom({
               : "bg-black/5 text-foreground/70 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
           }`}
         >
-          📹 Appel
+          📹 {t("callTab")}
         </button>
       </div>
 
@@ -209,9 +211,7 @@ export default function GroupRoom({
         <div className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
           <div className="flex max-h-[50vh] min-h-[30vh] flex-col gap-3 overflow-y-auto">
             {group.messages.length === 0 ? (
-              <p className="m-auto text-sm text-foreground/50">
-                Aucun message pour le moment — lance la discussion !
-              </p>
+              <p className="m-auto text-sm text-foreground/50">{t("noMessages")}</p>
             ) : (
               group.messages.map((message) => {
                 const isMine = message.authorId === currentUserId;
@@ -243,7 +243,7 @@ export default function GroupRoom({
             <input type="hidden" name="groupId" value={group.id} />
             <input
               name="content"
-              placeholder="Écrire un message…"
+              placeholder={t("messagePlaceholder")}
               required
               className="flex-1 rounded-full border border-black/10 bg-white/70 px-4 py-2 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
             />
@@ -252,7 +252,7 @@ export default function GroupRoom({
               disabled={sendPending}
               className="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
             >
-              Envoyer
+              {t("send")}
             </button>
           </form>
           {msgState?.message && <p className="text-sm text-red-600 dark:text-red-400">{msgState.message}</p>}

@@ -349,5 +349,29 @@
     "notificationsBody": "Active les notifications pour ne rien manquer, même quand le site est fermé.",
     "finishTitle": "Tu es prêt(e) ! 🎉",
     "finishBody": "Explore à ton rythme — l'aide reste toujours disponible en bas de chaque page."
+  },
+  "groups": {
+    "title": "Projets de groupes",
+    "subtitle": "Crée un groupe avec tes camarades de classe : chat et appel vidéo inclus.",
+    "studentsOnly": "Cet espace est réservé aux élèves.",
+    "createButton": "+ Créer un groupe",
+    "namePlaceholder": "Nom du groupe (ex: Projet SVT — Écosystèmes)",
+    "creating": "Création…",
+    "create": "Créer",
+    "noGroups": "Tu ne fais partie d'aucun groupe pour le moment.",
+    "memberCount": "{count} membre(s)",
+    "backToGroups": "Mes groupes",
+    "deleteGroup": "Supprimer le groupe",
+    "addMember": "+ Ajouter",
+    "allClassmatesAdded": "Tous tes camarades de classe sont déjà dans ce groupe.",
+    "add": "Ajouter",
+    "confirmLeave": "Quitter ce groupe ?",
+    "confirmRemoveMember": "Retirer ce membre du groupe ?",
+    "confirmDeleteGroup": "Supprimer définitivement ce groupe ? Cette action est irréversible.",
+    "chatTab": "Chat",
+    "callTab": "Appel",
+    "noMessages": "Aucun message pour le moment — lance la discussion !",
+    "messagePlaceholder": "Écrire un message…",
+    "send": "Envoyer"
   }
 }

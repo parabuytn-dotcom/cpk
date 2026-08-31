@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listMyGroups } from "@/lib/groups/data";
@@ -20,10 +20,12 @@ export default async function GroupsPage({
     return null;
   }
 
+  const t = await getTranslations("groups");
+
   if (profile.role !== "student" && profile.role !== "admin") {
     return (
       <div className="mx-auto max-w-md text-center">
-        <PageHeader title="Projets de groupes" subtitle="Cet espace est réservé aux élèves." />
+        <PageHeader title={t("title")} subtitle={t("studentsOnly")} />
       </div>
     );
   }
@@ -32,15 +34,12 @@ export default async function GroupsPage({
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <PageHeader
-        title="Projets de groupes"
-        subtitle="Crée un groupe avec tes camarades de classe : chat et appel vidéo inclus."
-      />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
       <CreateGroupForm />
 
       {groups.length === 0 ? (
-        <EmptyState message="Tu ne fais partie d'aucun groupe pour le moment." />
+        <EmptyState message={t("noGroups")} />
       ) : (
         <div className="flex flex-col gap-3">
           {groups.map((group) => (
@@ -54,7 +53,7 @@ export default async function GroupsPage({
                 <p className="text-sm text-foreground/60">{group.className}</p>
               </div>
               <span className="shrink-0 text-sm text-foreground/50">
-                {group.memberCount} membre{group.memberCount > 1 ? "s" : ""}
+                {t("memberCount", { count: group.memberCount })}
               </span>
             </Link>
           ))}

@@ -349,5 +349,29 @@
     "notificationsBody": "Turn on notifications so you never miss anything, even with the site closed.",
     "finishTitle": "You're all set! 🎉",
     "finishBody": "Explore at your own pace — help is always available at the bottom of every page."
+  },
+  "groups": {
+    "title": "Group projects",
+    "subtitle": "Create a group with your classmates: chat and video call included.",
+    "studentsOnly": "This space is reserved for students.",
+    "createButton": "+ Create a group",
+    "namePlaceholder": "Group name (e.g. Science project — Ecosystems)",
+    "creating": "Creating…",
+    "create": "Create",
+    "noGroups": "You're not part of any group yet.",
+    "memberCount": "{count} member(s)",
+    "backToGroups": "My groups",
+    "deleteGroup": "Delete group",
+    "addMember": "+ Add",
+    "allClassmatesAdded": "All your classmates are already in this group.",
+    "add": "Add",
+    "confirmLeave": "Leave this group?",
+    "confirmRemoveMember": "Remove this member from the group?",
+    "confirmDeleteGroup": "Permanently delete this group? This can't be undone.",
+    "chatTab": "Chat",
+    "callTab": "Call",
+    "noMessages": "No messages yet — start the conversation!",
+    "messagePlaceholder": "Write a message…",
+    "send": "Send"
   }
 }

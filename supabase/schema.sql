@@ -1127,6 +1127,29 @@ create index if not exists idx_makeup_sessions_session_date on public.makeup_ses
 -- is written directly by members through the regular client, so it does get
 -- a real INSERT policy.
 -- ----------------------------------------------------------------------------
+-- Tables first, then the security-definer helpers (LANGUAGE SQL functions
+-- are validated against the catalog at CREATE time — unlike plpgsql, a
+-- forward reference to a not-yet-created table fails immediately), then the
+-- RLS policies that call those helpers.
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  class_id uuid references public.classes (id) on delete cascade,
+  class_name text not null,
+  room_slug text not null unique,
+  created_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.group_members (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  role text not null default 'member' check (role in ('owner', 'member')),
+  joined_at timestamptz not null default now(),
+  unique (group_id, user_id)
+);
+
 create or replace function public.is_group_member(gid uuid)
 returns boolean
 language sql
@@ -1153,31 +1176,12 @@ as $$
   );
 $$;
 
-create table if not exists public.groups (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  class_id uuid references public.classes (id) on delete cascade,
-  class_name text not null,
-  room_slug text not null unique,
-  created_by uuid references public.profiles (id) on delete set null,
-  created_at timestamptz not null default now()
-);
-
 alter table public.groups enable row level security;
 
 drop policy if exists "Members or admin can view groups" on public.groups;
 create policy "Members or admin can view groups"
   on public.groups for select
   using (public.is_group_member(id) or public.is_admin());
-
-create table if not exists public.group_members (
-  id uuid primary key default gen_random_uuid(),
-  group_id uuid not null references public.groups (id) on delete cascade,
-  user_id uuid not null references public.profiles (id) on delete cascade,
-  role text not null default 'member' check (role in ('owner', 'member')),
-  joined_at timestamptz not null default now(),
-  unique (group_id, user_id)
-);
 
 alter table public.group_members enable row level security;
 
