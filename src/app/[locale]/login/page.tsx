@@ -13,10 +13,10 @@ export default async function LoginPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ method?: string }>;
+  searchParams: Promise<{ method?: string; qrError?: string }>;
 }) {
   const { locale } = await params;
-  const { method } = await searchParams;
+  const { method, qrError } = await searchParams;
   setRequestLocale(locale);
 
   const { classes, students } = await listChildLoginOptions();
@@ -28,6 +28,7 @@ export default async function LoginPage({
       initialMethod={initialMethod}
       childLoginClasses={classes}
       childLoginStudents={students}
+      qrError={qrError}
     />
   );
 }

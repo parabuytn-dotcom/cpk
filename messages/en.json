@@ -56,6 +56,10 @@
   "auth": {
     "loginTitle": "Login",
     "registerTitle": "Create an account",
+    "qrErrorUsed": "This login code has already been used. Ask the administration to generate a new one.",
+    "qrErrorExpired": "This login code has expired. Ask the administration to generate a new one.",
+    "qrErrorInvalid": "This login code isn't valid.",
+    "qrErrorConfig": "QR code login isn't available right now.",
     "methodCin": "ID number & password",
     "methodEmail": "Email",
     "methodPhone": "Phone & password",

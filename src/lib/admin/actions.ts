@@ -1,11 +1,13 @@
 "use server";
 
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
+import { SITE_URL } from "@/lib/siteUrl";
 import { sendSms } from "@/lib/smsService";
 import { sendEmail } from "@/lib/emailService";
 import { getCurrentProfile } from "@/lib/auth/session";
@@ -1003,6 +1005,58 @@ export async function createDocumentAccounts(
 // ---------------------------------------------------------------------------
 // Utilisateurs — vue d'ensemble + édition directe depuis le panel admin
 // ---------------------------------------------------------------------------
+
+// Generates a one-time login QR code for an existing user — the fastest,
+// safest way to hand a parent or teacher their account: nobody ever has to
+// read a password out loud. Scanning it logs the person in once and forces
+// them to set their own password immediately (must_change_password); any QR
+// generated earlier for the same user is invalidated in the same call, so
+// only the most recent code handed out can ever work.
+export async function generateLoginQrCode(
+  profileId: string,
+): Promise<
+  | { success: true; url: string; qrDataUrl: string; expiresAt: string }
+  | { success: false; error: string }
+> {
+  await requireAdmin();
+  const admin = await getCurrentProfile();
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (!profile) return { success: false, error: "Utilisateur introuvable." };
+
+  // Kill any still-valid code issued earlier for this user.
+  await adminClient
+    .from("login_qr_tokens")
+    .update({ used_at: new Date().toISOString() })
+    .eq("user_id", profileId)
+    .is("used_at", null);
+
+  const token = randomBytes(24).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+
+  const { data: row, error } = await adminClient
+    .from("login_qr_tokens")
+    .insert({ user_id: profileId, token_hash: tokenHash, created_by: admin?.id ?? null })
+    .select("expires_at")
+    .single();
+  if (error || !row) {
+    return { success: false, error: error?.message ?? "Échec de la génération du code." };
+  }
+
+  const url = `${SITE_URL}/api/qr-connexion/${token}`;
+  const qrDataUrl = await QRCode.toDataURL(url, { margin: 1, width: 400 });
+
+  return { success: true, url, qrDataUrl, expiresAt: row.expires_at };
+}
 
 export async function updateUserProfile(
   _state: FormState,

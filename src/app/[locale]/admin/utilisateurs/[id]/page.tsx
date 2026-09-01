@@ -5,6 +5,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import Avatar from "@/components/ui/Avatar";
 import { getProfileDetail } from "@/lib/admin/data";
 import { validateAccount } from "@/lib/admin/actions";
+import GenerateLoginQrButton from "@/components/admin/GenerateLoginQrButton";
 
 export default async function AdminUserDetailPage({
   params,
@@ -55,6 +56,16 @@ export default async function AdminUserDetailPage({
         <Field label="Méthode d'inscription" value={profile.registrationMethod ?? "—"} />
         <Field label="Tags" value={profile.tags.length > 0 ? profile.tags.join(", ") : "—"} />
         <Field label="Inscrit le" value={new Date(profile.createdAt).toLocaleString("fr-FR")} />
+      </div>
+
+      <div className="glass-surface rounded-3xl p-6">
+        <h2 className="mb-2 text-sm font-semibold text-foreground/70">Connexion sans mot de passe</h2>
+        <p className="mb-4 text-sm text-foreground/60">
+          Idéal pour donner son compte à un parent ou un professeur sans jamais lui communiquer
+          de mot de passe en clair : il scanne, il est connecté, et choisit lui-même son mot de
+          passe. Le code ne fonctionne qu&apos;une seule fois.
+        </p>
+        <GenerateLoginQrButton profileId={profile.id} />
       </div>
 
       {profile.badges.length > 0 && (

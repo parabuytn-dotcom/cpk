@@ -56,6 +56,10 @@
   "auth": {
     "loginTitle": "Connexion",
     "registerTitle": "Créer un compte",
+    "qrErrorUsed": "Ce code de connexion a déjà été utilisé. Demande à l'administration d'en générer un nouveau.",
+    "qrErrorExpired": "Ce code de connexion a expiré. Demande à l'administration d'en générer un nouveau.",
+    "qrErrorInvalid": "Ce code de connexion n'est pas valide.",
+    "qrErrorConfig": "La connexion par QR code n'est pas disponible pour le moment.",
     "methodCin": "CIN & mot de passe",
     "methodEmail": "Email",
     "methodPhone": "Téléphone & mot de passe",

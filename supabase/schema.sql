@@ -1214,3 +1214,31 @@ create index if not exists idx_group_members_group_id on public.group_members (g
 create index if not exists idx_group_members_user_id on public.group_members (user_id);
 create index if not exists idx_group_messages_group_id on public.group_messages (group_id);
 create index if not exists idx_groups_class_id on public.groups (class_id);
+
+-- ----------------------------------------------------------------------------
+-- login_qr_tokens — one-time login QR codes an admin generates from an
+-- existing user's page in /admin/utilisateurs (handing a parent or teacher
+-- their account without ever telling them a password). Deliberately a
+-- separate table from the `profiles.qr_login_token` column used by the
+-- "document" bulk-account-creation flow above: that one is a long-lived,
+-- reusable credential meant to survive on a printed slip for weeks, while
+-- this one must die after exactly one scan. Only the service-role client
+-- (admin server actions, the /api/qr-connexion route) ever touches this
+-- table, so no RLS policies are defined — RLS enabled with zero policies
+-- denies every request from the anon/authenticated clients by default.
+-- Only a SHA-256 hash of the token is stored; the raw token lives only in
+-- the URL handed to the admin at generation time.
+-- ----------------------------------------------------------------------------
+create table if not exists public.login_qr_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  token_hash text not null unique,
+  created_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '14 days'),
+  used_at timestamptz
+);
+
+alter table public.login_qr_tokens enable row level security;
+
+create index if not exists idx_login_qr_tokens_user_id on public.login_qr_tokens (user_id);

@@ -7,14 +7,23 @@ import { loginWithPhone, loginWithEmail } from "@/lib/auth/actions";
 import ChildLoginPicker from "./ChildLoginPicker";
 import type { ChildLoginClass, ChildLoginStudent } from "@/lib/auth/data";
 
+const QR_ERROR_KEYS = {
+  used: "qrErrorUsed",
+  expired: "qrErrorExpired",
+  invalid: "qrErrorInvalid",
+  config: "qrErrorConfig",
+} as const;
+
 export default function LoginForm({
   initialMethod = "phone",
   childLoginClasses,
   childLoginStudents,
+  qrError,
 }: {
   initialMethod?: "phone" | "email" | "child";
   childLoginClasses: ChildLoginClass[];
   childLoginStudents: ChildLoginStudent[];
+  qrError?: string;
 }) {
   const t = useTranslations("auth");
   const [method, setMethod] = useState<"phone" | "email" | "child">(initialMethod);
@@ -22,10 +31,17 @@ export default function LoginForm({
   const [emailState, emailAction, emailPending] = useActionState(loginWithEmail, undefined);
 
   const state = method === "phone" ? phoneState : method === "email" ? emailState : undefined;
+  const qrErrorKey = qrError && qrError in QR_ERROR_KEYS ? QR_ERROR_KEYS[qrError as keyof typeof QR_ERROR_KEYS] : undefined;
 
   return (
     <div className="glass-surface mx-auto max-w-md rounded-3xl p-8">
       <h1 className="mb-6 text-2xl font-bold">{t("loginTitle")}</h1>
+
+      {qrErrorKey && (
+        <p className="mb-6 rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+          {t(qrErrorKey)}
+        </p>
+      )}
 
       <div className="mb-6 flex gap-1 rounded-full bg-black/5 p-1 dark:bg-white/10">
         <button
