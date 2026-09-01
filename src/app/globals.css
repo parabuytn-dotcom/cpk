@@ -112,3 +112,59 @@ body {
     animation: none;
   }
 }
+
+/* Splash screen — logo reveal shown once when the site first loads. */
+@keyframes splash-logo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes splash-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-splash-logo {
+  animation: splash-logo-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-splash-word {
+  animation: splash-word-in 0.5s ease-out 0.35s both;
+}
+
+.animate-splash-out {
+  animation: splash-overlay-out 0.45s ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-splash-logo,
+  .animate-splash-word,
+  .animate-splash-out {
+    animation: none;
+  }
+}

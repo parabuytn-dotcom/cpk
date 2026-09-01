@@ -11,6 +11,7 @@ import ValidatedModal from "@/components/auth/ValidatedModal";
 import OnboardingTour, { type TourStep } from "@/components/onboarding/OnboardingTour";
 import { getCurrentProfile } from "@/lib/auth/session";
 import ChatWidget from "@/components/assistant/ChatWidget";
+import SplashScreen from "@/components/SplashScreen";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -60,6 +61,7 @@ export default async function LocaleLayout({
     <html lang={locale} dir={dir}>
       <body className={`${font.className} min-h-screen antialiased`}>
         <NextIntlClientProvider>
+          <SplashScreen />
           <Navbar />
           {profile?.status === "pending" && <PendingBanner />}
           <main className="mx-auto min-h-[60vh] max-w-6xl px-4 py-10">{children}</main>
