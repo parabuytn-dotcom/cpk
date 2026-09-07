@@ -127,14 +127,23 @@ export async function getGroupDetail(groupId: string, profileId: string): Promis
 
 export type ClassmateRow = { userId: string; name: string };
 
-export async function listClassmates(classId: string, excludeUserIds: string[]): Promise<ClassmateRow[]> {
+export async function listClassmates(
+  classId: string,
+  className: string,
+  excludeUserIds: string[],
+): Promise<ClassmateRow[]> {
   if (!isSupabaseConfigured()) return [];
 
   const supabase = await createClient();
+  // Match on class_id OR class_name: some students rows predate the
+  // class_id column (backfilled separately) and still only have class_name
+  // set, so a class_id-only filter silently hides them here even though
+  // they have a real account (same fallback pattern used for homework/
+  // makeup-session notifications in src/lib/admin/actions.ts).
   const { data } = await supabase
     .from("students")
     .select("user_id, first_name, last_name")
-    .eq("class_id", classId)
+    .or(`class_id.eq.${classId},class_name.eq.${className}`)
     .not("user_id", "is", null);
 
   return (data ?? [])

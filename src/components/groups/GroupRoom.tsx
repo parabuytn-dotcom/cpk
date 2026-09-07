@@ -15,12 +15,14 @@ export default function GroupRoom({
   currentUserId,
   currentUserName,
   classmates,
+  noClassmatesRegisteredYet,
   locale,
 }: {
   group: GroupDetail;
   currentUserId: string;
   currentUserName: string;
   classmates: ClassmateRow[];
+  noClassmatesRegisteredYet: boolean;
   locale: string;
 }) {
   const t = useTranslations("groups");
@@ -150,7 +152,9 @@ export default function GroupRoom({
         {showAddMember && (
           <div className="flex flex-wrap items-center gap-2">
             {classmates.length === 0 ? (
-              <p className="text-sm text-foreground/50">{t("allClassmatesAdded")}</p>
+              <p className="text-sm text-foreground/50">
+                {noClassmatesRegisteredYet ? t("noClassmatesRegisteredYet") : t("allClassmatesAdded")}
+              </p>
             ) : (
               <>
                 <select

@@ -368,6 +368,7 @@
     "deleteGroup": "Delete group",
     "addMember": "+ Add",
     "allClassmatesAdded": "All your classmates are already in this group.",
+    "noClassmatesRegisteredYet": "None of your classmates have a student account yet — they can't be added to a group until they do.",
     "add": "Add",
     "confirmLeave": "Leave this group?",
     "confirmRemoveMember": "Remove this member from the group?",

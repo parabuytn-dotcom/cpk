@@ -25,12 +25,17 @@ export default async function GroupDetailPage({
   if (!group) notFound();
 
   const ownClass = await getOwnClass(profile.id);
-  const classmates = ownClass
-    ? await listClassmates(
-        ownClass.classId,
-        group.members.map((m) => m.userId),
-      )
+  // Excludes only the caller here (not the other current group members) so
+  // its length also tells us WHY the addable list might be empty: no
+  // classmate has a linked student account yet, vs. every registered
+  // classmate is already a member of this group — two very different
+  // situations that need two different messages in the UI below.
+  const registeredClassmates = ownClass
+    ? await listClassmates(ownClass.classId, ownClass.className, [profile.id])
     : [];
+  const memberIds = new Set(group.members.map((m) => m.userId));
+  const classmates = registeredClassmates.filter((c) => !memberIds.has(c.userId));
+  const noClassmatesRegisteredYet = registeredClassmates.length === 0;
 
   const currentUserName = profile.fullName ?? profile.parentFirstName ?? "Élève";
 
@@ -40,6 +45,7 @@ export default async function GroupDetailPage({
       currentUserId={profile.id}
       currentUserName={currentUserName}
       classmates={classmates}
+      noClassmatesRegisteredYet={noClassmatesRegisteredYet}
       locale={locale}
     />
   );

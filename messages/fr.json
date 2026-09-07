@@ -368,6 +368,7 @@
     "deleteGroup": "Supprimer le groupe",
     "addMember": "+ Ajouter",
     "allClassmatesAdded": "Tous tes camarades de classe sont déjà dans ce groupe.",
+    "noClassmatesRegisteredYet": "Aucun camarade de ta classe n'a encore de compte élève — ils ne peuvent pas encore être ajoutés à un groupe.",
     "add": "Ajouter",
     "confirmLeave": "Quitter ce groupe ?",
     "confirmRemoveMember": "Retirer ce membre du groupe ?",
