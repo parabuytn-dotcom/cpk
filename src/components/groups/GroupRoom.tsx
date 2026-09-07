@@ -6,30 +6,30 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Avatar from "@/components/ui/Avatar";
 import MiroTalkCall from "./MiroTalkCall";
-import { addGroupMember, removeGroupMember, deleteGroup, sendGroupMessage } from "@/lib/groups/actions";
-import type { GroupDetail, ClassmateRow } from "@/lib/groups/data";
+import {
+  removeGroupMember,
+  deleteGroup,
+  sendGroupMessage,
+  requestToJoinGroup,
+  acceptJoinRequest,
+} from "@/lib/groups/actions";
+import type { GroupDetail } from "@/lib/groups/data";
 import { formatDateTime } from "@/lib/formatDate";
 
 export default function GroupRoom({
   group,
   currentUserId,
   currentUserName,
-  classmates,
-  noClassmatesRegisteredYet,
   locale,
 }: {
   group: GroupDetail;
   currentUserId: string;
   currentUserName: string;
-  classmates: ClassmateRow[];
-  noClassmatesRegisteredYet: boolean;
   locale: string;
 }) {
   const t = useTranslations("groups");
   const router = useRouter();
   const [view, setView] = useState<"chat" | "call">("chat");
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [selectedClassmate, setSelectedClassmate] = useState(classmates[0]?.userId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -37,13 +37,16 @@ export default function GroupRoom({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  const isMember = group.myStatus === "owner" || group.myStatus === "accepted";
+  const isOwner = group.myStatus === "owner";
+
   // Lightweight "live enough" chat: re-fetch server data every few seconds
   // while the chat tab is open, instead of a full websocket subscription.
   useEffect(() => {
-    if (view !== "chat") return;
+    if (!isMember || view !== "chat") return;
     const interval = setInterval(() => router.refresh(), 6000);
     return () => clearInterval(interval);
-  }, [view, router]);
+  }, [isMember, view, router]);
 
   useEffect(() => {
     if (msgState?.success !== undefined) formRef.current?.reset();
@@ -53,13 +56,36 @@ export default function GroupRoom({
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [group.messages.length]);
 
-  function handleAddMember() {
-    if (!selectedClassmate) return;
+  function handleRequestToJoin() {
     setError(null);
     startTransition(async () => {
       try {
-        await addGroupMember(group.id, selectedClassmate);
-        setShowAddMember(false);
+        await requestToJoinGroup(group.id);
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur.");
+      }
+    });
+  }
+
+  function handleWithdrawRequest() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await removeGroupMember(group.id, currentUserId);
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur.");
+      }
+    });
+  }
+
+  function handleAccept(memberId: string) {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await acceptJoinRequest(group.id, memberId);
+        router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Erreur.");
       }
@@ -73,6 +99,19 @@ export default function GroupRoom({
     startTransition(async () => {
       try {
         await removeGroupMember(group.id, memberId);
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur.");
+      }
+    });
+  }
+
+  function handleRejectRequest(memberId: string) {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await removeGroupMember(group.id, memberId);
+        router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Erreur.");
       }
@@ -103,7 +142,7 @@ export default function GroupRoom({
             <h1 className="text-2xl font-bold">{group.name}</h1>
             <p className="text-sm text-foreground/60">{group.className}</p>
           </div>
-          {group.isOwner && (
+          {isOwner && (
             <button
               type="button"
               onClick={handleDeleteGroup}
@@ -124,7 +163,7 @@ export default function GroupRoom({
               <Avatar name={member.name} photoUrl={member.avatarUrl} size={28} />
               <span className="text-sm font-medium">{member.name}</span>
               {member.role === "owner" && <span aria-hidden>👑</span>}
-              {(group.isOwner || member.userId === currentUserId) && (
+              {(isOwner || member.userId === currentUserId) && (
                 <button
                   type="button"
                   onClick={() => handleRemoveMember(member.userId)}
@@ -137,130 +176,157 @@ export default function GroupRoom({
               )}
             </div>
           ))}
-
-          {group.isOwner && group.members.length < 6 && (
-            <button
-              type="button"
-              onClick={() => setShowAddMember((v) => !v)}
-              className="rounded-full border border-dashed border-black/20 px-4 py-1.5 text-sm font-medium text-foreground/60 transition hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
-            >
-              {t("addMember")}
-            </button>
-          )}
         </div>
 
-        {showAddMember && (
-          <div className="flex flex-wrap items-center gap-2">
-            {classmates.length === 0 ? (
-              <p className="text-sm text-foreground/50">
-                {noClassmatesRegisteredYet ? t("noClassmatesRegisteredYet") : t("allClassmatesAdded")}
-              </p>
-            ) : (
-              <>
-                <select
-                  value={selectedClassmate}
-                  onChange={(e) => setSelectedClassmate(e.target.value)}
-                  className="rounded-xl border border-black/10 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5"
-                >
-                  {classmates.map((c) => (
-                    <option key={c.userId} value={c.userId}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddMember}
-                  disabled={isPending}
-                  className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
-                >
-                  {t("add")}
-                </button>
-              </>
-            )}
+        {isOwner && group.pendingMembers.length > 0 && (
+          <div className="flex flex-col gap-2 border-t border-black/5 pt-3 dark:border-white/10">
+            <p className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
+              {t("pendingRequests")}
+            </p>
+            {group.pendingMembers.map((member) => (
+              <div
+                key={member.userId}
+                className="flex items-center justify-between gap-3 rounded-2xl bg-black/5 px-3 py-2 dark:bg-white/10"
+              >
+                <div className="flex items-center gap-2">
+                  <Avatar name={member.name} photoUrl={member.avatarUrl} size={28} />
+                  <span className="text-sm font-medium">{member.name}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAccept(member.userId)}
+                    disabled={isPending}
+                    className="rounded-full bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+                  >
+                    {t("acceptRequest")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRejectRequest(member.userId)}
+                    disabled={isPending}
+                    className="rounded-full border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+                  >
+                    {t("rejectRequest")}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setView("chat")}
-          className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-            view === "chat"
-              ? "bg-brand-600 text-white shadow-md"
-              : "bg-black/5 text-foreground/70 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
-          }`}
-        >
-          💬 {t("chatTab")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("call")}
-          className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-            view === "call"
-              ? "bg-brand-600 text-white shadow-md"
-              : "bg-black/5 text-foreground/70 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
-          }`}
-        >
-          📹 {t("callTab")}
-        </button>
-      </div>
+      {group.myStatus === "none" && (
+        <div className="glass-surface flex flex-col items-center gap-3 rounded-3xl p-8 text-center">
+          <p className="text-sm text-foreground/70">{t("notAMemberYet")}</p>
+          <button
+            type="button"
+            onClick={handleRequestToJoin}
+            disabled={isPending}
+            className="rounded-full bg-brand-600 px-6 py-3 font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
+          >
+            {isPending ? t("requesting") : t("requestToJoin")}
+          </button>
+        </div>
+      )}
 
-      {view === "call" ? (
-        <MiroTalkCall roomSlug={group.roomSlug} displayName={currentUserName} />
-      ) : (
-        <div className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
-          <div className="flex max-h-[50vh] min-h-[30vh] flex-col gap-3 overflow-y-auto">
-            {group.messages.length === 0 ? (
-              <p className="m-auto text-sm text-foreground/50">{t("noMessages")}</p>
-            ) : (
-              group.messages.map((message) => {
-                const isMine = message.authorId === currentUserId;
-                return (
-                  <div key={message.id} className={`flex gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
-                    <Avatar name={message.authorName} photoUrl={message.authorAvatarUrl} size={28} />
-                    <div className={`flex max-w-[75%] flex-col ${isMine ? "items-end" : "items-start"}`}>
-                      <div
-                        className={`rounded-2xl px-4 py-2 text-sm ${
-                          isMine
-                            ? "bg-brand-600 text-white"
-                            : "bg-black/5 text-foreground dark:bg-white/10"
-                        }`}
-                      >
-                        {message.content}
-                      </div>
-                      <span className="mt-0.5 text-[11px] text-foreground/40">
-                        {message.authorName} · {formatDateTime(locale, message.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <div ref={messagesEndRef} />
+      {group.myStatus === "pending" && (
+        <div className="glass-surface flex flex-col items-center gap-3 rounded-3xl p-8 text-center">
+          <p className="text-sm text-foreground/70">{t("pendingApproval")}</p>
+          <button
+            type="button"
+            onClick={handleWithdrawRequest}
+            disabled={isPending}
+            className="rounded-full border border-red-500/30 px-5 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+          >
+            {t("withdrawRequest")}
+          </button>
+        </div>
+      )}
+
+      {isMember && (
+        <>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setView("chat")}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                view === "chat"
+                  ? "bg-brand-600 text-white shadow-md"
+                  : "bg-black/5 text-foreground/70 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
+              }`}
+            >
+              💬 {t("chatTab")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("call")}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                view === "call"
+                  ? "bg-brand-600 text-white shadow-md"
+                  : "bg-black/5 text-foreground/70 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
+              }`}
+            >
+              📹 {t("callTab")}
+            </button>
           </div>
 
-          <form ref={formRef} action={sendAction} className="flex gap-2 border-t border-black/5 pt-3 dark:border-white/10">
-            <input type="hidden" name="groupId" value={group.id} />
-            <input
-              name="content"
-              placeholder={t("messagePlaceholder")}
-              required
-              className="flex-1 rounded-full border border-black/10 bg-white/70 px-4 py-2 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
-            />
-            <button
-              type="submit"
-              disabled={sendPending}
-              className="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
-            >
-              {t("send")}
-            </button>
-          </form>
-          {msgState?.message && <p className="text-sm text-red-600 dark:text-red-400">{msgState.message}</p>}
-        </div>
+          {view === "call" && group.roomSlug ? (
+            <MiroTalkCall roomSlug={group.roomSlug} displayName={currentUserName} />
+          ) : (
+            <div className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
+              <div className="flex max-h-[50vh] min-h-[30vh] flex-col gap-3 overflow-y-auto">
+                {group.messages.length === 0 ? (
+                  <p className="m-auto text-sm text-foreground/50">{t("noMessages")}</p>
+                ) : (
+                  group.messages.map((message) => {
+                    const isMine = message.authorId === currentUserId;
+                    return (
+                      <div key={message.id} className={`flex gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
+                        <Avatar name={message.authorName} photoUrl={message.authorAvatarUrl} size={28} />
+                        <div className={`flex max-w-[75%] flex-col ${isMine ? "items-end" : "items-start"}`}>
+                          <div
+                            className={`rounded-2xl px-4 py-2 text-sm ${
+                              isMine
+                                ? "bg-brand-600 text-white"
+                                : "bg-black/5 text-foreground dark:bg-white/10"
+                            }`}
+                          >
+                            {message.content}
+                          </div>
+                          <span className="mt-0.5 text-[11px] text-foreground/40">
+                            {message.authorName} · {formatDateTime(locale, message.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <form ref={formRef} action={sendAction} className="flex gap-2 border-t border-black/5 pt-3 dark:border-white/10">
+                <input type="hidden" name="groupId" value={group.id} />
+                <input
+                  name="content"
+                  placeholder={t("messagePlaceholder")}
+                  required
+                  className="flex-1 rounded-full border border-black/10 bg-white/70 px-4 py-2 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
+                />
+                <button
+                  type="submit"
+                  disabled={sendPending}
+                  className="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+                >
+                  {t("send")}
+                </button>
+              </form>
+              {msgState?.message && <p className="text-sm text-red-600 dark:text-red-400">{msgState.message}</p>}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

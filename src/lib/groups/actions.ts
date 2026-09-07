@@ -46,7 +46,42 @@ export async function createGroup(_state: FormState, formData: FormData): Promis
   return { success: "Groupe créé." };
 }
 
-export async function addGroupMember(groupId: string, memberId: string) {
+/** Anyone can ask to join any group — the founder is the only one who can let them in (see acceptJoinRequest). */
+export async function requestToJoinGroup(groupId: string) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Non connecté.");
+
+  const adminClient = createAdminClient();
+  if (!adminClient) throw new Error("Configuration manquante.");
+
+  const { data: existing } = await adminClient
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", profile.id)
+    .maybeSingle();
+  if (existing) throw new Error("Tu as déjà demandé à rejoindre ce groupe.");
+
+  const { error } = await adminClient
+    .from("group_members")
+    .insert({ group_id: groupId, user_id: profile.id, role: "member", status: "pending" });
+  if (error) throw new Error(error.message);
+
+  const { data: owner } = await adminClient
+    .from("group_members")
+    .select("user_id")
+    .eq("group_id", groupId)
+    .eq("role", "owner")
+    .maybeSingle();
+  if (owner) {
+    await notify(owner.user_id, "group_join_request", "Quelqu'un demande à rejoindre ton groupe de projet.", `/groupes/${groupId}`);
+  }
+
+  revalidatePath("/groupes");
+  revalidatePath(`/groupes/${groupId}`);
+}
+
+export async function acceptJoinRequest(groupId: string, memberId: string) {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Non connecté.");
 
@@ -60,22 +95,25 @@ export async function addGroupMember(groupId: string, memberId: string) {
     .eq("user_id", profile.id)
     .eq("role", "owner")
     .maybeSingle();
-  if (!owner) throw new Error("Seul le créateur du groupe peut ajouter des membres.");
+  if (!owner) throw new Error("Seul le créateur du groupe peut accepter des membres.");
 
   const { count } = await adminClient
     .from("group_members")
     .select("id", { count: "exact", head: true })
-    .eq("group_id", groupId);
+    .eq("group_id", groupId)
+    .eq("status", "accepted");
   if ((count ?? 0) >= MAX_MEMBERS) {
     throw new Error(`Ce groupe a déjà atteint ${MAX_MEMBERS} membres.`);
   }
 
   const { error } = await adminClient
     .from("group_members")
-    .insert({ group_id: groupId, user_id: memberId, role: "member" });
+    .update({ status: "accepted" })
+    .eq("group_id", groupId)
+    .eq("user_id", memberId);
   if (error) throw new Error(error.message);
 
-  await notify(memberId, "group_invite", "Tu as été ajouté(e) à un groupe de projet.", "/groupes");
+  await notify(memberId, "group_invite", "Ta demande pour rejoindre le groupe a été acceptée.", "/groupes");
 
   revalidatePath("/groupes");
   revalidatePath(`/groupes/${groupId}`);

@@ -1113,19 +1113,24 @@ create index if not exists idx_makeup_sessions_class_id on public.makeup_session
 create index if not exists idx_makeup_sessions_session_date on public.makeup_sessions (session_date);
 
 -- ----------------------------------------------------------------------------
--- Group projects — students create a group for their own class, invite
--- classmates directly (the creator becomes 'owner' and is the only one who
--- can add/remove members or delete the group), get a persistent text chat,
--- and a per-group Jitsi Meet room (room_slug) for voice/video calls.
+-- Group projects — a student creates a group for a class project and gets a
+-- persistent text chat plus a video-call room. Every group is visible to
+-- every student (browsing groups doesn't require being in one); anyone can
+-- ask to join, and the founder ('owner') is the only one who can accept a
+-- request, remove a member, or delete the group. `group_members.status`
+-- distinguishes a pending request from an accepted membership — chat access
+-- and the call room address are only ever given to accepted members/the
+-- owner (see is_group_member() below and getGroupDetail() in
+-- src/lib/groups/data.ts).
 --
 -- All writes to `groups`/`group_members` go through server actions using the
 -- service-role client with an explicit owner/admin check in application
 -- code (see src/lib/groups/actions.ts) — simpler and safer than replicating
--- "only the owner" authorization as RLS policies, especially for the
--- necessary bootstrap step (inserting the creator as the first 'owner' row).
--- RLS below only needs to gate SELECT for these two tables. `group_messages`
--- is written directly by members through the regular client, so it does get
--- a real INSERT policy.
+-- that authorization as RLS policies, especially for the necessary
+-- bootstrap step (inserting the creator as the first 'owner' row). RLS below
+-- only needs to gate SELECT for these two tables. `group_messages` is
+-- written directly by members through the regular client, so it does get a
+-- real INSERT policy.
 -- ----------------------------------------------------------------------------
 -- Tables first, then the security-definer helpers (LANGUAGE SQL functions
 -- are validated against the catalog at CREATE time — unlike plpgsql, a
@@ -1146,9 +1151,12 @@ create table if not exists public.group_members (
   group_id uuid not null references public.groups (id) on delete cascade,
   user_id uuid not null references public.profiles (id) on delete cascade,
   role text not null default 'member' check (role in ('owner', 'member')),
+  status text not null default 'accepted' check (status in ('pending', 'accepted')),
   joined_at timestamptz not null default now(),
   unique (group_id, user_id)
 );
+
+alter table public.group_members add column if not exists status text not null default 'accepted' check (status in ('pending', 'accepted'));
 
 create or replace function public.is_group_member(gid uuid)
 returns boolean
@@ -1159,7 +1167,7 @@ stable
 as $$
   select exists (
     select 1 from public.group_members
-    where group_id = gid and user_id = auth.uid()
+    where group_id = gid and user_id = auth.uid() and status = 'accepted'
   );
 $$;
 
@@ -1179,16 +1187,18 @@ $$;
 alter table public.groups enable row level security;
 
 drop policy if exists "Members or admin can view groups" on public.groups;
-create policy "Members or admin can view groups"
+drop policy if exists "Any authenticated user can view groups" on public.groups;
+create policy "Any authenticated user can view groups"
   on public.groups for select
-  using (public.is_group_member(id) or public.is_admin());
+  using (auth.uid() is not null);
 
 alter table public.group_members enable row level security;
 
 drop policy if exists "Members can view group membership" on public.group_members;
-create policy "Members can view group membership"
+drop policy if exists "Any authenticated user can view group membership" on public.group_members;
+create policy "Any authenticated user can view group membership"
   on public.group_members for select
-  using (public.is_group_member(group_id) or public.is_admin());
+  using (auth.uid() is not null);
 
 create table if not exists public.group_messages (
   id uuid primary key default gen_random_uuid(),

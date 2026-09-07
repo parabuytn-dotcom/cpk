@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { listMyGroups } from "@/lib/groups/data";
+import { listAllGroups } from "@/lib/groups/data";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import CreateGroupForm from "@/components/groups/CreateGroupForm";
@@ -30,7 +30,7 @@ export default async function GroupsPage({
     );
   }
 
-  const groups = await listMyGroups(profile.id);
+  const groups = await listAllGroups(profile.id);
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
@@ -52,9 +52,21 @@ export default async function GroupsPage({
                 <p className="text-lg font-semibold">{group.name}</p>
                 <p className="text-sm text-foreground/60">{group.className}</p>
               </div>
-              <span className="shrink-0 text-sm text-foreground/50">
-                {t("memberCount", { count: group.memberCount })}
-              </span>
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="text-sm text-foreground/50">
+                  {t("memberCount", { count: group.memberCount })}
+                </span>
+                {group.myStatus === "pending" && (
+                  <span className="rounded-full bg-accent-500/15 px-3 py-1 text-xs font-semibold text-accent-600 dark:text-accent-400">
+                    {t("pendingBadge")}
+                  </span>
+                )}
+                {(group.myStatus === "owner" || group.myStatus === "accepted") && (
+                  <span className="rounded-full bg-brand-500/15 px-3 py-1 text-xs font-semibold text-brand-600 dark:text-brand-400">
+                    {t("memberBadge")}
+                  </span>
+                )}
+              </div>
             </Link>
           ))}
         </div>
