@@ -128,7 +128,7 @@ export async function getGroupDetail(groupId: string, profileId: string): Promis
 export type ClassmateRow = { userId: string; name: string };
 
 export async function listClassmates(
-  classId: string,
+  classId: string | null,
   className: string,
   excludeUserIds: string[],
 ): Promise<ClassmateRow[]> {
@@ -143,7 +143,7 @@ export async function listClassmates(
   const { data } = await supabase
     .from("students")
     .select("user_id, first_name, last_name")
-    .or(`class_id.eq.${classId},class_name.eq.${className}`)
+    .or(classId ? `class_id.eq.${classId},class_name.eq.${className}` : `class_name.eq.${className}`)
     .not("user_id", "is", null);
 
   return (data ?? [])
@@ -156,7 +156,7 @@ export async function listClassmates(
 
 export async function getOwnClass(
   profileId: string,
-): Promise<{ classId: string; className: string } | null> {
+): Promise<{ classId: string | null; className: string } | null> {
   if (!isSupabaseConfigured()) return null;
 
   const supabase = await createClient();
@@ -166,6 +166,10 @@ export async function getOwnClass(
     .eq("user_id", profileId)
     .maybeSingle();
 
-  if (!data?.class_id) return null;
+  // class_name is the one field every students row is guaranteed to have —
+  // class_id can be null on rows that predate that column, so requiring it
+  // here would wrongly tell a real student "you have no class" and hide
+  // every classmate downstream (see listClassmates above).
+  if (!data?.class_name) return null;
   return { classId: data.class_id, className: data.class_name };
 }
