@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Avatar from "@/components/ui/Avatar";
-import JitsiCall from "./JitsiCall";
+import MiroTalkCall from "./MiroTalkCall";
 import { addGroupMember, removeGroupMember, deleteGroup, sendGroupMessage } from "@/lib/groups/actions";
 import type { GroupDetail, ClassmateRow } from "@/lib/groups/data";
 import { formatDateTime } from "@/lib/formatDate";
@@ -206,7 +206,7 @@ export default function GroupRoom({
       </div>
 
       {view === "call" ? (
-        <JitsiCall roomSlug={group.roomSlug} displayName={currentUserName} onClose={() => setView("chat")} />
+        <MiroTalkCall roomSlug={group.roomSlug} displayName={currentUserName} />
       ) : (
         <div className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
           <div className="flex max-h-[50vh] min-h-[30vh] flex-col gap-3 overflow-y-auto">
