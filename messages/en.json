@@ -60,7 +60,6 @@
     "qrErrorExpired": "This login code has expired. Ask the administration to generate a new one.",
     "qrErrorInvalid": "This login code isn't valid.",
     "qrErrorConfig": "QR code login isn't available right now.",
-    "methodCin": "ID number & password",
     "methodEmail": "Email",
     "methodPhone": "Phone & password",
     "methodChild": "I'm a student",
@@ -70,7 +69,6 @@
     "childLoginNoStudents": "No students yet.",
     "childLoginNoAccount": "no account yet",
     "childLoginGreeting": "Hi {name}! Enter your password.",
-    "cin": "National ID (CIN)",
     "phone": "Phone number",
     "password": "Password",
     "email": "Email",
@@ -165,18 +163,27 @@
     "statPendingAccounts": "Pending accounts",
     "statPendingHelp": "Pending help",
     "statPendingSuggestions": "Pending ideas",
-    "shortcuts": "Shortcuts"
+    "shortcuts": "Shortcuts",
+    "notificationsTab": "Notifications"
   },
   "privacy": {
     "title": "Your data, privacy",
     "intro": "This page explains, simply, what information Collège Pilote du Kef collects through this platform, and why.",
     "collectedTitle": "What we store",
-    "collected1": "Identity: national ID (CIN), parent's first and last name, child's class.",
-    "collected2": "Contact: phone number and email, used to log in and to notify you of a teacher absence.",
-    "collected3": "Schooling: timetable, teacher absences, homework, and presence on community spaces.",
-    "collected4": "SMS history (content and delivery status), for technical follow-up.",
+    "collected1": "Identity: parent's first and last name, child's first name and class. Your national ID (CIN) is never asked for at sign-up — it's optional, and only stored if you choose to add it to your profile yourself.",
+    "collected2": "Contact: phone number (it doubles as your login identifier) and email address if you provide one.",
+    "collected3": "Schooling: class timetable, teacher absences, homework, and exam dates.",
+    "collected4": "Content you publish: feed posts and comments, project-group messages, and ideas submitted to the suggestion box.",
+    "collected5": "Photos: your profile picture and any media you publish on the feed.",
+    "collected6": "History of messages sent by the platform (SMS and email): recipient, content and delivery status, for technical follow-up.",
+    "collected7": "Notifications: a technical identifier for your device or browser, needed to deliver notifications, plus the date you were last active.",
+    "collected8": "Donations: the amount and payment reference. The payment itself is handled by Konnect — no banking details ever pass through or are stored by the platform.",
     "purposeTitle": "Why",
-    "purpose": "This data is used solely for the school's administrative and educational management (account validation, communication, timetable tracking). It is never sold or shared with third parties.",
+    "purpose": "This data is used solely for the school's administrative and educational management (account validation, communication, timetable tracking, school life). It is never sold or shared with third parties.",
+    "aiTitle": "The site assistant",
+    "ai": "Questions you ask the assistant are sent to Google Gemini, the AI service that generates the answer. Please don't type sensitive or personal information there.",
+    "rightsTitle": "Your rights",
+    "rights": "You can view and correct your information at any time from your profile. To request deletion of your account and its data, contact the administration.",
     "contactTitle": "Any question?",
     "contact": "Contact us at 99766801 or by email at contact@cpkef.tn."
   },
@@ -231,10 +238,17 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "close": "Close",
-    "typeControle": "Test",
-    "typeSynthese": "Final exam",
+    "typeControle": "Class test",
+    "typeSynthese": "End-of-term exam",
     "subjectLabel": "Topic",
-    "notesLabel": "Teacher's notes"
+    "notesLabel": "Teacher's notes",
+    "addTitle": "Add an exam (class test / end-of-term)",
+    "classPlaceholder": "Class…",
+    "subject": "Subject",
+    "descriptionPlaceholder": "Topic / material covered (optional)",
+    "notesPlaceholder": "Notes for students (optional)",
+    "adding": "…",
+    "add": "Add exam"
   },
   "notificationsUi": {
     "title": "Notifications",
@@ -244,7 +258,10 @@
     "pushEnabling": "Enabling…",
     "pushEnabled": "Notifications enabled on this device ✓",
     "pushDenied": "Notifications blocked — enable them in your browser/phone settings.",
-    "pushIosAddToHome": "📲 On iPhone, notifications only work after adding this site to your Home Screen: tap Safari's Share icon, then \"Add to Home Screen\"."
+    "pushIosAddToHome": "📲 On iPhone, notifications only work after adding this site to your Home Screen: tap Safari's Share icon, then \"Add to Home Screen\".",
+    "announcementTitle": "Message from the administration",
+    "announcementClose": "Got it",
+    "announcementOpenLink": "Open link"
   },
   "suggestions": {
     "title": "Suggestion box",
@@ -384,5 +401,16 @@
     "noMessages": "No messages yet — start the conversation!",
     "messagePlaceholder": "Write a message…",
     "send": "Send"
+  },
+  "makeup": {
+    "upcomingTitle": "Upcoming catch-up sessions",
+    "addTitle": "Add a catch-up session",
+    "classPlaceholder": "Class…",
+    "subject": "Subject",
+    "reason": "Reason (optional)",
+    "adding": "Adding…",
+    "add": "Add session",
+    "deleteLabel": "Delete session",
+    "confirmDelete": "Delete this catch-up session?"
   }
 }

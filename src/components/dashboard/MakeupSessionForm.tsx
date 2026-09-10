@@ -1,15 +1,17 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { createMakeupSession } from "@/lib/admin/actions";
 import type { ClassRow } from "@/lib/admin/data";
 
 export default function MakeupSessionForm({ classes }: { classes: ClassRow[] }) {
+  const t = useTranslations("makeup");
   const [state, action, pending] = useActionState(createMakeupSession, undefined);
 
   return (
     <form action={action} className="glass-surface grid gap-3 rounded-3xl p-6 sm:grid-cols-2">
-      <h2 className="font-semibold sm:col-span-2">Ajouter une séance de rattrapage</h2>
+      <h2 className="font-semibold sm:col-span-2">{t("addTitle")}</h2>
 
       <select
         name="classId"
@@ -21,7 +23,7 @@ export default function MakeupSessionForm({ classes }: { classes: ClassRow[] }) 
         }}
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
       >
-        <option value="">Classe…</option>
+        <option value="">{t("classPlaceholder")}</option>
         {classes.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
@@ -32,7 +34,7 @@ export default function MakeupSessionForm({ classes }: { classes: ClassRow[] }) 
 
       <input
         name="subject"
-        placeholder="Matière"
+        placeholder={t("subject")}
         required
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
       />
@@ -58,7 +60,7 @@ export default function MakeupSessionForm({ classes }: { classes: ClassRow[] }) 
       </div>
       <input
         name="reason"
-        placeholder="Motif (optionnel)"
+        placeholder={t("reason")}
         className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 sm:col-span-2 dark:border-white/10 dark:bg-white/5"
       />
 
@@ -67,7 +69,7 @@ export default function MakeupSessionForm({ classes }: { classes: ClassRow[] }) 
         disabled={pending}
         className="self-start rounded-full bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60 sm:col-span-2"
       >
-        {pending ? "Ajout…" : "Ajouter la séance"}
+        {pending ? t("adding") : t("add")}
       </button>
       {state?.message && (
         <p className="text-sm text-red-600 dark:text-red-400 sm:col-span-2">{state.message}</p>

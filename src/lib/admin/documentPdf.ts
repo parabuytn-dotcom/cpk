@@ -5,7 +5,6 @@ import { SITE_URL } from "@/lib/siteUrl";
 
 export type DocumentEntry = {
   fullName: string;
-  cin: string;
   childFirstName: string;
   phone: string;
   password: string;
@@ -81,9 +80,6 @@ export async function buildDocumentsPdf(entries: DocumentEntry[]): Promise<Uint8
         font,
         color: rgb(0.4, 0.4, 0.4),
       });
-      textY -= 20;
-
-      page.drawText(`CIN : ${entry.cin}`, { x: textX, y: textY, size: 12, font });
       textY -= 20;
 
       page.drawText(`Identifiant : ${entry.phone}`, { x: textX, y: textY, size: 12, font });

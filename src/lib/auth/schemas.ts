@@ -7,8 +7,13 @@ const phone = z
   .trim()
   .regex(/^\d{8}$/, "Numéro invalide (8 chiffres, ex: 99766801).");
 
+// Registering by phone: the phone number IS the identifier (it becomes the
+// synthetic @cpk.internal auth email). CIN used to be required here, but
+// asking a parent for their national ID card number just to sign up was too
+// intrusive for almost anyone to accept — it's now purely optional, added
+// later from their own profile page if they want to (see
+// updateProfileInfoSchema below).
 export const registerManualSchema = z.object({
-  cin,
   phone,
   password,
   parentFirstName: z.string().trim().min(1, "Champ requis."),

@@ -16,10 +16,12 @@ import {
   type FormState,
 } from "./schemas";
 
-const CIN_EMAIL_DOMAIN = "cpk.internal";
+const INTERNAL_EMAIL_DOMAIN = "cpk.internal";
 
-function cinToEmail(cin: string) {
-  return `${cin}@${CIN_EMAIL_DOMAIN}`;
+// Parents who sign up with just a phone number still need *an* email for
+// Supabase Auth, so we mint a synthetic one they never see or use.
+function phoneToEmail(phone: string) {
+  return `${phone}@${INTERNAL_EMAIL_DOMAIN}`;
 }
 
 async function createParentAccount({
@@ -46,8 +48,9 @@ async function createParentAccount({
   // Created via the admin API (email_confirm: true) rather than the public
   // signUp() flow: Supabase's default "Confirm email" setting would otherwise
   // leave the account unable to log in until a confirmation link is clicked —
-  // which is impossible for CIN accounts, since their @cpk.internal address
-  // isn't real. This also lets us insert profiles/students without hitting
+  // which is impossible for phone-registered accounts, since their
+  // @cpk.internal address isn't real. This also lets us insert
+  // profiles/students without hitting
   // the RLS insert policy (no session exists yet at this point anyway).
   const adminClient = createAdminClient();
   if (!adminClient) {
@@ -118,7 +121,6 @@ export async function registerManual(
   formData: FormData,
 ): Promise<FormState> {
   const validated = registerManualSchema.safeParse({
-    cin: formData.get("cin"),
     phone: formData.get("phone"),
     password: formData.get("password"),
     parentFirstName: formData.get("parentFirstName"),
@@ -131,13 +133,13 @@ export async function registerManual(
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const { cin, phone, password, parentFirstName, parentLastName, childFirstName, childClass } =
+  const { phone, password, parentFirstName, parentLastName, childFirstName, childClass } =
     validated.data;
 
   return createParentAccount({
-    email: cinToEmail(cin),
+    email: phoneToEmail(phone),
     password,
-    cin,
+    cin: null,
     phone,
     parentFirstName,
     parentLastName,

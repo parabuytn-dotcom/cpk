@@ -12,6 +12,8 @@ import OnboardingTour, { type TourStep } from "@/components/onboarding/Onboardin
 import { getCurrentProfile } from "@/lib/auth/session";
 import ChatWidget from "@/components/assistant/ChatWidget";
 import SplashScreen from "@/components/SplashScreen";
+import IntrusiveNotificationModal from "@/components/notifications/IntrusiveNotificationModal";
+import { listUnreadIntrusiveNotifications } from "@/lib/notifications/data";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -56,6 +58,12 @@ export default async function LocaleLayout({
     Boolean(profile) && !profile!.onboardingTourSeen && !profile!.mustChangePassword;
   const showValidatedModal =
     profile?.status === "validated" && !profile.validationSeen && !showOnboardingTour;
+  // Queued behind the onboarding tour and the validation popup so a new user
+  // isn't hit by three modals stacked on top of each other on first login.
+  const intrusiveNotifications =
+    profile && !showOnboardingTour && !showValidatedModal
+      ? await listUnreadIntrusiveNotifications(profile.id)
+      : [];
 
   return (
     <html lang={locale} dir={dir}>
@@ -77,6 +85,9 @@ export default async function LocaleLayout({
           </footer>
           {showOnboardingTour && <OnboardingTourContainer />}
           {showValidatedModal && <ValidatedModalContainer />}
+          {intrusiveNotifications.length > 0 && (
+            <IntrusiveNotificationModal notifications={intrusiveNotifications} />
+          )}
           <ChatWidget />
         </NextIntlClientProvider>
       </body>

@@ -4,12 +4,11 @@ import type { CurrentProfile } from "@/lib/auth/session";
 export default async function ProfileProgress({ profile }: { profile: CurrentProfile }) {
   const t = await getTranslations("profile");
 
-  const needsCin = profile.registrationMethod === "email";
-  const identityDone = needsCin ? Boolean(profile.cin) : Boolean(profile.contactEmail);
-
+  // CIN is deliberately absent: it's optional extra info a parent may add
+  // from their profile, never something to nag them for.
   const items = [
     { label: t("phone"), done: Boolean(profile.phone) },
-    { label: needsCin ? t("cin") : t("contactEmail"), done: identityDone },
+    { label: t("contactEmail"), done: Boolean(profile.contactEmail) },
     { label: t("photo"), done: Boolean(profile.avatarUrl) },
   ];
 

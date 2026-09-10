@@ -8,6 +8,10 @@ import type { ClassRow } from "@/lib/admin/data";
 
 export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
   const t = useTranslations("auth");
+  // "manual" = sign up with just a phone number (the phone becomes the login
+  // identifier); "email" = sign up with a real email address. Either way the
+  // phone field below is required, so the two tabs really only differ by
+  // whether a real email is collected too.
   const [method, setMethod] = useState<"manual" | "email">("manual");
   const [manualState, manualAction, manualPending] = useActionState(registerManual, undefined);
   const [emailState, emailAction, emailPending] = useActionState(
@@ -29,7 +33,7 @@ export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
             method === "manual" ? "bg-white shadow dark:bg-white/20" : "text-foreground/60"
           }`}
         >
-          {t("methodCin")}
+          {t("methodPhone")}
         </button>
         <button
           type="button"
@@ -46,9 +50,7 @@ export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
         action={method === "manual" ? manualAction : emailAction}
         className="flex flex-col gap-4"
       >
-        {method === "manual" ? (
-          <Field label={t("cin")} name="cin" errors={state?.errors?.cin} />
-        ) : (
+        {method === "email" && (
           <Field label={t("email")} name="email" type="email" errors={state?.errors?.email} />
         )}
         <Field

@@ -60,7 +60,6 @@
     "qrErrorExpired": "Ce code de connexion a expiré. Demande à l'administration d'en générer un nouveau.",
     "qrErrorInvalid": "Ce code de connexion n'est pas valide.",
     "qrErrorConfig": "La connexion par QR code n'est pas disponible pour le moment.",
-    "methodCin": "CIN & mot de passe",
     "methodEmail": "Email",
     "methodPhone": "Téléphone & mot de passe",
     "methodChild": "Je suis un enfant",
@@ -70,7 +69,6 @@
     "childLoginNoStudents": "Aucun élève pour le moment.",
     "childLoginNoAccount": "compte pas encore créé",
     "childLoginGreeting": "Bonjour {name} ! Entre ton mot de passe.",
-    "cin": "Carte d'identité (CIN)",
     "phone": "Numéro de téléphone",
     "password": "Mot de passe",
     "email": "Email",
@@ -165,18 +163,27 @@
     "statPendingAccounts": "Comptes en attente",
     "statPendingHelp": "Aide en attente",
     "statPendingSuggestions": "Idées en attente",
-    "shortcuts": "Raccourcis"
+    "shortcuts": "Raccourcis",
+    "notificationsTab": "Notifications"
   },
   "privacy": {
     "title": "Confidentialité de vos données",
     "intro": "Cette page explique simplement quelles informations le Collège Pilote du Kef collecte via cette plateforme, et pourquoi.",
     "collectedTitle": "Ce que nous stockons",
-    "collected1": "Identité : carte d'identité (CIN), prénom et nom du parent, classe de l'enfant.",
-    "collected2": "Contact : numéro de téléphone et adresse email, utilisés pour la connexion et pour vous prévenir en cas d'absence d'un professeur.",
-    "collected3": "Scolarité : emploi du temps, absences des professeurs, devoirs et présence sur les espaces communautaires.",
-    "collected4": "Historique des SMS envoyés (contenu et statut d'envoi), pour le suivi technique.",
+    "collected1": "Identité : prénom et nom du parent, prénom de l'enfant et sa classe. La carte d'identité (CIN) n'est jamais demandée à l'inscription — elle est facultative et uniquement si vous choisissez vous-même de l'ajouter à votre profil.",
+    "collected2": "Contact : numéro de téléphone (il sert d'identifiant de connexion) et adresse email si vous en fournissez une.",
+    "collected3": "Scolarité : emploi du temps de la classe, absences des professeurs, devoirs et dates des devoirs surveillés.",
+    "collected4": "Contenus que vous publiez : publications et commentaires du feed, messages des groupes de projet, idées proposées dans la boîte à idées.",
+    "collected5": "Photos : votre photo de profil et les médias que vous publiez sur le feed.",
+    "collected6": "Historique des messages envoyés par la plateforme (SMS et emails) : destinataire, contenu et statut d'envoi, pour le suivi technique.",
+    "collected7": "Notifications : un identifiant technique de votre appareil ou navigateur, nécessaire pour vous envoyer les notifications, ainsi que la date de votre dernière activité.",
+    "collected8": "Dons : le montant et la référence du paiement. Le paiement lui-même est traité par Konnect — aucune donnée bancaire ne transite par la plateforme ni n'y est stockée.",
     "purposeTitle": "Pourquoi",
-    "purpose": "Ces données servent uniquement à la gestion administrative et pédagogique du collège (validation des comptes, communication, suivi de l'emploi du temps). Elles ne sont jamais vendues ni partagées avec des tiers.",
+    "purpose": "Ces données servent uniquement à la gestion administrative et pédagogique du collège (validation des comptes, communication, suivi de l'emploi du temps, vie scolaire). Elles ne sont jamais vendues ni partagées avec des tiers.",
+    "aiTitle": "L'assistant du site",
+    "ai": "Les questions posées à l'assistant sont transmises à Google Gemini, le service d'intelligence artificielle qui génère la réponse. N'y écrivez pas d'informations sensibles ou personnelles.",
+    "rightsTitle": "Vos droits",
+    "rights": "Vous pouvez consulter et corriger vos informations à tout moment depuis votre profil. Pour demander la suppression de votre compte et des données associées, contactez l'administration.",
     "contactTitle": "Une question ?",
     "contact": "Contacte-nous au 99766801 ou par email à contact@cpkef.tn."
   },
@@ -234,7 +241,14 @@
     "typeControle": "Devoir de contrôle",
     "typeSynthese": "Devoir de synthèse",
     "subjectLabel": "Sujet",
-    "notesLabel": "Notes du professeur"
+    "notesLabel": "Notes du professeur",
+    "addTitle": "Ajouter un devoir (contrôle/synthèse)",
+    "classPlaceholder": "Classe…",
+    "subject": "Matière",
+    "descriptionPlaceholder": "Sujet / cours couvert (facultatif)",
+    "notesPlaceholder": "Notes pour les élèves (facultatif)",
+    "adding": "…",
+    "add": "Ajouter le devoir"
   },
   "notificationsUi": {
     "title": "Notifications",
@@ -244,7 +258,10 @@
     "pushEnabling": "Activation…",
     "pushEnabled": "Notifications activées sur cet appareil ✓",
     "pushDenied": "Notifications bloquées — active-les dans les réglages de ton navigateur/téléphone.",
-    "pushIosAddToHome": "📲 Sur iPhone, les notifications ne sont possibles qu'après avoir ajouté ce site à l'écran d'accueil : appuie sur l'icône Partager de Safari, puis « Sur l'écran d'accueil »."
+    "pushIosAddToHome": "📲 Sur iPhone, les notifications ne sont possibles qu'après avoir ajouté ce site à l'écran d'accueil : appuie sur l'icône Partager de Safari, puis « Sur l'écran d'accueil ».",
+    "announcementTitle": "Message de l'administration",
+    "announcementClose": "J'ai compris",
+    "announcementOpenLink": "Ouvrir le lien"
   },
   "suggestions": {
     "title": "Boîte à idées",
@@ -384,5 +401,16 @@
     "noMessages": "Aucun message pour le moment — lance la discussion !",
     "messagePlaceholder": "Écrire un message…",
     "send": "Envoyer"
+  },
+  "makeup": {
+    "upcomingTitle": "Séances de rattrapage à venir",
+    "addTitle": "Ajouter une séance de rattrapage",
+    "classPlaceholder": "Classe…",
+    "subject": "Matière",
+    "reason": "Motif (optionnel)",
+    "adding": "Ajout…",
+    "add": "Ajouter la séance",
+    "deleteLabel": "Supprimer la séance",
+    "confirmDelete": "Supprimer cette séance de rattrapage ?"
   }
 }

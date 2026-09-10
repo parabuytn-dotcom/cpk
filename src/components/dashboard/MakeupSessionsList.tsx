@@ -1,8 +1,9 @@
+import { getTranslations } from "next-intl/server";
 import type { MakeupSessionRow } from "@/lib/admin/data";
 import { formatDate } from "@/lib/formatDate";
 import DeleteMakeupSessionButton from "./DeleteMakeupSessionButton";
 
-export default function MakeupSessionsList({
+export default async function MakeupSessionsList({
   sessions,
   locale,
   canDelete = false,
@@ -12,10 +13,11 @@ export default function MakeupSessionsList({
   canDelete?: boolean;
 }) {
   if (sessions.length === 0) return null;
+  const t = await getTranslations("makeup");
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Séances de rattrapage à venir</h2>
+      <h2 className="text-lg font-semibold">{t("upcomingTitle")}</h2>
       <div className="flex flex-col gap-2">
         {sessions.map((session) => (
           <div

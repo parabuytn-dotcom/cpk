@@ -664,6 +664,17 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 
+-- Sent from /admin/notifications: `intrusive` notifications are also shown as
+-- a blocking modal the next time the person opens the site (same treatment as
+-- the "your account has been validated" popup) instead of only sitting under
+-- the bell. `title` is that modal's heading; `sent_by` records which admin
+-- sent it, so a hand-written message is distinguishable from an automatic one.
+alter table public.notifications add column if not exists intrusive boolean not null default false;
+alter table public.notifications add column if not exists title text;
+alter table public.notifications add column if not exists sent_by uuid references public.profiles (id) on delete set null;
+
+create index if not exists idx_notifications_user_read on public.notifications (user_id, read);
+
 alter table public.notifications enable row level security;
 
 drop policy if exists "Users read their own notifications" on public.notifications;

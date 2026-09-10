@@ -23,12 +23,26 @@ export default async function PrivacyPage({
             <li>{t("collected2")}</li>
             <li>{t("collected3")}</li>
             <li>{t("collected4")}</li>
+            <li>{t("collected5")}</li>
+            <li>{t("collected6")}</li>
+            <li>{t("collected7")}</li>
+            <li>{t("collected8")}</li>
           </ul>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold">{t("purposeTitle")}</h2>
           <p>{t("purpose")}</p>
+        </div>
+
+        <div>
+          <h2 className="mb-2 font-semibold">{t("aiTitle")}</h2>
+          <p>{t("ai")}</p>
+        </div>
+
+        <div>
+          <h2 className="mb-2 font-semibold">{t("rightsTitle")}</h2>
+          <p>{t("rights")}</p>
         </div>
 
         <div>
