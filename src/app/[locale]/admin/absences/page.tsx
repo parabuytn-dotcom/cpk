@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import AbsenceForm from "@/components/admin/AbsenceForm";
+import DeleteAbsenceButton from "@/components/admin/DeleteAbsenceButton";
 import { listTeachers, listTeacherAbsences } from "@/lib/admin/data";
 
 export default async function AdminAbsencesPage({
@@ -36,6 +37,7 @@ export default async function AdminAbsencesPage({
                 {new Date(a.endsAt).toLocaleString("fr-FR")}
               </span>
               {a.reason && <span className="text-sm text-foreground/60">{a.reason}</span>}
+              <DeleteAbsenceButton absenceId={a.id} />
             </div>
           ))}
         </div>

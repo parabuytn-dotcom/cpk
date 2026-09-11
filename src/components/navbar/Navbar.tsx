@@ -23,9 +23,9 @@ export default async function Navbar() {
           ...(profile.role === "student" || profile.role === "admin"
             ? [{ href: "/groupes", label: t("groups") }]
             : []),
+          { href: "/messages", label: t("messages") },
         ]
       : []),
-    { href: "/staff", label: t("staff") },
     { href: "/a-propos", label: t("about") },
     { href: "/nouveautes", label: t("releases") },
     ...(profile ? [{ href: "/dons", label: t("donations") }] : []),

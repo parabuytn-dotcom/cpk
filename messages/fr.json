@@ -15,7 +15,10 @@
     "register": "S'inscrire",
     "dashboard": "Mon espace",
     "admin": "Administration",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "logoutCodePrompt": "Code de déconnexion (réservé au staff) :",
+    "logoutCodeWrong": "Code incorrect.",
+    "messages": "Messages"
   },
   "home": {
     "title": "Bienvenue au Collège Pilote du Kef",
@@ -164,7 +167,9 @@
     "statPendingHelp": "Aide en attente",
     "statPendingSuggestions": "Idées en attente",
     "shortcuts": "Raccourcis",
-    "notificationsTab": "Notifications"
+    "notificationsTab": "Notifications",
+    "reportsTab": "Signalements",
+    "reportsEmpty": "Aucun signalement."
   },
   "privacy": {
     "title": "Confidentialité de vos données",
@@ -412,5 +417,28 @@
     "add": "Ajouter la séance",
     "deleteLabel": "Supprimer la séance",
     "confirmDelete": "Supprimer cette séance de rattrapage ?"
+  },
+  "messages": {
+    "title": "Messages",
+    "subtitle": "Discute et appelle les personnes qui te suivent et que tu suis en retour.",
+    "noFriends": "Aucun ami pour le moment. Suivez-vous mutuellement depuis un profil pour pouvoir discuter.",
+    "noMessagesYet": "Aucun message pour le moment.",
+    "backToList": "Messages",
+    "chatTab": "Chat",
+    "callTab": "Appel",
+    "placeholder": "Écrire un message…",
+    "send": "Envoyer",
+    "block": "Bloquer",
+    "unblock": "Débloquer",
+    "report": "Signaler",
+    "reportTitle": "Signaler cette personne",
+    "reportHint": "Explique ce qui ne va pas. Le signalement est envoyé à l'administration, la personne n'en est pas informée.",
+    "reportPlaceholder": "Décris le problème…",
+    "reportSubmit": "Envoyer le signalement",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "notFriends": "Vous devez vous suivre mutuellement pour discuter.",
+    "youBlocked": "Tu as bloqué cette personne. Débloque-la pour reprendre la conversation.",
+    "conversationUnavailable": "Cette conversation n'est plus disponible."
   }
 }

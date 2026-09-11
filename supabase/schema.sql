@@ -1263,3 +1263,141 @@ create table if not exists public.login_qr_tokens (
 alter table public.login_qr_tokens enable row level security;
 
 create index if not exists idx_login_qr_tokens_user_id on public.login_qr_tokens (user_id);
+
+-- ----------------------------------------------------------------------------
+-- One-off cleanup: timetable_entries.is_cancelled is no longer written to or
+-- read. A teacher absence used to flip it to true on the recurring weekly
+-- slot, which struck that course out every week forever instead of only
+-- during the absence. Cancellation is now derived at read time from
+-- teacher_absences (see listTimetableEntries in src/lib/admin/data.ts), so any
+-- row still stuck at true is stale data — reset it. Safe to re-run: nothing
+-- sets this column to true any more.
+-- ----------------------------------------------------------------------------
+update public.timetable_entries set is_cancelled = false where is_cancelled = true;
+
+-- ----------------------------------------------------------------------------
+-- Messagerie privée — réservée aux "amis", c'est-à-dire deux personnes qui se
+-- suivent mutuellement (follows dans les deux sens). Pas de demande d'ami
+-- séparée : le suivi mutuel EST l'amitié, ce qui évite un deuxième système de
+-- validation à maintenir.
+--
+-- user_blocks : un blocage coupe la conversation dans les deux sens, quel que
+-- soit celui qui a bloqué. user_reports : signalements, relus depuis
+-- /admin/signalements.
+-- ----------------------------------------------------------------------------
+create table if not exists public.direct_messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid not null references public.profiles (id) on delete cascade,
+  recipient_id uuid not null references public.profiles (id) on delete cascade,
+  content text not null,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.user_blocks (
+  id uuid primary key default gen_random_uuid(),
+  blocker_id uuid not null references public.profiles (id) on delete cascade,
+  blocked_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (blocker_id, blocked_id)
+);
+
+create table if not exists public.user_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid references public.profiles (id) on delete set null,
+  reported_id uuid not null references public.profiles (id) on delete cascade,
+  reason text not null,
+  context text,
+  status text not null default 'open' check (status in ('open', 'reviewed', 'dismissed')),
+  created_at timestamptz not null default now()
+);
+
+-- Mutual follow = friendship. Security definer so the check doesn't depend on
+-- the caller being able to read the other person's follow rows.
+create or replace function public.are_friends(a uuid, b uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (select 1 from public.follows where follower_id = a and followed_id = b)
+     and exists (select 1 from public.follows where follower_id = b and followed_id = a);
+$$;
+
+-- A block in EITHER direction cuts the conversation off for both sides.
+create or replace function public.is_blocked_between(a uuid, b uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.user_blocks
+    where (blocker_id = a and blocked_id = b)
+       or (blocker_id = b and blocked_id = a)
+  );
+$$;
+
+alter table public.direct_messages enable row level security;
+
+drop policy if exists "Participants read their own messages" on public.direct_messages;
+create policy "Participants read their own messages"
+  on public.direct_messages for select
+  using (auth.uid() = sender_id or auth.uid() = recipient_id or public.is_admin());
+
+drop policy if exists "Friends send messages" on public.direct_messages;
+create policy "Friends send messages"
+  on public.direct_messages for insert
+  with check (
+    auth.uid() = sender_id
+    and public.are_friends(auth.uid(), recipient_id)
+    and not public.is_blocked_between(auth.uid(), recipient_id)
+  );
+
+drop policy if exists "Recipients mark messages read" on public.direct_messages;
+create policy "Recipients mark messages read"
+  on public.direct_messages for update
+  using (auth.uid() = recipient_id);
+
+alter table public.user_blocks enable row level security;
+
+drop policy if exists "Users read their own blocks" on public.user_blocks;
+create policy "Users read their own blocks"
+  on public.user_blocks for select
+  using (auth.uid() = blocker_id or auth.uid() = blocked_id or public.is_admin());
+
+drop policy if exists "Users block as themselves" on public.user_blocks;
+create policy "Users block as themselves"
+  on public.user_blocks for insert
+  with check (auth.uid() = blocker_id);
+
+drop policy if exists "Users unblock as themselves" on public.user_blocks;
+create policy "Users unblock as themselves"
+  on public.user_blocks for delete
+  using (auth.uid() = blocker_id);
+
+alter table public.user_reports enable row level security;
+
+-- Reports are write-only for the reporter: only admins get to read them back,
+-- so nobody can browse who reported whom.
+drop policy if exists "Users file their own reports" on public.user_reports;
+create policy "Users file their own reports"
+  on public.user_reports for insert
+  with check (auth.uid() = reporter_id);
+
+drop policy if exists "Admins read reports" on public.user_reports;
+create policy "Admins read reports"
+  on public.user_reports for select
+  using (public.is_admin());
+
+drop policy if exists "Admins update reports" on public.user_reports;
+create policy "Admins update reports"
+  on public.user_reports for update
+  using (public.is_admin());
+
+create index if not exists idx_direct_messages_pair on public.direct_messages (sender_id, recipient_id, created_at);
+create index if not exists idx_direct_messages_recipient on public.direct_messages (recipient_id, read_at);
+create index if not exists idx_user_blocks_blocker on public.user_blocks (blocker_id);
+create index if not exists idx_user_reports_status on public.user_reports (status, created_at);

@@ -12,6 +12,7 @@ import OnboardingTour, { type TourStep } from "@/components/onboarding/Onboardin
 import { getCurrentProfile } from "@/lib/auth/session";
 import ChatWidget from "@/components/assistant/ChatWidget";
 import SplashScreen from "@/components/SplashScreen";
+import PushAutoRegister from "@/components/push/PushAutoRegister";
 import IntrusiveNotificationModal from "@/components/notifications/IntrusiveNotificationModal";
 import { listUnreadIntrusiveNotifications } from "@/lib/notifications/data";
 import "../globals.css";
@@ -81,6 +82,10 @@ export default async function LocaleLayout({
             ·{" "}
             <Link href="/confidentialite" className="underline hover:text-foreground">
               {footer("privacy")}
+            </Link>{" "}
+            ·{" "}
+            <Link href="/staff" className="underline hover:text-foreground">
+              {nav("staff")}
             </Link>
           </footer>
           {showOnboardingTour && <OnboardingTourContainer />}
@@ -88,6 +93,7 @@ export default async function LocaleLayout({
           {intrusiveNotifications.length > 0 && (
             <IntrusiveNotificationModal notifications={intrusiveNotifications} />
           )}
+          {profile && <PushAutoRegister />}
           <ChatWidget />
         </NextIntlClientProvider>
       </body>

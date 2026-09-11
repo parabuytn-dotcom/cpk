@@ -358,12 +358,13 @@ async function applyTeacherAbsence({
     }
   }
 
-  if (affectedEntryIds.size > 0) {
-    await supabase
-      .from("timetable_entries")
-      .update({ is_cancelled: true })
-      .in("id", Array.from(affectedEntryIds));
-  }
+  // Deliberately NOT writing is_cancelled on those rows: timetable_entries
+  // holds the recurring weekly pattern, so flipping the flag struck the course
+  // out every week forever instead of just during the absence. The cancelled
+  // state is derived at read time from this absence row — see
+  // listTimetableEntries() in data.ts. affectedEntryIds is still computed here
+  // only to report how many slots this absence hits and to know which classes
+  // to alert.
 
   // 2. SMS alert to parents of every affected class.
   const teacherName = teacher ? `${teacher.first_name} ${teacher.last_name}` : "Le professeur";
@@ -401,6 +402,20 @@ async function applyTeacherAbsence({
       classes: affectedClasses.size,
     }),
   };
+}
+
+export async function deleteTeacherAbsence(absenceId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("teacher_absences").delete().eq("id", absenceId);
+  if (error) throw new Error(error.message);
+
+  // Nothing else to undo: the strike-through on the timetable is derived from
+  // this row, so deleting it restores the affected courses on its own.
+  revalidatePath("/admin/absences");
+  revalidatePath("/admin/emploi-du-temps");
+  revalidatePath("/emploi-du-temps");
+  revalidatePath("/dashboard");
 }
 
 export async function declareTeacherAbsence(
@@ -1387,4 +1402,12 @@ export async function updateDownloadSettings(_state: FormState, formData: FormDa
   revalidatePath("/admin/parametres");
   revalidatePath("/");
   return { success: "Enregistré." };
+}
+
+export async function setReportStatus(reportId: string, status: "reviewed" | "dismissed") {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("user_reports").update({ status }).eq("id", reportId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/signalements");
 }

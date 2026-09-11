@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useTranslations } from "next-intl";
-import { registerPushToken } from "@/lib/push/actions";
+import {
+  isIosSafariTab,
+  registerNativeToken,
+  registerWebToken,
+  listenForegroundMessages,
+} from "@/lib/push/register";
 
 type Status =
   | "checking"
@@ -14,101 +19,6 @@ type Status =
   | "registering"
   | "granted"
   | "error";
-
-// iOS Safari only exposes the Notification/Push API to a site that's been
-// added to the home screen and launched from there (standalone display
-// mode) — in a regular browser tab `window.Notification` doesn't exist at
-// all, on any iOS version. This isn't a bug to work around; the only fix is
-// telling the user how to add the site to their home screen.
-function isIosSafariTab() {
-  if (typeof navigator === "undefined") return false;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isStandalone = (window.navigator as { standalone?: boolean }).standalone === true;
-  return isIOS && !isStandalone;
-}
-
-async function registerNative(): Promise<boolean> {
-  const { PushNotifications } = await import("@capacitor/push-notifications");
-
-  const perm = await PushNotifications.requestPermissions();
-  if (perm.receive !== "granted") return false;
-
-  return new Promise<boolean>((resolve) => {
-    let settled = false;
-    let regHandle: { remove: () => Promise<void> } | undefined;
-    let errHandle: { remove: () => Promise<void> } | undefined;
-
-    function finish(ok: boolean) {
-      if (settled) return;
-      settled = true;
-      regHandle?.remove();
-      errHandle?.remove();
-      resolve(ok);
-    }
-
-    PushNotifications.addListener("registration", async (token) => {
-      await registerPushToken(token.value, "android");
-      finish(true);
-    }).then((h) => (regHandle = h));
-
-    PushNotifications.addListener("registrationError", () => finish(false)).then(
-      (h) => (errHandle = h),
-    );
-
-    PushNotifications.register();
-  });
-}
-
-async function registerWeb() {
-  if (typeof Notification === "undefined") return false;
-
-  const { isFirebaseWebConfigured, getFirebaseApp } = await import("@/lib/push/firebaseClient");
-  if (!isFirebaseWebConfigured()) return false;
-
-  const app = getFirebaseApp();
-  if (!app) return false;
-
-  const { getMessaging, getToken } = await import("firebase/messaging");
-  const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-  const messaging = getMessaging(app);
-  const token = await getToken(messaging, {
-    vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-    serviceWorkerRegistration: registration,
-  });
-
-  if (!token) return false;
-  const result = await registerPushToken(token, "web");
-  return result.success;
-}
-
-// Firebase only routes a push through the service worker's
-// onBackgroundMessage when the tab is NOT focused. With the tab open and
-// active (the common case while testing), the message instead arrives here
-// — without this listener it's received by the SDK but never shown as a
-// notification at all.
-async function listenForegroundMessages() {
-  const { isFirebaseWebConfigured, getFirebaseApp } = await import("@/lib/push/firebaseClient");
-  if (!isFirebaseWebConfigured()) return;
-
-  const app = getFirebaseApp();
-  if (!app) return;
-
-  const { getMessaging, onMessage } = await import("firebase/messaging");
-  const messaging = getMessaging(app);
-
-  onMessage(messaging, (payload) => {
-    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
-    const { title, body } = payload.notification ?? {};
-    const link = payload.data?.link;
-    const notification = new Notification(title ?? "CPK Learn", { body, icon: "/icon.png" });
-    if (link) {
-      notification.onclick = () => {
-        window.focus();
-        window.location.href = link;
-      };
-    }
-  });
-}
 
 export default function PushNotificationToggle() {
   const t = useTranslations("notificationsUi");
@@ -132,7 +42,7 @@ export default function PushNotificationToggle() {
         if (perm.receive === "granted") {
           // Already granted in a previous session — silently keep the
           // token fresh rather than making the user click again.
-          const ok = await registerNative();
+          const ok = await registerNativeToken();
           if (!cancelled) setStatus(ok ? "granted" : "error");
         } else {
           setStatus("idle");
@@ -143,7 +53,12 @@ export default function PushNotificationToggle() {
       if (typeof Notification === "undefined") {
         setStatus(isIosSafariTab() ? "ios-add-to-home" : "unsupported");
       } else if (Notification.permission === "granted") {
-        setStatus("granted");
+        // Permission alone isn't enough — without an FCM token on the server
+        // nothing can ever be delivered, and web tokens rotate. Refresh it
+        // silently instead of just showing "enabled".
+        const ok = await registerWebToken();
+        if (cancelled) return;
+        setStatus(ok ? "granted" : "error");
       } else if (Notification.permission === "denied") {
         setStatus("denied");
       } else {
@@ -160,7 +75,7 @@ export default function PushNotificationToggle() {
   async function handleEnable() {
     setStatus("registering");
     try {
-      const ok = Capacitor.isNativePlatform() ? await registerNative() : await registerWeb();
+      const ok = Capacitor.isNativePlatform() ? await registerNativeToken() : await registerWebToken();
       setStatus(ok ? "granted" : "denied");
     } catch {
       setStatus("error");

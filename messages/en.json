@@ -15,7 +15,10 @@
     "register": "Sign up",
     "dashboard": "My space",
     "admin": "Administration",
-    "logout": "Log out"
+    "logout": "Log out",
+    "logoutCodePrompt": "Logout code (staff only):",
+    "logoutCodeWrong": "Wrong code.",
+    "messages": "Messages"
   },
   "home": {
     "title": "Welcome to Collège Pilote du Kef",
@@ -164,7 +167,9 @@
     "statPendingHelp": "Pending help",
     "statPendingSuggestions": "Pending ideas",
     "shortcuts": "Shortcuts",
-    "notificationsTab": "Notifications"
+    "notificationsTab": "Notifications",
+    "reportsTab": "Reports",
+    "reportsEmpty": "No reports."
   },
   "privacy": {
     "title": "Your data, privacy",
@@ -412,5 +417,28 @@
     "add": "Add session",
     "deleteLabel": "Delete session",
     "confirmDelete": "Delete this catch-up session?"
+  },
+  "messages": {
+    "title": "Messages",
+    "subtitle": "Chat and call the people who follow you and whom you follow back.",
+    "noFriends": "No friends yet. Follow each other from a profile to start chatting.",
+    "noMessagesYet": "No messages yet.",
+    "backToList": "Messages",
+    "chatTab": "Chat",
+    "callTab": "Call",
+    "placeholder": "Write a message…",
+    "send": "Send",
+    "block": "Block",
+    "unblock": "Unblock",
+    "report": "Report",
+    "reportTitle": "Report this person",
+    "reportHint": "Explain what's wrong. The report goes to the administration; the person isn't notified.",
+    "reportPlaceholder": "Describe the problem…",
+    "reportSubmit": "Send report",
+    "cancel": "Cancel",
+    "close": "Close",
+    "notFriends": "You both need to follow each other to chat.",
+    "youBlocked": "You blocked this person. Unblock them to resume the conversation.",
+    "conversationUnavailable": "This conversation is no longer available."
   }
 }

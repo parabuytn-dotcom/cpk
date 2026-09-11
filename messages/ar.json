@@ -15,7 +15,10 @@
     "register": "إنشاء حساب",
     "dashboard": "فضائي",
     "admin": "الإدارة",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "logoutCodePrompt": "رمز تسجيل الخروج (خاص بالطاقم):",
+    "logoutCodeWrong": "الرمز غير صحيح.",
+    "messages": "الرسائل"
   },
   "home": {
     "title": "مرحبا بكم في المعهد النموذجي بالكاف",
@@ -164,7 +167,9 @@
     "statPendingHelp": "مساعدة في الانتظار",
     "statPendingSuggestions": "أفكار في الانتظار",
     "shortcuts": "اختصارات",
-    "notificationsTab": "الإشعارات"
+    "notificationsTab": "الإشعارات",
+    "reportsTab": "البلاغات",
+    "reportsEmpty": "لا توجد بلاغات."
   },
   "privacy": {
     "title": "خصوصية بياناتك",
@@ -412,5 +417,28 @@
     "add": "إضافة الحصة",
     "deleteLabel": "حذف الحصة",
     "confirmDelete": "حذف حصة التدارك هذه؟"
+  },
+  "messages": {
+    "title": "الرسائل",
+    "subtitle": "تحدّث واتصل بالأشخاص الذين يتابعونك وتتابعهم بدورك.",
+    "noFriends": "لا يوجد أصدقاء بعد. تابعا بعضكما من الملف الشخصي لتتمكنا من المحادثة.",
+    "noMessagesYet": "لا توجد رسائل بعد.",
+    "backToList": "الرسائل",
+    "chatTab": "محادثة",
+    "callTab": "مكالمة",
+    "placeholder": "اكتب رسالة…",
+    "send": "إرسال",
+    "block": "حظر",
+    "unblock": "إلغاء الحظر",
+    "report": "إبلاغ",
+    "reportTitle": "الإبلاغ عن هذا الشخص",
+    "reportHint": "اشرح ما هي المشكلة. يُرسل البلاغ إلى الإدارة، ولا يتم إعلام الشخص المعني.",
+    "reportPlaceholder": "صف المشكلة…",
+    "reportSubmit": "إرسال البلاغ",
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "notFriends": "يجب أن يتابع كل منكما الآخر لتتمكنا من المحادثة.",
+    "youBlocked": "لقد حظرت هذا الشخص. ألغِ الحظر لاستئناف المحادثة.",
+    "conversationUnavailable": "هذه المحادثة لم تعد متاحة."
   }
 }

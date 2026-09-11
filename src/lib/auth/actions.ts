@@ -110,10 +110,11 @@ async function createParentAccount({
     return { message: studentError.message };
   }
 
-  redirect({
-    href: { pathname: "/login", query: { registered: "1" } },
-    locale: await getLocale(),
-  });
+  // Log the brand-new account straight in instead of bouncing to /login: the
+  // password was just typed on the form, so making them retype it adds a step
+  // and a chance to mistype it for nothing. The account is still "pending"
+  // admin validation — the dashboard shows the pending banner.
+  return signInAndRedirect(email, password);
 }
 
 export async function registerManual(

@@ -201,6 +201,30 @@ export type TimetableEntryRow = {
   isCancelled: boolean;
 };
 
+/** Monday 00:00 UTC through next Monday 00:00 UTC, for the week containing `now`. */
+function currentWeekBounds(now = new Date()) {
+  const isoDay = now.getUTCDay() === 0 ? 7 : now.getUTCDay();
+  const weekStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (isoDay - 1)),
+  );
+  const weekEnd = new Date(weekStart);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+  return { weekStart, weekEnd };
+}
+
+function slotDateTime(weekStart: Date, dayOfWeek: number, hhmm: string) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return new Date(
+    Date.UTC(
+      weekStart.getUTCFullYear(),
+      weekStart.getUTCMonth(),
+      weekStart.getUTCDate() + (dayOfWeek - 1),
+      h,
+      m,
+    ),
+  );
+}
+
 export async function listTimetableEntries(classId: string): Promise<TimetableEntryRow[]> {
   if (!isSupabaseConfigured()) return [];
 
@@ -208,14 +232,47 @@ export async function listTimetableEntries(classId: string): Promise<TimetableEn
   const { data } = await supabase
     .from("timetable_entries")
     .select(
-      "id, class_name, day_of_week, start_time, end_time, subject, is_cancelled, teachers(first_name, last_name)",
+      "id, class_name, day_of_week, start_time, end_time, subject, teacher_id, teachers(first_name, last_name)",
     )
     .eq("class_id", classId)
     .order("day_of_week")
     .order("start_time");
 
-  return (data ?? []).map((row) => {
+  const entries = data ?? [];
+
+  // "Cancelled" is DERIVED, never stored on the recurring slot. Writing
+  // is_cancelled = true on a timetable_entries row used to strike that course
+  // out every week forever, because these rows are the weekly pattern, not
+  // individual dated lessons — a one-off absence looked permanent. Instead we
+  // check, per render, whether an absence actually covers THIS week's
+  // occurrence of the slot, so it un-cancels itself once the absence is over.
+  const teacherIds = Array.from(
+    new Set(entries.map((e) => e.teacher_id).filter((id): id is string => Boolean(id))),
+  );
+
+  const { weekStart, weekEnd } = currentWeekBounds();
+  let absences: { teacher_id: string; starts_at: string; ends_at: string }[] = [];
+  if (teacherIds.length > 0) {
+    const { data: rows } = await supabase
+      .from("teacher_absences")
+      .select("teacher_id, starts_at, ends_at")
+      .in("teacher_id", teacherIds)
+      .lt("starts_at", weekEnd.toISOString())
+      .gt("ends_at", weekStart.toISOString());
+    absences = rows ?? [];
+  }
+
+  return entries.map((row) => {
     const teacher = Array.isArray(row.teachers) ? row.teachers[0] : row.teachers;
+    const slotStart = slotDateTime(weekStart, row.day_of_week, row.start_time);
+    const slotEnd = slotDateTime(weekStart, row.day_of_week, row.end_time);
+    const isCancelled = absences.some(
+      (a) =>
+        a.teacher_id === row.teacher_id &&
+        new Date(a.starts_at) < slotEnd &&
+        new Date(a.ends_at) > slotStart,
+    );
+
     return {
       id: row.id,
       className: row.class_name,
@@ -224,7 +281,7 @@ export async function listTimetableEntries(classId: string): Promise<TimetableEn
       endTime: row.end_time,
       subject: row.subject,
       teacherName: teacher ? `${teacher.first_name} ${teacher.last_name}` : null,
-      isCancelled: row.is_cancelled,
+      isCancelled,
     };
   });
 }
@@ -720,4 +777,50 @@ export async function listMakeupSessionsForClass(classId: string): Promise<Makeu
       reason: row.reason,
     };
   });
+}
+
+export type UserReportRow = {
+  id: string;
+  reportedId: string;
+  reportedName: string;
+  reportedAvatarUrl: string | null;
+  reporterName: string;
+  reason: string;
+  context: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export async function listUserReports(): Promise<UserReportRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_reports")
+    .select("id, reported_id, reporter_id, reason, context, status, created_at")
+    .order("status")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const ids = Array.from(
+    new Set(
+      rows.flatMap((r) => [r.reported_id, r.reporter_id]).filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const profiles = await getPublicProfiles(supabase, ids);
+
+  return rows.map((r) => ({
+    id: r.id,
+    reportedId: r.reported_id,
+    reportedName: profiles.get(r.reported_id)?.displayName ?? "?",
+    reportedAvatarUrl: profiles.get(r.reported_id)?.avatarUrl ?? null,
+    reporterName: r.reporter_id ? (profiles.get(r.reporter_id)?.displayName ?? "?") : "compte supprimé",
+    reason: r.reason,
+    context: r.context,
+    status: r.status,
+    createdAt: r.created_at,
+  }));
 }
