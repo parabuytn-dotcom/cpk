@@ -1401,3 +1401,13 @@ create index if not exists idx_direct_messages_pair on public.direct_messages (s
 create index if not exists idx_direct_messages_recipient on public.direct_messages (recipient_id, read_at);
 create index if not exists idx_user_blocks_blocker on public.user_blocks (blocker_id);
 create index if not exists idx_user_reports_status on public.user_reports (status, created_at);
+
+-- ----------------------------------------------------------------------------
+-- push_tokens.platform accepte désormais 'ios' : l'app native iOS (Capacitor)
+-- renvoie un token APNs, que la contrainte d'origine ('web','android')
+-- rejetait silencieusement à l'insertion — le token n'était donc jamais
+-- enregistré et aucune notification ne pouvait arriver sur iPhone.
+-- ----------------------------------------------------------------------------
+alter table public.push_tokens drop constraint if exists push_tokens_platform_check;
+alter table public.push_tokens add constraint push_tokens_platform_check
+  check (platform in ('web', 'android', 'ios'));

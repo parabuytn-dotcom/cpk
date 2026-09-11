@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 
-export async function registerPushToken(token: string, platform: "web" | "android") {
+export async function registerPushToken(token: string, platform: "web" | "android" | "ios") {
   const profile = await getCurrentProfile();
   if (!profile) return { success: false };
 
