@@ -169,7 +169,9 @@
     "shortcuts": "اختصارات",
     "notificationsTab": "الإشعارات",
     "reportsTab": "البلاغات",
-    "reportsEmpty": "لا توجد بلاغات."
+    "reportsEmpty": "لا توجد بلاغات.",
+    "emailsTab": "الرسائل الإلكترونية",
+    "securityTab": "الأمان"
   },
   "privacy": {
     "title": "خصوصية بياناتك",

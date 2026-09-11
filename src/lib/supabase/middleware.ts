@@ -14,7 +14,7 @@ export async function updateSession(request: NextRequest, response: NextResponse
   // Supabase isn't configured yet (.env.local not filled in) — treat every
   // request as anonymous instead of crashing the whole site on every route.
   if (!supabaseUrl || !supabaseAnonKey) {
-    return { response, user: null, role: null, mustChangePassword: false };
+    return { response, user: null, role: null, mustChangePassword: false, needsMfa: false };
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -47,5 +47,14 @@ export async function updateSession(request: NextRequest, response: NextResponse
     mustChangePassword = profile?.must_change_password ?? false;
   }
 
-  return { response, user, role, mustChangePassword };
+  // needsMfa: the account has a verified second factor but this session
+  // hasn't used it yet. getAuthenticatorAssuranceLevel() reads the JWT that
+  // was just refreshed above, so it costs no extra round-trip.
+  let needsMfa = false;
+  if (user) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    needsMfa = aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2";
+  }
+
+  return { response, user, role, mustChangePassword, needsMfa };
 }

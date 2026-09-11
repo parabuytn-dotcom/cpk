@@ -18,7 +18,10 @@ export default async function proxy(request: NextRequest) {
   const i18nResponse = handleI18nRouting(request);
 
   // 2. Refresh the Supabase auth session on the resulting response
-  const { response, user, role, mustChangePassword } = await updateSession(request, i18nResponse);
+  const { response, user, role, mustChangePassword, needsMfa } = await updateSession(
+    request,
+    i18nResponse,
+  );
 
   // 3. Protect /admin routes (optimistic check — real authorization happens
   //    again in the admin layout/data access layer, see AGENTS/docs guidance).
@@ -29,6 +32,12 @@ export default async function proxy(request: NextRequest) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Once a biometric factor is enrolled, a password alone no longer opens
+    // the admin area — the session must be elevated to aal2 first.
+    if (needsMfa) {
+      return NextResponse.redirect(new URL("/verification-securite", request.url));
     }
   }
 

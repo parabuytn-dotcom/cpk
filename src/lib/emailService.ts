@@ -47,7 +47,12 @@ export async function sendEmail(
 
   try {
     await transport.sendMail({
-      from: `CPK Learn <${fromAddress}>`,
+      // The display name is the one part of the sender we fully control:
+      // Brevo rewrites the domain of an unauthenticated sender (a gmail.com
+      // address can never be authenticated), so recipients see this name
+      // rather than the @brevosend.com address it actually came from.
+      from: `CPK Learn — Collège Pilote du Kef <${fromAddress}>`,
+      replyTo: process.env.SMTP_REPLY_TO || fromAddress,
       to,
       subject,
       html: htmlContent,

@@ -824,3 +824,30 @@ export async function listUserReports(): Promise<UserReportRow[]> {
     createdAt: r.created_at,
   }));
 }
+
+export type SentEmailRow = {
+  id: string;
+  recipient: string;
+  subject: string;
+  status: string;
+  createdAt: string;
+};
+
+export async function listSentEmails(): Promise<SentEmailRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("email_logs")
+    .select("id, recipient, subject, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    recipient: row.recipient,
+    subject: row.subject,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+}

@@ -169,7 +169,9 @@
     "shortcuts": "Shortcuts",
     "notificationsTab": "Notifications",
     "reportsTab": "Reports",
-    "reportsEmpty": "No reports."
+    "reportsEmpty": "No reports.",
+    "emailsTab": "Emails",
+    "securityTab": "Security"
   },
   "privacy": {
     "title": "Your data, privacy",

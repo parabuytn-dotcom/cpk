@@ -1411,3 +1411,29 @@ create index if not exists idx_user_reports_status on public.user_reports (statu
 alter table public.push_tokens drop constraint if exists push_tokens_platform_check;
 alter table public.push_tokens add constraint push_tokens_platform_check
   check (platform in ('web', 'android', 'ios'));
+
+-- ----------------------------------------------------------------------------
+-- email_logs — historique des emails envoyés depuis /admin/emails (envoi
+-- personnalisé à des membres du site et/ou à des adresses externes). Sert de
+-- trace administrative et à surveiller le quota Brevo (300 emails/jour sur
+-- l'offre gratuite). Écrit uniquement via le client service_role.
+-- ----------------------------------------------------------------------------
+create table if not exists public.email_logs (
+  id uuid primary key default gen_random_uuid(),
+  sent_by uuid references public.profiles (id) on delete set null,
+  recipient text not null,
+  subject text not null,
+  body text not null,
+  status text not null default 'sent' check (status in ('sent', 'failed')),
+  error text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.email_logs enable row level security;
+
+drop policy if exists "Admins read email logs" on public.email_logs;
+create policy "Admins read email logs"
+  on public.email_logs for select
+  using (public.is_admin());
+
+create index if not exists idx_email_logs_created on public.email_logs (created_at desc);
