@@ -34,8 +34,16 @@ export default async function AdminSecurityPage({
           appareil enregistré, tu perds l&apos;accès admin.
         </p>
         <p>
-          • Une clé est aussi liée au <strong>domaine</strong>. Au passage à cpkef.tn, il faudra la
-          ré-enregistrer depuis le nouveau domaine.
+          • Une clé <strong>Face ID est liée au domaine</strong>. Au passage à cpkef.tn, il faudra
+          la ré-enregistrer. L&apos;application d&apos;authentification, elle, continuera de
+          fonctionner.
+        </p>
+        <p>
+          • Si Face ID refuse de s&apos;enregistrer (« MFA enroll is disabled for WebAuthn »),
+          active-le dans le dashboard Supabase : <strong>Authentication → Multi-Factor
+          Authentication → WebAuthn</strong>. C&apos;est une fonctionnalité encore en beta, donc
+          désactivée par défaut sur les projets. En attendant, l&apos;application
+          d&apos;authentification protège ton compte tout aussi efficacement.
         </p>
       </div>
     </div>
