@@ -177,6 +177,7 @@
     "reportsTab": "Signalements",
     "reportsEmpty": "Aucun signalement.",
     "emailsTab": "Emails",
+    "smsTab": "SMS",
     "securityTab": "Sécurité"
   },
   "privacy": {

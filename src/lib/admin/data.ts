@@ -851,3 +851,37 @@ export async function listSentEmails(): Promise<SentEmailRow[]> {
     createdAt: row.created_at,
   }));
 }
+
+export type SentSmsRow = {
+  id: string;
+  phone: string;
+  message: string;
+  trigger: string;
+  status: string;
+  error: string | null;
+  createdAt: string;
+};
+
+// Every SMS the platform ever sends goes through sms_logs — absence alerts,
+// generated passwords, phone-verification codes, and admin-composed ones —
+// so this is the full history, not just what the admin manually sent.
+export async function listSentSms(): Promise<SentSmsRow[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("sms_logs")
+    .select("id, phone, message, trigger, status, error, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    phone: row.phone,
+    message: row.message,
+    trigger: row.trigger,
+    status: row.status,
+    error: row.error,
+    createdAt: row.created_at,
+  }));
+}
