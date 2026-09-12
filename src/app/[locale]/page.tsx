@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/auth/session";
 import { getSiteSetting } from "@/lib/admin/data";
 import FirstVisitRedirect from "@/components/FirstVisitRedirect";
 import DownloadAppButton from "@/components/DownloadAppButton";
+import SocialLinks from "@/components/SocialLinks";
 
 // Whether to show the first-visit onboarding redirect depends on the
 // signed-in state at request time — must not be baked in at build time.
@@ -43,6 +44,7 @@ cpkef.tn
         downloadMode={downloadMode === "playstore" ? "playstore" : "apk"}
         playstoreUrl={playstoreUrl ?? ""}
       />
+      <SocialLinks />
     </div>
   );
 }
