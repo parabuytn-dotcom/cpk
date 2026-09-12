@@ -67,7 +67,7 @@ d'inventer une réponse.
 
 # Dons
 - La page "Faire un don" permet de soutenir la plateforme (hébergement, SMS, développement).
-- Le paiement est effectué via Konnect, un service de paiement tunisien. Aucune donnée bancaire
+- Le paiement est effectué via Flouci, un service de paiement tunisien. Aucune donnée bancaire
   n'est stockée par le site.
 
 # Application mobile

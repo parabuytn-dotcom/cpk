@@ -1101,12 +1101,12 @@ create index if not exists idx_profiles_last_seen_at on public.profiles (last_se
 alter table public.profiles add column if not exists onboarding_tour_seen boolean not null default false;
 
 -- ----------------------------------------------------------------------------
--- donations — parent/staff support payments via Konnect (Tunisian payment
--- gateway). `amount` is in millimes (Konnect's unit; 1 TND = 1000). A row is
--- inserted as 'pending' when the payment is initiated, then flipped to
--- 'completed'/'failed' by the webhook route AFTER it independently confirms
--- the real status via Konnect's Get Payment Details API — never trust the
--- webhook call's own payload, it only carries a payment_ref to look up.
+-- donations — parent/staff support payments via Flouci (Tunisian payment
+-- gateway). `amount` is in millimes (Flouci's unit; 1 TND = 1000), and
+-- `payment_ref` holds Flouci's payment_id. A row is inserted as 'pending'
+-- when the payment is initiated, then flipped to 'completed'/'failed' only
+-- after the real status is re-fetched from Flouci's verify_payment API —
+-- neither the webhook call nor the redirect back is trusted on its own.
 -- ----------------------------------------------------------------------------
 create table if not exists public.donations (
   id uuid primary key default gen_random_uuid(),

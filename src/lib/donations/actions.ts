@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { initKonnectPayment } from "@/lib/konnect/client";
+import { initFlouciPayment } from "@/lib/flouci/client";
 import { SITE_URL } from "@/lib/siteUrl";
 import { donationSchema, type FormState } from "./schemas";
 
@@ -31,13 +31,15 @@ export async function startDonation(_state: FormState, formData: FormData): Prom
   }
 
   const locale = await getLocale();
-  const result = await initKonnectPayment({
+  // The donation id travels in the return/webhook URLs we control, so the
+  // payment can always be tied back to its row without depending on the shape
+  // of whatever Flouci posts to the webhook.
+  const result = await initFlouciPayment({
     amountMillimes,
-    description: "Don pour CPK Learn",
-    orderId: donation.id,
-    webhookUrl: `${SITE_URL}/api/konnect/webhook`,
-    successUrl: `${SITE_URL}/${locale}/dons/succes`,
-    failUrl: `${SITE_URL}/${locale}/dons/echec`,
+    trackingId: donation.id,
+    webhookUrl: `${SITE_URL}/api/flouci/webhook?don=${donation.id}`,
+    successUrl: `${SITE_URL}/${locale}/dons/succes?don=${donation.id}`,
+    failUrl: `${SITE_URL}/${locale}/dons/echec?don=${donation.id}`,
   });
 
   if (!result.success) {
@@ -45,7 +47,7 @@ export async function startDonation(_state: FormState, formData: FormData): Prom
     return { message: result.error };
   }
 
-  await supabase.from("donations").update({ payment_ref: result.paymentRef }).eq("id", donation.id);
+  await supabase.from("donations").update({ payment_ref: result.paymentId }).eq("id", donation.id);
 
   redirect(result.payUrl);
 }
