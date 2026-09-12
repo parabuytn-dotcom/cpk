@@ -53,6 +53,69 @@ export async function validateAccount(profileId: string) {
   revalidatePath("/admin/comptes");
 }
 
+/**
+ * Points a profile at its `teachers` record, adopting the one the timetable
+ * already uses instead of adding a second row for the same person. Two rows
+ * for one teacher silently break everything keyed on teacher_id: an absence
+ * declared from the account matched none of their courses, because the
+ * courses hung off the other row. Returns an error message, or null.
+ */
+async function linkOrCreateTeacherRow({
+  profileId,
+  fullName,
+  fallbackLastName,
+  phone,
+  subject,
+}: {
+  profileId: string;
+  fullName: string;
+  fallbackLastName?: string | null;
+  phone?: string | null;
+  subject?: string | null;
+}): Promise<string | null> {
+  const adminClient = createAdminClient();
+  if (!adminClient) return "Supabase (clé service_role) n'est pas configuré.";
+
+  const { data: alreadyLinked } = await adminClient
+    .from("teachers")
+    .select("id")
+    .eq("user_id", profileId)
+    .maybeSingle();
+  if (alreadyLinked) return null;
+
+  const [firstName, ...rest] = fullName.trim().split(/\s+/);
+  const lastName = rest.join(" ") || fallbackLastName || firstName;
+
+  // Only an unclaimed record is adopted, and only when exactly one matches —
+  // two teachers sharing a name are left alone rather than risking the wrong
+  // person being linked.
+  const { data: unclaimed } = await adminClient
+    .from("teachers")
+    .select("id")
+    .is("user_id", null)
+    .ilike("first_name", firstName)
+    .ilike("last_name", lastName);
+
+  if (unclaimed?.length === 1) {
+    // Only fill blanks — never overwrite what the existing record already has.
+    const patch: { user_id: string; phone?: string; subject?: string } = { user_id: profileId };
+    if (phone) patch.phone = phone;
+    if (subject) patch.subject = subject;
+
+    const { error } = await adminClient.from("teachers").update(patch).eq("id", unclaimed[0].id);
+    return error?.message ?? null;
+  }
+
+  const { error } = await adminClient.from("teachers").insert({
+    first_name: firstName,
+    last_name: lastName,
+    subject: subject || null,
+    phone: phone || null,
+    user_id: profileId,
+  });
+  return error?.message ?? null;
+}
+
 // Lets an admin create a parent or teacher account directly, with no
 // pre-existing pending registration or CSV-imported `teachers` row needed —
 // unlike /admin/profs, which only creates a *login* for a teacher who
@@ -107,18 +170,14 @@ export async function createAccount(_state: FormState, formData: FormData): Prom
   }
 
   if (validated.data.role === "teacher") {
-    const [firstName, ...rest] = validated.data.fullName.trim().split(/\s+/);
-    const lastName = rest.join(" ") || firstName;
-
-    const { error: teacherError } = await adminClient.from("teachers").insert({
-      first_name: firstName,
-      last_name: lastName,
-      subject: validated.data.subject || null,
+    const teacherError = await linkOrCreateTeacherRow({
+      profileId: created.user.id,
+      fullName: validated.data.fullName,
       phone: validated.data.phone,
-      user_id: created.user.id,
+      subject: validated.data.subject,
     });
     if (teacherError) {
-      return { message: teacherError.message };
+      return { message: teacherError };
     }
   }
 
@@ -1187,31 +1246,18 @@ export async function updateUserProfile(
   // forms are all keyed on. Without this, a teacher account created purely
   // by changing a profile's role would never be assignable to a class.
   if (validated.data.role === "teacher") {
-    const { data: existingTeacher } = await supabase
-      .from("teachers")
-      .select("id")
-      .eq("user_id", validated.data.profileId)
-      .maybeSingle();
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("full_name, parent_first_name, parent_last_name")
+      .eq("id", validated.data.profileId)
+      .single();
 
-    if (!existingTeacher) {
-      const { data: profileRow } = await supabase
-        .from("profiles")
-        .select("full_name, parent_first_name, parent_last_name")
-        .eq("id", validated.data.profileId)
-        .single();
-
-      const displayName =
-        profileRow?.full_name ?? profileRow?.parent_first_name ?? "Professeur";
-      const [firstName, ...rest] = displayName.trim().split(/\s+/);
-      const lastName = rest.join(" ") || profileRow?.parent_last_name || firstName;
-
-      await supabase.from("teachers").insert({
-        first_name: firstName,
-        last_name: lastName,
-        phone: validated.data.phone || null,
-        user_id: validated.data.profileId,
-      });
-    }
+    await linkOrCreateTeacherRow({
+      profileId: validated.data.profileId,
+      fullName: profileRow?.full_name ?? profileRow?.parent_first_name ?? "Professeur",
+      fallbackLastName: profileRow?.parent_last_name,
+      phone: validated.data.phone,
+    });
   }
 
   revalidatePath("/admin/utilisateurs");
