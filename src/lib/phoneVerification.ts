@@ -4,13 +4,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteSetting } from "@/lib/admin/data";
 import { sendSms } from "@/lib/smsService";
 
-export type OtpPurpose = "register" | "update";
+export type OtpPurpose = "register" | "update" | "qr_login";
 
 const CODE_TTL_MINUTES = 10;
-const RESEND_COOLDOWN_SECONDS = 60;
-const MAX_ATTEMPTS = 5;
+const DEFAULT_RESEND_COOLDOWN_SECONDS = 60;
+const DEFAULT_MAX_ATTEMPTS = 5;
 
-export type OtpResult = { success: true } | { success: false; error: string };
+export type OtpOptions = { cooldownSeconds?: number; maxAttempts?: number };
+
+export type OtpResult =
+  | { success: true }
+  | { success: false; error: string; attemptsRemaining?: number };
 
 export async function isSmsVerificationEnabled(): Promise<boolean> {
   const value = await getSiteSetting("sms_verification_enabled");
@@ -22,13 +26,19 @@ function hashCode(code: string) {
 }
 
 /** Generates and SMS's a 6-digit code, replacing any still-valid code for the same phone+purpose. */
-export async function sendPhoneOtp(phone: string, purpose: OtpPurpose): Promise<OtpResult> {
+export async function sendPhoneOtp(
+  phone: string,
+  purpose: OtpPurpose,
+  options: OtpOptions = {},
+): Promise<OtpResult> {
+  const cooldownSeconds = options.cooldownSeconds ?? DEFAULT_RESEND_COOLDOWN_SECONDS;
+
   const adminClient = createAdminClient();
   if (!adminClient) {
     return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
   }
 
-  const cooldownStart = new Date(Date.now() - RESEND_COOLDOWN_SECONDS * 1000).toISOString();
+  const cooldownStart = new Date(Date.now() - cooldownSeconds * 1000).toISOString();
   const { data: recent } = await adminClient
     .from("phone_otps")
     .select("id")
@@ -39,7 +49,9 @@ export async function sendPhoneOtp(phone: string, purpose: OtpPurpose): Promise<
     .maybeSingle();
 
   if (recent) {
-    return { success: false, error: "Patiente une minute avant de redemander un code." };
+    const waitLabel =
+      cooldownSeconds % 60 === 0 ? `${cooldownSeconds / 60} minute(s)` : `${cooldownSeconds} secondes`;
+    return { success: false, error: `Patiente ${waitLabel} avant de redemander un code.` };
   }
 
   // A resend invalidates whatever code was sent before it, so only the
@@ -72,12 +84,56 @@ export async function sendPhoneOtp(phone: string, purpose: OtpPurpose): Promise<
   return { success: true };
 }
 
+/**
+ * Sends a code only if there isn't already a live one for this phone+purpose
+ * — for flows that auto-trigger a send on page load (a remount, a strict-mode
+ * double-effect, or a plain refresh shouldn't fire a second SMS or reset an
+ * in-progress attempt count). Callers that need an explicit resend button
+ * should call sendPhoneOtp() directly instead, which always sends (subject to
+ * its own cooldown check).
+ */
+export async function ensurePhoneOtpSent(
+  phone: string,
+  purpose: OtpPurpose,
+  options: OtpOptions = {},
+): Promise<{ success: true; alreadySent: boolean } | { success: false; error: string; attemptsExhausted?: boolean }> {
+  const maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: existing } = await adminClient
+    .from("phone_otps")
+    .select("attempts, expires_at")
+    .eq("phone", phone)
+    .eq("purpose", purpose)
+    .is("consumed_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing && new Date(existing.expires_at) >= new Date()) {
+    if (existing.attempts >= maxAttempts) {
+      return { success: false, error: "Trop de tentatives.", attemptsExhausted: true };
+    }
+    return { success: true, alreadySent: true };
+  }
+
+  const sent = await sendPhoneOtp(phone, purpose, options);
+  return sent.success ? { success: true, alreadySent: false } : sent;
+}
+
 /** Verifies a code entered by the user against the latest one sent for this phone+purpose. */
 export async function verifyPhoneOtp(
   phone: string,
   code: string,
   purpose: OtpPurpose,
+  options: OtpOptions = {},
 ): Promise<OtpResult> {
+  const maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+
   const adminClient = createAdminClient();
   if (!adminClient) {
     return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
@@ -94,21 +150,23 @@ export async function verifyPhoneOtp(
     .maybeSingle();
 
   if (!otp) {
-    return { success: false, error: "Aucun code en attente. Redemande un code." };
+    return { success: false, error: "Aucun code en attente. Redemande un code.", attemptsRemaining: 0 };
   }
   if (new Date(otp.expires_at) < new Date()) {
-    return { success: false, error: "Code expiré. Redemande un code." };
+    return { success: false, error: "Code expiré. Redemande un code.", attemptsRemaining: 0 };
   }
-  if (otp.attempts >= MAX_ATTEMPTS) {
-    return { success: false, error: "Trop de tentatives. Redemande un code." };
+  if (otp.attempts >= maxAttempts) {
+    return { success: false, error: "Trop de tentatives. Redemande un code.", attemptsRemaining: 0 };
   }
 
   if (hashCode(code) !== otp.code_hash) {
-    await adminClient
-      .from("phone_otps")
-      .update({ attempts: otp.attempts + 1 })
-      .eq("id", otp.id);
-    return { success: false, error: "Code invalide." };
+    const attempts = otp.attempts + 1;
+    await adminClient.from("phone_otps").update({ attempts }).eq("id", otp.id);
+    return {
+      success: false,
+      error: "Code invalide.",
+      attemptsRemaining: Math.max(0, maxAttempts - attempts),
+    };
   }
 
   await adminClient

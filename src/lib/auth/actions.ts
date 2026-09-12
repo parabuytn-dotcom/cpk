@@ -6,7 +6,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { redirect } from "@/i18n/navigation";
-import { isSmsVerificationEnabled, sendPhoneOtp, verifyPhoneOtp } from "@/lib/phoneVerification";
+import {
+  isSmsVerificationEnabled,
+  sendPhoneOtp,
+  verifyPhoneOtp,
+  ensurePhoneOtpSent,
+} from "@/lib/phoneVerification";
 import {
   registerManualSchema,
   registerEmailSchema,
@@ -428,6 +433,107 @@ export async function loginWithQrToken(_state: FormState, formData: FormData): P
   }
 
   return signInAndRedirect(userData.user.email, password);
+}
+
+// ---------------------------------------------------------------------------
+// Re-login by SMS code — the printed "document" QR (see /api/qr-login and
+// /qr-login/[token]) used to ask for the account's password on every scan
+// after the first. It now texts a code to the phone on file instead, and
+// only falls back to the password field after 3 wrong tries.
+// ---------------------------------------------------------------------------
+
+const QR_OTP_OPTIONS = { cooldownSeconds: 90, maxAttempts: 3 };
+
+async function getPhoneForQrToken(token: string): Promise<{ id: string; phone: string | null } | null> {
+  const adminClient = createAdminClient();
+  if (!adminClient) return null;
+  const { data } = await adminClient
+    .from("profiles")
+    .select("id, phone")
+    .eq("qr_login_token", token)
+    .maybeSingle();
+  return data;
+}
+
+// Called once when the re-login page mounts. Sends a fresh code only if
+// there isn't already a live one, so a remount/refresh never fires a second
+// SMS or resets the 3-attempt budget below.
+export async function sendQrLoginOtp(
+  token: string,
+): Promise<
+  { success: true; alreadySent: boolean } | { success: false; error: string; attemptsExhausted?: boolean }
+> {
+  const profile = await getPhoneForQrToken(token);
+  if (!profile?.phone) {
+    return { success: false, error: "Aucun numéro de téléphone n'est enregistré sur ce compte." };
+  }
+  return ensurePhoneOtpSent(profile.phone, "qr_login", QR_OTP_OPTIONS);
+}
+
+// The explicit "renvoyer le code" button — always attempts a real send,
+// which enforces its own 90-second cooldown.
+export async function resendQrLoginOtp(token: string): Promise<{ success: boolean; message?: string }> {
+  const profile = await getPhoneForQrToken(token);
+  if (!profile?.phone) {
+    return { success: false, message: "Aucun numéro de téléphone n'est enregistré sur ce compte." };
+  }
+  const result = await sendPhoneOtp(profile.phone, "qr_login", QR_OTP_OPTIONS);
+  return result.success ? { success: true } : { success: false, message: result.error };
+}
+
+export async function verifyQrLoginOtp(
+  token: string,
+  code: string,
+): Promise<{ success: false; message: string; attemptsExhausted: boolean } | undefined> {
+  const profile = await getPhoneForQrToken(token);
+  if (!profile?.phone) {
+    return {
+      success: false,
+      message: "Aucun numéro de téléphone n'est enregistré sur ce compte.",
+      attemptsExhausted: true,
+    };
+  }
+
+  const result = await verifyPhoneOtp(profile.phone, code, "qr_login", QR_OTP_OPTIONS);
+  if (!result.success) {
+    return {
+      success: false,
+      message: result.error,
+      attemptsExhausted: result.attemptsRemaining === 0,
+    };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return {
+      success: false,
+      message: "Supabase (clé service_role) n'est pas configuré.",
+      attemptsExhausted: false,
+    };
+  }
+
+  const { data: userData, error: userError } = await adminClient.auth.admin.getUserById(profile.id);
+  const email = userData.user?.email;
+  if (userError || !email) {
+    return { success: false, message: "Compte introuvable.", attemptsExhausted: false };
+  }
+
+  const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+  const tokenHash = linkData?.properties?.hashed_token;
+  if (linkError || !tokenHash) {
+    return { success: false, message: "Connexion impossible.", attemptsExhausted: false };
+  }
+
+  const supabase = await createClient();
+  const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "email" });
+  if (verifyError) {
+    return { success: false, message: "Connexion impossible.", attemptsExhausted: false };
+  }
+
+  redirect({ href: "/dashboard", locale: await getLocale() });
 }
 
 export async function logout() {

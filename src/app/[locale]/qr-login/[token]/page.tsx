@@ -1,7 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import QrPasswordForm from "@/components/auth/QrPasswordForm";
+import QrLoginOtpForm from "@/components/auth/QrLoginOtpForm";
 
 // Looks up the account by its (durable, non-expiring) qr_login_token —
 // state depends on live DB data, never build-time.
@@ -19,7 +19,7 @@ export default async function QrLoginPage({
   const { data: profile } = adminClient
     ? await adminClient
         .from("profiles")
-        .select("full_name, parent_first_name")
+        .select("full_name, parent_first_name, phone")
         .eq("qr_login_token", token)
         .maybeSingle()
     : { data: null };
@@ -37,10 +37,10 @@ export default async function QrLoginPage({
         {displayName ? `Bon retour, ${displayName} !` : "Bon retour !"}
       </h1>
       <p className="mb-6 text-sm text-foreground/60">
-        Ce code QR a déjà servi à te connecter une première fois. Entre le mot de passe que tu as
-        choisi pour continuer.
+        Ce code QR a déjà servi à te connecter une première fois. Confirme que c&apos;est bien toi
+        pour continuer.
       </p>
-      <QrPasswordForm token={token} />
+      <QrLoginOtpForm token={token} phone={profile.phone ?? ""} />
     </div>
   );
 }

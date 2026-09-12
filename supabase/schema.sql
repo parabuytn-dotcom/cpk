@@ -351,12 +351,18 @@ create table if not exists public.phone_otps (
   id uuid primary key default gen_random_uuid(),
   phone text not null,
   code_hash text not null,
-  purpose text not null check (purpose in ('register', 'update')),
+  purpose text not null check (purpose in ('register', 'update', 'qr_login')),
   attempts int not null default 0,
   consumed_at timestamptz,
   expires_at timestamptz not null,
   created_at timestamptz not null default now()
 );
+
+-- 'qr_login' added for the QR-code re-login flow (a scanned printed QR, on a
+-- second use, now asks for an SMS code before falling back to the password).
+alter table public.phone_otps drop constraint if exists phone_otps_purpose_check;
+alter table public.phone_otps add constraint phone_otps_purpose_check
+  check (purpose in ('register', 'update', 'qr_login'));
 
 create index if not exists phone_otps_phone_purpose_idx on public.phone_otps (phone, purpose, created_at desc);
 
