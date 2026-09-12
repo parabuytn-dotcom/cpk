@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
-export type SmsTrigger = "teacher_absence" | "generated_password" | "manual";
+export type SmsTrigger = "teacher_absence" | "generated_password" | "manual" | "phone_verification";
 
 export type SendSmsResult = { success: true } | { success: false; error: string };
 

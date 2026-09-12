@@ -2,10 +2,11 @@ import { z } from "zod";
 
 const password = z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères.");
 const cin = z.string().trim().min(8, "CIN invalide.").max(8, "CIN invalide.");
-const phone = z
+export const phoneSchema = z
   .string()
   .trim()
   .regex(/^\d{8}$/, "Numéro invalide (8 chiffres, ex: 99766801).");
+const phone = phoneSchema;
 
 // Registering by phone: the phone number IS the identifier (it becomes the
 // synthetic @cpk.internal auth email). CIN used to be required here, but

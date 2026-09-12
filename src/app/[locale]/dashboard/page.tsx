@@ -23,6 +23,7 @@ import AvatarUpload from "@/components/dashboard/AvatarUpload";
 import EmptyState from "@/components/ui/EmptyState";
 import { listMyBadges } from "@/lib/badges/data";
 import { formatDate } from "@/lib/formatDate";
+import { isSmsVerificationEnabled } from "@/lib/phoneVerification";
 
 export default async function DashboardPage({
   params,
@@ -39,9 +40,10 @@ export default async function DashboardPage({
   }
 
   const t = await getTranslations("dashboard");
-  const [children, myBadges] = await Promise.all([
+  const [children, myBadges, smsVerificationEnabled] = await Promise.all([
     profile.role === "parent" ? listChildrenForParent(profile.id) : Promise.resolve([]),
     listMyBadges(profile.id),
+    isSmsVerificationEnabled(),
   ]);
 
   return (
@@ -64,7 +66,7 @@ export default async function DashboardPage({
       <BadgesRow badges={myBadges} />
 
       <ProfileProgress profile={profile} />
-      <EditProfileForm profile={profile} />
+      <EditProfileForm profile={profile} smsVerificationEnabled={smsVerificationEnabled} />
 
       {profile.role === "parent" && profile.status === "validated" && (
         <div>

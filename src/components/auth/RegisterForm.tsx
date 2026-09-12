@@ -1,12 +1,18 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { registerManual, registerWithEmail } from "@/lib/auth/actions";
+import { registerManual, registerWithEmail, sendRegistrationOtp } from "@/lib/auth/actions";
 import type { ClassRow } from "@/lib/admin/data";
 
-export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
+export default function RegisterForm({
+  classes,
+  smsVerificationEnabled,
+}: {
+  classes: ClassRow[];
+  smsVerificationEnabled: boolean;
+}) {
   const t = useTranslations("auth");
   // "manual" = sign up with just a phone number (the phone becomes the login
   // identifier); "email" = sign up with a real email address. Either way the
@@ -18,8 +24,25 @@ export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
     registerWithEmail,
     undefined,
   );
+  const [phone, setPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpMessage, setOtpMessage] = useState<string | null>(null);
+  const [otpPending, startOtpTransition] = useTransition();
 
   const state = method === "manual" ? manualState : emailState;
+
+  function requestOtp() {
+    setOtpMessage(null);
+    startOtpTransition(async () => {
+      const result = await sendRegistrationOtp(phone.trim());
+      if (result.success) {
+        setOtpSent(true);
+        setOtpMessage(t("otpSent"));
+      } else {
+        setOtpMessage(result.message ?? t("otpError"));
+      }
+    });
+  }
 
   return (
     <div className="glass-surface mx-auto max-w-lg rounded-3xl p-8">
@@ -53,13 +76,54 @@ export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
         {method === "email" && (
           <Field label={t("email")} name="email" type="email" errors={state?.errors?.email} />
         )}
-        <Field
-          label={t("phone")}
-          name="phone"
-          type="tel"
-          placeholder="99766801"
-          errors={state?.errors?.phone}
-        />
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">{t("phone")}</label>
+          <input
+            name="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              setOtpSent(false);
+              setOtpMessage(null);
+            }}
+            placeholder="99766801"
+            required
+            className="w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
+          />
+          {state?.errors?.phone?.map((err) => (
+            <p key={err} className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {err}
+            </p>
+          ))}
+
+          {smsVerificationEnabled && (
+            <div className="mt-2 flex flex-col gap-2 rounded-xl bg-black/5 p-3 dark:bg-white/10">
+              <p className="text-xs text-foreground/60">{t("otpExplain")}</p>
+              <button
+                type="button"
+                onClick={requestOtp}
+                disabled={otpPending || !/^\d{8}$/.test(phone.trim())}
+                className="self-start rounded-full bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white shadow disabled:opacity-60"
+              >
+                {otpPending ? t("otpSending") : otpSent ? t("otpResend") : t("otpSend")}
+              </button>
+              {otpMessage && <p className="text-xs text-foreground/70">{otpMessage}</p>}
+              {otpSent && (
+                <input
+                  name="otpCode"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="123456"
+                  required
+                  className="w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2 text-center tracking-[0.3em] outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
+                />
+              )}
+            </div>
+          )}
+        </div>
+
         <Field
           label={t("password")}
           name="password"
@@ -112,7 +176,7 @@ export default function RegisterForm({ classes }: { classes: ClassRow[] }) {
 
         <button
           type="submit"
-          disabled={manualPending || emailPending}
+          disabled={manualPending || emailPending || (smsVerificationEnabled && !otpSent)}
           className="mt-2 rounded-full bg-brand-600 px-4 py-3 font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
         >
           {t("submitRegister")}

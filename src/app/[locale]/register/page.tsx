@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import RegisterForm from "@/components/auth/RegisterForm";
 import { listClassesForRegistration } from "@/lib/auth/data";
+import { isSmsVerificationEnabled } from "@/lib/phoneVerification";
 
 // The class list is fetched with the admin client (RLS on `classes` requires
 // an authenticated caller, which no one has yet on this page) — no
@@ -17,7 +18,10 @@ export default async function RegisterPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const classes = await listClassesForRegistration();
+  const [classes, smsVerificationEnabled] = await Promise.all([
+    listClassesForRegistration(),
+    isSmsVerificationEnabled(),
+  ]);
 
-  return <RegisterForm classes={classes} />;
+  return <RegisterForm classes={classes} smsVerificationEnabled={smsVerificationEnabled} />;
 }

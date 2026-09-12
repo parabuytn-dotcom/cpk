@@ -330,6 +330,42 @@ create table if not exists public.sms_logs (
   created_at timestamptz not null default now()
 );
 
+-- 'phone_verification' added for the SMS OTP feature (registration + profile
+-- phone changes) — widened rather than reused so those sends are
+-- distinguishable from absence/manual alerts in the logs.
+alter table public.sms_logs drop constraint if exists sms_logs_trigger_check;
+alter table public.sms_logs add constraint sms_logs_trigger_check
+  check (trigger in ('teacher_absence', 'generated_password', 'manual', 'phone_verification'));
+
+-- ----------------------------------------------------------------------------
+-- Phone number verification (OTP by SMS) — gated at registration and at any
+-- later phone change, toggleable by admins via site_settings
+-- ('sms_verification_enabled'). Default true on the column so existing rows
+-- (created before this feature) aren't retroactively treated as unverified;
+-- every code path that sets a *new* phone number explicitly writes the
+-- correct value instead of relying on this default.
+-- ----------------------------------------------------------------------------
+alter table public.profiles add column if not exists phone_verified boolean not null default true;
+
+create table if not exists public.phone_otps (
+  id uuid primary key default gen_random_uuid(),
+  phone text not null,
+  code_hash text not null,
+  purpose text not null check (purpose in ('register', 'update')),
+  attempts int not null default 0,
+  consumed_at timestamptz,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists phone_otps_phone_purpose_idx on public.phone_otps (phone, purpose, created_at desc);
+
+-- No policies at all: this table is only ever touched via the service-role
+-- admin client (see src/lib/phoneVerification.ts), never from a browser
+-- session, so RLS enabled with zero policies denies anon/authenticated
+-- access entirely.
+alter table public.phone_otps enable row level security;
+
 alter table public.sms_logs enable row level security;
 
 drop policy if exists "Admins read sms logs" on public.sms_logs;

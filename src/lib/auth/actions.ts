@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { redirect } from "@/i18n/navigation";
+import { isSmsVerificationEnabled, sendPhoneOtp, verifyPhoneOtp } from "@/lib/phoneVerification";
 import {
   registerManualSchema,
   registerEmailSchema,
@@ -13,6 +14,7 @@ import {
   loginEmailSchema,
   loginChildSchema,
   updateProfileInfoSchema,
+  phoneSchema,
   type FormState,
 } from "./schemas";
 
@@ -34,6 +36,7 @@ async function createParentAccount({
   childFirstName,
   childClass,
   method,
+  phoneVerified,
 }: {
   email: string;
   password: string;
@@ -44,6 +47,7 @@ async function createParentAccount({
   childFirstName: string;
   childClass: string;
   method: "manual" | "email";
+  phoneVerified: boolean;
 }): Promise<FormState> {
   // Created via the admin API (email_confirm: true) rather than the public
   // signUp() flow: Supabase's default "Confirm email" setting would otherwise
@@ -87,6 +91,7 @@ async function createParentAccount({
     parent_first_name: parentFirstName,
     parent_last_name: parentLastName,
     registration_method: method,
+    phone_verified: phoneVerified,
   });
 
   if (profileError) {
@@ -117,6 +122,23 @@ async function createParentAccount({
   return signInAndRedirect(email, password);
 }
 
+// Checks the phone verification gate (when enabled) before an account is
+// created. Returns null when it's fine to proceed, or a FormState to return
+// straight to the caller when it isn't.
+async function checkRegistrationOtp(phone: string, formData: FormData): Promise<FormState | null> {
+  if (!(await isSmsVerificationEnabled())) return null;
+
+  const code = formData.get("otpCode");
+  if (typeof code !== "string" || !/^\d{6}$/.test(code.trim())) {
+    return { message: "Saisis le code à 6 chiffres reçu par SMS." };
+  }
+
+  const result = await verifyPhoneOtp(phone, code.trim(), "register");
+  if (!result.success) return { message: result.error };
+
+  return null;
+}
+
 export async function registerManual(
   _state: FormState,
   formData: FormData,
@@ -137,6 +159,9 @@ export async function registerManual(
   const { phone, password, parentFirstName, parentLastName, childFirstName, childClass } =
     validated.data;
 
+  const otpError = await checkRegistrationOtp(phone, formData);
+  if (otpError) return otpError;
+
   return createParentAccount({
     email: phoneToEmail(phone),
     password,
@@ -147,6 +172,7 @@ export async function registerManual(
     childFirstName,
     childClass,
     method: "manual",
+    phoneVerified: true,
   });
 }
 
@@ -171,6 +197,9 @@ export async function registerWithEmail(
   const { email, phone, password, parentFirstName, parentLastName, childFirstName, childClass } =
     validated.data;
 
+  const otpError = await checkRegistrationOtp(phone, formData);
+  if (otpError) return otpError;
+
   return createParentAccount({
     email,
     password,
@@ -181,7 +210,71 @@ export async function registerWithEmail(
     childFirstName,
     childClass,
     method: "email",
+    phoneVerified: true,
   });
+}
+
+// Called directly from the client (not a useActionState form action) when the
+// user taps "Envoyer le code" on the registration form, before the account
+// exists — so it takes a raw phone string rather than FormData.
+export async function sendRegistrationOtp(
+  phone: string,
+): Promise<{ success: boolean; message?: string }> {
+  if (!(await isSmsVerificationEnabled())) return { success: true };
+
+  const validated = phoneSchema.safeParse(phone);
+  if (!validated.success) {
+    return { success: false, message: validated.error.issues[0]?.message ?? "Numéro invalide." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: existingPhone } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("phone", validated.data)
+    .maybeSingle();
+  if (existingPhone) {
+    return { success: false, message: "Ce numéro de téléphone est déjà utilisé par un autre compte." };
+  }
+
+  const result = await sendPhoneOtp(validated.data, "register");
+  return result.success ? { success: true } : { success: false, message: result.error };
+}
+
+// Same as above but for a signed-in user changing their phone from their
+// profile page — checked against every OTHER profile's phone, not their own.
+export async function sendProfileVerificationOtp(
+  newPhone: string,
+): Promise<{ success: boolean; message?: string }> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { success: false, message: "Non connecté." };
+  if (!(await isSmsVerificationEnabled())) return { success: true };
+
+  const validated = phoneSchema.safeParse(newPhone);
+  if (!validated.success) {
+    return { success: false, message: validated.error.issues[0]?.message ?? "Numéro invalide." };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, message: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const { data: existing } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("phone", validated.data)
+    .maybeSingle();
+  if (existing && existing.id !== profile.id) {
+    return { success: false, message: "Ce numéro de téléphone est déjà utilisé par un autre compte." };
+  }
+
+  const result = await sendPhoneOtp(validated.data, "update");
+  return result.success ? { success: true } : { success: false, message: result.error };
 }
 
 async function signInAndRedirect(email: string, password: string): Promise<FormState> {
@@ -440,7 +533,9 @@ export async function updateProfileInfo(
   // Uniqueness checks (phone/cin are unique-ish identifiers used for login
   // lookup) — done via the admin client since regular users can't read
   // other people's profiles under RLS.
-  if (phone !== profile.phone) {
+  const phoneChanged = phone !== profile.phone;
+
+  if (phoneChanged) {
     const { data: existing } = await adminClient
       .from("profiles")
       .select("id")
@@ -448,6 +543,15 @@ export async function updateProfileInfo(
       .maybeSingle();
     if (existing && existing.id !== profile.id) {
       return { message: "Ce numéro de téléphone est déjà utilisé par un autre compte." };
+    }
+
+    if (await isSmsVerificationEnabled()) {
+      const code = formData.get("otpCode");
+      if (typeof code !== "string" || !/^\d{6}$/.test(code.trim())) {
+        return { message: "Saisis le code à 6 chiffres reçu par SMS pour confirmer ce numéro." };
+      }
+      const result = await verifyPhoneOtp(phone, code.trim(), "update");
+      if (!result.success) return { message: result.error };
     }
   }
 
@@ -470,6 +574,7 @@ export async function updateProfileInfo(
       phone,
       cin: cin || null,
       contact_email: contactEmail || null,
+      ...(phoneChanged ? { phone_verified: true } : {}),
     })
     .eq("id", profile.id);
 

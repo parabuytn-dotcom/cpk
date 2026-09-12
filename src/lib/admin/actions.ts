@@ -1404,6 +1404,23 @@ export async function updateDownloadSettings(_state: FormState, formData: FormDa
   return { success: "Enregistré." };
 }
 
+export async function updateSmsVerificationSetting(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const enabled = formData.get("enabled") === "true";
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key: "sms_verification_enabled", value: enabled ? "true" : "false" });
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/parametres");
+  return { success: "Enregistré." };
+}
+
 export async function setReportStatus(reportId: string, status: "reviewed" | "dismissed") {
   await requireAdmin();
   const supabase = await createClient();
