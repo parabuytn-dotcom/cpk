@@ -10,7 +10,11 @@ const COUNTRY_CODE = "216";
 
 function toInternational(phone: string) {
   const digits = phone.replace(/\D/g, "");
-  return digits.startsWith(COUNTRY_CODE) ? digits : `${COUNTRY_CODE}${digits}`;
+  const withCountryCode = digits.startsWith(COUNTRY_CODE) ? digits : `${COUNTRY_CODE}${digits}`;
+  // The gateway's API rejects numbers without a leading "+" as "invalid phone
+  // number" (confirmed by a live test send) — every SMS sent before this fix
+  // would have failed at the gateway, regardless of the credentials being valid.
+  return `+${withCountryCode}`;
 }
 
 /**
