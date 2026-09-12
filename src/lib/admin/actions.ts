@@ -366,7 +366,8 @@ async function applyTeacherAbsence({
   // only to report how many slots this absence hits and to know which classes
   // to alert.
 
-  // 2. SMS alert to parents of every affected class.
+  // 2. SMS alert to parents AND students (whichever have their own account
+  // with a phone on file) of every affected class.
   const teacherName = teacher ? `${teacher.first_name} ${teacher.last_name}` : "Le professeur";
   const durationHours = Math.round((endsAt.getTime() - startsAt.getTime()) / 3600000);
   const formatFr = (d: Date) =>
@@ -377,18 +378,24 @@ async function applyTeacherAbsence({
     const classNames = Array.from(affectedClasses.values());
     const { data: students } = await supabase
       .from("students")
-      .select("parent_id")
+      .select("parent_id, user_id")
       .in("class_name", classNames);
 
-    const parentIds = Array.from(new Set((students ?? []).map((s) => s.parent_id).filter(Boolean))) as string[];
-    if (parentIds.length > 0) {
-      const { data: parents } = await supabase.from("profiles").select("id, phone").in("id", parentIds);
+    // user_id is only set once the student has their own account — a Set
+    // both dedupes siblings sharing one parent and drops the nulls from
+    // students who don't have an account yet.
+    const recipientIds = Array.from(
+      new Set((students ?? []).flatMap((s) => [s.parent_id, s.user_id]).filter(Boolean)),
+    ) as string[];
 
-      for (const parent of parents ?? []) {
-        if (parent.phone) await sendSms(parent.phone, message, "teacher_absence");
+    if (recipientIds.length > 0) {
+      const { data: recipients } = await supabase.from("profiles").select("id, phone").in("id", recipientIds);
+
+      for (const recipient of recipients ?? []) {
+        if (recipient.phone) await sendSms(recipient.phone, message, "teacher_absence");
       }
 
-      await notifyMany(parentIds, "teacher_absence", message, "/emploi-du-temps");
+      await notifyMany(recipientIds, "teacher_absence", message, "/emploi-du-temps");
     }
   }
 
