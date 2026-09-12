@@ -397,8 +397,15 @@ async function applyTeacherAbsence({
   });
   if (absenceError) return { message: absenceError.message };
 
+  // Fanning the alert out is inherently privileged: under RLS a teacher's own
+  // session can't read other families' students/profiles, so a self-declared
+  // absence would save and then quietly notify nobody. Who may declare an
+  // absence is enforced by the callers and by RLS on the insert above; only
+  // the reads below run with the service-role client.
+  const db = createAdminClient() ?? supabase;
+
   // 1. Find every recurring slot for this teacher that falls inside the window.
-  const { data: candidateEntries } = await supabase
+  const { data: candidateEntries } = await db
     .from("timetable_entries")
     .select("id, class_id, class_name, day_of_week, start_time, end_time")
     .eq("teacher_id", teacherId);
@@ -439,7 +446,7 @@ async function applyTeacherAbsence({
 
   if (affectedClasses.size > 0) {
     const classNames = Array.from(affectedClasses.values());
-    const { data: students } = await supabase
+    const { data: students } = await db
       .from("students")
       .select("parent_id, user_id")
       .in("class_name", classNames);
@@ -452,7 +459,7 @@ async function applyTeacherAbsence({
     ) as string[];
 
     if (recipientIds.length > 0) {
-      const { data: recipients } = await supabase
+      const { data: recipients } = await db
         .from("profiles")
         .select("id, phone, contact_email")
         .in("id", recipientIds);

@@ -203,6 +203,23 @@ create policy "Admins manage teacher absences"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- A teacher declares their own absence from their dashboard ("Je suis
+-- absent(e)"), which the admin-only policy above refused. Restricted to the
+-- teachers row linked to their account, so nobody can mark a colleague
+-- absent. `teachers` is readable by any authenticated user, so this subquery
+-- needs no security-definer helper.
+drop policy if exists "Teachers declare their own absence" on public.teacher_absences;
+create policy "Teachers declare their own absence"
+  on public.teacher_absences for insert
+  with check (
+    exists (
+      select 1
+      from public.teachers t
+      where t.id = teacher_id
+        and t.user_id = auth.uid()
+    )
+  );
+
 -- ----------------------------------------------------------------------------
 -- staff_members — public "Le Staff" page.
 -- ----------------------------------------------------------------------------
