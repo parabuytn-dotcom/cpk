@@ -10,6 +10,8 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { SITE_URL } from "@/lib/siteUrl";
 import { sendSms } from "@/lib/smsService";
 import { sendEmail } from "@/lib/emailService";
+import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
+import { getSiteSetting } from "@/lib/admin/data";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { checkToujoursAJour } from "@/lib/badges/engine";
 import { notify, notifyMany } from "@/lib/notifications/engine";
@@ -305,6 +307,66 @@ function everyDayBetween(start: Date, end: Date) {
   return days;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Default ON — only an explicit "false" written from /admin/parametres turns absence emails off. */
+async function isAbsenceEmailEnabled() {
+  return (await getSiteSetting("absence_email_enabled")) !== "false";
+}
+
+async function emailAbsenceAlert(
+  recipients: { id: string; contact_email: string | null }[],
+  teacherName: string,
+  message: string,
+  sentBy: string,
+) {
+  const adminClient = createAdminClient();
+  if (!adminClient) return;
+
+  const subject = `Absence de ${teacherName}`;
+  const html = renderEmail({ title: subject, bodyHtml: plainTextToHtml(message) });
+  const logs: {
+    sent_by: string | null;
+    recipient: string;
+    subject: string;
+    body: string;
+    status: string;
+    error: string | null;
+  }[] = [];
+
+  for (const recipient of recipients) {
+    // A declared contact_email wins; otherwise the auth address, which is
+    // only a real inbox for email signups — phone signups carry a synthetic
+    // @cpk.internal address that goes nowhere.
+    let email =
+      recipient.contact_email && EMAIL_RE.test(recipient.contact_email)
+        ? recipient.contact_email
+        : null;
+    if (!email) {
+      const { data: userData } = await adminClient.auth.admin.getUserById(recipient.id);
+      const authEmail = userData.user?.email ?? "";
+      if (authEmail && !authEmail.endsWith("@cpk.internal") && EMAIL_RE.test(authEmail)) {
+        email = authEmail;
+      }
+    }
+    if (!email) continue;
+
+    const result = await sendEmail(email, subject, html);
+    logs.push({
+      sent_by: sentBy,
+      recipient: email,
+      subject,
+      body: message,
+      status: result.success ? "sent" : "failed",
+      error: result.success ? null : result.error,
+    });
+  }
+
+  // Logged like any other send so a failure shows up in Admin → Emails
+  // instead of vanishing.
+  if (logs.length > 0) await adminClient.from("email_logs").insert(logs);
+}
+
 async function applyTeacherAbsence({
   teacherId,
   startsAt,
@@ -366,8 +428,9 @@ async function applyTeacherAbsence({
   // only to report how many slots this absence hits and to know which classes
   // to alert.
 
-  // 2. SMS alert to parents AND students (whichever have their own account
-  // with a phone on file) of every affected class.
+  // 2. Alert parents AND students (whichever have their own account) of every
+  // affected class — by SMS, in-app notification, and email (the email leg is
+  // switchable from /admin/parametres).
   const teacherName = teacher ? `${teacher.first_name} ${teacher.last_name}` : "Le professeur";
   const durationHours = Math.round((endsAt.getTime() - startsAt.getTime()) / 3600000);
   const formatFr = (d: Date) =>
@@ -389,13 +452,20 @@ async function applyTeacherAbsence({
     ) as string[];
 
     if (recipientIds.length > 0) {
-      const { data: recipients } = await supabase.from("profiles").select("id, phone").in("id", recipientIds);
+      const { data: recipients } = await supabase
+        .from("profiles")
+        .select("id, phone, contact_email")
+        .in("id", recipientIds);
 
       for (const recipient of recipients ?? []) {
         if (recipient.phone) await sendSms(recipient.phone, message, "teacher_absence");
       }
 
       await notifyMany(recipientIds, "teacher_absence", message, "/emploi-du-temps");
+
+      if (await isAbsenceEmailEnabled()) {
+        await emailAbsenceAlert(recipients ?? [], teacherName, message, createdBy);
+      }
     }
   }
 
@@ -1422,6 +1492,23 @@ export async function updateSmsVerificationSetting(
   const { error } = await supabase
     .from("site_settings")
     .upsert({ key: "sms_verification_enabled", value: enabled ? "true" : "false" });
+  if (error) return { message: error.message };
+
+  revalidatePath("/admin/parametres");
+  return { success: "Enregistré." };
+}
+
+export async function updateAbsenceEmailSetting(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const enabled = formData.get("enabled") === "true";
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key: "absence_email_enabled", value: enabled ? "true" : "false" });
   if (error) return { message: error.message };
 
   revalidatePath("/admin/parametres");
