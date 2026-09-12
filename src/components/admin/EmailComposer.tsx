@@ -112,14 +112,27 @@ export default function EmailComposer({ classes }: { classes: ClassRow[] }) {
         <p className="text-sm text-red-600 dark:text-red-400">{result.error}</p>
       )}
       {result && result.success && (
-        <p className="text-sm text-green-600 dark:text-green-400">
-          {result.sent} email(s) envoyé(s)
-          {result.failed > 0 ? ` · ${result.failed} échec(s)` : ""}
-          {result.skipped > 0
-            ? ` · ${result.skipped} destinataire(s) ignoré(s) faute d'adresse email valide`
-            : ""}
-          .
-        </p>
+        <div className="flex flex-col gap-1">
+          <p
+            className={
+              result.sent > 0
+                ? "text-sm text-green-600 dark:text-green-400"
+                : "text-sm text-red-600 dark:text-red-400"
+            }
+          >
+            {result.sent} email(s) envoyé(s)
+            {result.failed > 0 ? ` · ${result.failed} échec(s)` : ""}
+            {result.skipped > 0
+              ? ` · ${result.skipped} destinataire(s) ignoré(s) faute d'adresse email valide`
+              : ""}
+            .
+          </p>
+          {result.failed > 0 && result.lastError && (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              Raison de l&apos;échec (Brevo) : {result.lastError}
+            </p>
+          )}
+        </div>
       )}
     </form>
   );

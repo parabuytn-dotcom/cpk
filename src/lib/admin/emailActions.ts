@@ -9,7 +9,7 @@ import { sendEmail } from "@/lib/emailService";
 import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
 
 export type EmailSendResult =
-  | { success: true; sent: number; failed: number; skipped: number }
+  | { success: true; sent: number; failed: number; skipped: number; lastError: string | null }
   | { success: false; error: string };
 
 const schema = z.object({
@@ -119,6 +119,7 @@ export async function sendBulkEmail(formData: FormData): Promise<EmailSendResult
 
   let sent = 0;
   let failed = 0;
+  let lastError: string | null = null;
   const logs: {
     sent_by: string | null;
     recipient: string;
@@ -142,6 +143,7 @@ export async function sendBulkEmail(formData: FormData): Promise<EmailSendResult
       });
     } else {
       failed++;
+      lastError = result.error;
       logs.push({
         sent_by: admin?.id ?? null,
         recipient,
@@ -156,5 +158,5 @@ export async function sendBulkEmail(formData: FormData): Promise<EmailSendResult
   if (logs.length > 0) await adminClient.from("email_logs").insert(logs);
 
   revalidatePath("/admin/emails");
-  return { success: true, sent, failed, skipped };
+  return { success: true, sent, failed, skipped, lastError };
 }
