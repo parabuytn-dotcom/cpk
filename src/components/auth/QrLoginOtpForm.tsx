@@ -31,6 +31,14 @@ export default function QrLoginOtpForm({ token, phone }: { token: string; phone:
         setMode("otp");
         setCooldownUntil(Date.now() + COOLDOWN_SECONDS * 1000);
       } else {
+        // Why the SMS step was skipped matters — without it a gateway or
+        // configuration failure looks identical to "this account has no
+        // phone", and both silently land on the password form.
+        setFallbackNote(
+          result.attemptsExhausted
+            ? "Trop de tentatives incorrectes. Entre ton mot de passe pour continuer."
+            : `Envoi du code impossible (${result.error}). Entre ton mot de passe pour continuer.`,
+        );
         setMode("password");
       }
     });
