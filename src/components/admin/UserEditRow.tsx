@@ -34,6 +34,9 @@ export default function UserEditRow({ user, badges }: { user: UserRow; badges: B
             <p className="text-xs text-foreground/60">
               {user.cin ?? "—"} {user.className ? `· ${user.className}` : ""}
             </p>
+            {user.contactEmail && (
+              <p className="break-all text-xs text-foreground/60">✉ {user.contactEmail}</p>
+            )}
           </div>
         </Link>
 

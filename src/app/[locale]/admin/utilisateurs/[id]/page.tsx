@@ -52,7 +52,11 @@ export default async function AdminUserDetailPage({
       <div className="glass-surface grid gap-4 rounded-3xl p-6 sm:grid-cols-2">
         <Field label="CIN" value={profile.cin ?? "—"} />
         <Field label="Téléphone" value={profile.phone ?? "—"} />
-        <Field label="Email" value={profile.email ?? "—"} />
+        <Field label="Email de contact" value={profile.contactEmail ?? "—"} />
+        <Field
+          label="Email de connexion"
+          value={profile.email && !profile.email.endsWith("@cpk.internal") ? profile.email : "— (connexion par téléphone / CIN)"}
+        />
         <Field label="Méthode d'inscription" value={profile.registrationMethod ?? "—"} />
         <Field label="Tags" value={profile.tags.length > 0 ? profile.tags.join(", ") : "—"} />
         <Field label="Inscrit le" value={new Date(profile.createdAt).toLocaleString("fr-FR")} />

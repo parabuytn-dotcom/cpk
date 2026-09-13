@@ -50,6 +50,7 @@ export type ProfileDetail = {
   registrationMethod: string | null;
   createdAt: string;
   email: string | null;
+  contactEmail: string | null;
   children: { id: string; firstName: string; lastName: string | null; className: string; hasAccount: boolean }[];
   badges: { label: string; emoji: string }[];
 };
@@ -61,7 +62,7 @@ export async function getProfileDetail(profileId: string): Promise<ProfileDetail
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, parent_first_name, parent_last_name, role, status, phone, cin, tags, avatar_url, registration_method, created_at",
+      "id, full_name, parent_first_name, parent_last_name, role, status, phone, cin, contact_email, tags, avatar_url, registration_method, created_at",
     )
     .eq("id", profileId)
     .single();
@@ -101,6 +102,7 @@ export async function getProfileDetail(profileId: string): Promise<ProfileDetail
     registrationMethod: profile.registration_method,
     createdAt: profile.created_at,
     email,
+    contactEmail: profile.contact_email,
     children: (children ?? []).map((c) => ({
       id: c.id,
       firstName: c.first_name,
@@ -323,6 +325,7 @@ export type UserRow = {
   role: string;
   status: string;
   phone: string | null;
+  contactEmail: string | null;
   tags: string[];
   cin: string | null;
   className: string | null;
@@ -337,7 +340,7 @@ export async function listAllProfiles(): Promise<UserRow[]> {
   const { data: profiles } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, parent_first_name, parent_last_name, role, status, phone, tags, cin, avatar_url",
+      "id, full_name, parent_first_name, parent_last_name, role, status, phone, contact_email, tags, cin, avatar_url",
     )
     .order("created_at", { ascending: false });
 
@@ -364,6 +367,7 @@ export async function listAllProfiles(): Promise<UserRow[]> {
     role: p.role,
     status: p.status,
     phone: p.phone,
+    contactEmail: p.contact_email,
     tags: p.tags ?? [],
     cin: p.cin,
     badgeIds: badgesByUserId.get(p.id) ?? [],
