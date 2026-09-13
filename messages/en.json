@@ -177,8 +177,7 @@
     "reportsTab": "Reports",
     "reportsEmpty": "No reports.",
     "emailsTab": "Emails",
-    "smsTab": "SMS",
-    "securityTab": "Security"
+    "smsTab": "SMS"
   },
   "privacy": {
     "title": "Your data, privacy",

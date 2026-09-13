@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteSetting } from "@/lib/admin/data";
 import { sendSms } from "@/lib/smsService";
 
-export type OtpPurpose = "register" | "update" | "qr_login" | "password_reset";
+export type OtpPurpose = "register" | "update" | "qr_login" | "password_reset" | "admin_login";
 
 const CODE_TTL_MINUTES = 10;
 const DEFAULT_RESEND_COOLDOWN_SECONDS = 60;

@@ -177,8 +177,7 @@
     "reportsTab": "البلاغات",
     "reportsEmpty": "لا توجد بلاغات.",
     "emailsTab": "الرسائل الإلكترونية",
-    "smsTab": "الرسائل القصيرة",
-    "securityTab": "الأمان"
+    "smsTab": "الرسائل القصيرة"
   },
   "privacy": {
     "title": "خصوصية بياناتك",

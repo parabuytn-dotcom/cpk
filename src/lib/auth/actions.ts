@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { redirect } from "@/i18n/navigation";
+import { cookies } from "next/headers";
+import { ADMIN_PROOF_COOKIE } from "@/lib/admin/adminProof";
 import {
   isSmsVerificationEnabled,
   sendPhoneOtp,
@@ -539,6 +541,7 @@ export async function verifyQrLoginOtp(
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  (await cookies()).delete(ADMIN_PROOF_COOKIE);
   redirect({ href: "/login", locale: await getLocale() });
 }
 

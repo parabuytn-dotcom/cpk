@@ -2,6 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 import { updateSession } from "@/lib/supabase/middleware";
+import { ADMIN_PROOF_COOKIE, isAdminVerificationEnabled, isValidAdminProof } from "@/lib/admin/adminProof";
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -18,7 +19,7 @@ export default async function proxy(request: NextRequest) {
   const i18nResponse = handleI18nRouting(request);
 
   // 2. Refresh the Supabase auth session on the resulting response
-  const { response, user, role, mustChangePassword, needsMfa } = await updateSession(
+  const { response, user, role, mustChangePassword, supabase } = await updateSession(
     request,
     i18nResponse,
   );
@@ -34,10 +35,27 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Once a biometric factor is enrolled, a password alone no longer opens
-    // the admin area — the session must be elevated to aal2 first.
-    if (needsMfa) {
-      return NextResponse.redirect(new URL("/verification-securite", request.url));
+    // A password alone doesn't open the admin area: the session also needs the
+    // code texted to the admin phone, unless that's been switched off in
+    // Admin > Réglages.
+    if (supabase) {
+      const { data: setting } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "admin_sms_verification_enabled")
+        .maybeSingle();
+
+      if (isAdminVerificationEnabled(setting?.value ?? null)) {
+        const { data } = await supabase.auth.getClaims();
+        const claims = data?.claims as { sub?: string; session_id?: string } | undefined;
+        const verified =
+          claims?.sub && claims.session_id
+            ? await isValidAdminProof(request.cookies.get(ADMIN_PROOF_COOKIE)?.value, claims.sub, claims.session_id)
+            : false;
+        if (!verified) {
+          return NextResponse.redirect(new URL("/verification-securite", request.url));
+        }
+      }
     }
   }
 
