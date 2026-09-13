@@ -303,7 +303,14 @@
     "resetConfirm": "L'ancien mot de passe ne fonctionnera plus une fois validé.",
     "resetNote": "Mot de passe réinitialisé — note ces identifiants, ils ne seront plus affichés :",
     "choosePassword": "Choisis un mot de passe (6 caractères min.)",
-    "confirm": "Valider"
+    "confirm": "Valider",
+    "qrCreated": "Compte créé. Fais scanner ce code à ton enfant pour ouvrir sa session :",
+    "qrAlt": "Code QR de connexion",
+    "qrValidity": "Valable 14 jours, utilisable une seule fois. Ton enfant choisira son mot de passe juste après.",
+    "qrSentBoth": "Le code a aussi été envoyé par SMS et par email.",
+    "qrSentSms": "Le code a aussi été envoyé par SMS.",
+    "qrSentEmail": "Le code a aussi été envoyé par email.",
+    "qrSentNeither": "L'envoi par SMS et par email n'a pas pu se faire — utilise le code ci-dessus."
   },
   "avatarUpload": {
     "change": "Changer la photo",

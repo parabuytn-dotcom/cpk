@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const TRIGGER_LABELS: Record<string, string> = {
   teacher_absence: "Absence prof",
-  generated_password: "Mot de passe",
+  generated_password: "Accès compte",
   phone_verification: "Vérification",
   manual: "Manuel",
 };

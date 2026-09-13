@@ -303,7 +303,14 @@
     "resetConfirm": "The old password will stop working once confirmed.",
     "resetNote": "Password reset — note these credentials, they won't be shown again:",
     "choosePassword": "Choose a password (6 characters min.)",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "qrCreated": "Account created. Have your child scan this code to open their session:",
+    "qrAlt": "Login QR code",
+    "qrValidity": "Valid for 14 days, single use. Your child will choose their password right after.",
+    "qrSentBoth": "The code was also sent by SMS and email.",
+    "qrSentSms": "The code was also sent by SMS.",
+    "qrSentEmail": "The code was also sent by email.",
+    "qrSentNeither": "Sending by SMS and email failed — use the code above."
   },
   "avatarUpload": {
     "change": "Change photo",

@@ -2,69 +2,65 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { createChildAccount } from "@/lib/admin/actions";
+import { createChildAccount, type ChildAccountResult } from "@/lib/admin/actions";
 
 export default function ChildAccountButton({ studentId }: { studentId: string }) {
   const t = useTranslations("accountCreation");
   const [isPending, startTransition] = useTransition();
-  const [showForm, setShowForm] = useState(false);
-  const [password, setPassword] = useState("");
-  const [result, setResult] = useState<
-    { success: true; email: string; password: string } | { success: false; error: string } | null
-  >(null);
+  const [result, setResult] = useState<ChildAccountResult | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleCreate() {
     startTransition(async () => {
-      const res = await createChildAccount(studentId, password);
-      setResult(res);
+      setResult(await createChildAccount(studentId));
     });
   }
 
   if (result?.success) {
     return (
-      <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-sm">
-        <p className="font-medium">{t("createdNote")}</p>
-        <p className="mt-1 font-mono">
-          {result.email} / {result.password}
+      <div className="flex flex-col gap-3 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-4 text-sm">
+        <p className="font-medium">{t("qrCreated")}</p>
+
+        {/* Plain <img>: the source is a data: URL, which next/image rejects. */}
+        <img
+          src={result.qrDataUrl}
+          alt={t("qrAlt")}
+          className="h-52 w-52 self-start rounded-xl bg-white p-2 shadow-sm"
+        />
+
+        <p className="text-xs text-foreground/60">{t("qrValidity")}</p>
+
+        <a
+          href={result.url}
+          className="break-all text-xs font-medium text-brand-600 underline"
+        >
+          {result.url}
+        </a>
+
+        <p className="text-xs text-foreground/60">
+          {result.sentBySms && result.sentByEmail
+            ? t("qrSentBoth")
+            : result.sentBySms
+              ? t("qrSentSms")
+              : result.sentByEmail
+                ? t("qrSentEmail")
+                : t("qrSentNeither")}
         </p>
       </div>
     );
   }
 
-  if (!showForm) {
-    return (
-      <button
-        onClick={() => setShowForm(true)}
-        className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700"
-      >
-        {t("createChild")}
-      </button>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder={t("choosePassword")}
-        minLength={6}
-        required
-        autoFocus
-        className="rounded-full border border-black/10 bg-white/70 px-3 py-1.5 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
-      />
+    <div className="flex flex-wrap items-center gap-2">
       <button
-        type="submit"
+        onClick={handleCreate}
         disabled={isPending}
-        className="rounded-full bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
+        className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-60"
       >
-        {isPending ? t("creating") : t("confirm")}
+        {isPending ? t("creating") : t("createChild")}
       </button>
       {result?.success === false && (
         <p className="w-full text-sm text-red-600 dark:text-red-400">{result.error}</p>
       )}
-    </form>
+    </div>
   );
 }

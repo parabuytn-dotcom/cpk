@@ -33,10 +33,18 @@ function getTransport() {
  * isn't configured — the on-screen display of the password remains the
  * primary channel.
  */
+/**
+ * Inline images are attached to the message rather than linked, and referenced
+ * from the HTML as `<img src="cid:THE_CID">`. A remote <img> is blocked by
+ * default in most mail clients; an embedded one is not.
+ */
+export type EmailAttachment = { filename: string; content: Buffer; cid: string };
+
 export async function sendEmail(
   to: string,
   subject: string,
   htmlContent: string,
+  attachments?: EmailAttachment[],
 ): Promise<SendEmailResult> {
   const transport = getTransport();
   const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
@@ -56,6 +64,7 @@ export async function sendEmail(
       to,
       subject,
       html: htmlContent,
+      attachments,
     });
     return { success: true };
   } catch (error) {

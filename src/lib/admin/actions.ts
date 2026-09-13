@@ -924,18 +924,59 @@ function generatePassword() {
   return randomBytes(6).toString("base64url").slice(0, 8);
 }
 
-export async function createChildAccount(
-  studentId: string,
-  password: string,
-): Promise<{ success: true; email: string; password: string } | { success: false; error: string }> {
+/**
+ * Issues a single-use login QR for an account and invalidates any earlier one,
+ * so only the most recent code handed out can ever work. Shared by the admin
+ * "generate a QR" button and by child account creation.
+ */
+async function issueLoginQrToken(
+  profileId: string,
+  createdBy: string | null,
+): Promise<{ url: string; qrDataUrl: string; expiresAt: string } | { error: string }> {
+  const adminClient = createAdminClient();
+  if (!adminClient) return { error: "Supabase (clé service_role) n'est pas configuré." };
+
+  await adminClient
+    .from("login_qr_tokens")
+    .update({ used_at: new Date().toISOString() })
+    .eq("user_id", profileId)
+    .is("used_at", null);
+
+  const token = randomBytes(24).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+
+  const { data: row, error } = await adminClient
+    .from("login_qr_tokens")
+    .insert({ user_id: profileId, token_hash: tokenHash, created_by: createdBy })
+    .select("expires_at")
+    .single();
+  if (error || !row) return { error: error?.message ?? "Échec de la génération du code." };
+
+  const url = `${SITE_URL}/api/qr-connexion/${token}`;
+  return {
+    url,
+    qrDataUrl: await QRCode.toDataURL(url, { margin: 1, width: 400 }),
+    expiresAt: row.expires_at,
+  };
+}
+
+export type ChildAccountResult =
+  | { success: true; url: string; qrDataUrl: string; expiresAt: string; sentBySms: boolean; sentByEmail: boolean }
+  | { success: false; error: string };
+
+/**
+ * Creates the child's account and hands it over as a single-use login QR
+ * instead of a password: nobody has to read out or retype credentials, and the
+ * child sets their own password right after scanning (must_change_password).
+ * The account's initial password is random and deliberately never shown.
+ */
+export async function createChildAccount(studentId: string): Promise<ChildAccountResult> {
   const profile = await getCurrentProfile();
   if (!profile || profile.role !== "parent") {
     return { success: false, error: "Non autorisé." };
   }
-  if (password.length < 6) {
-    return { success: false, error: "Le mot de passe doit contenir au moins 6 caractères." };
-  }
 
+  const password = generatePassword();
   const adminClient = createAdminClient();
   if (!adminClient) {
     return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
@@ -970,24 +1011,60 @@ export async function createChildAccount(
     id: created.user.id,
     role: "student",
     status: "validated",
+    must_change_password: true,
   });
   await adminClient.from("students").update({ user_id: created.user.id }).eq("id", studentId);
 
-  // Best-effort: only reachable if the parent's own login email is real
-  // (not a CIN-based synthetic @cpk.internal address).
+  const issued = await issueLoginQrToken(created.user.id, profile.id);
+  if ("error" in issued) return { success: false, error: issued.error };
+
+  const childName = student.first_name;
+
+  const sms = profile.phone
+    ? await sendSms(
+        profile.phone,
+        `CPK Learn : le compte de ${childName} est créé. Lien de connexion (valable 14 jours, une seule utilisation) : ${issued.url}`,
+        "generated_password",
+      )
+    : { success: false as const, error: "no phone" };
+
+  // Only reachable if the parent has a real inbox: a phone signup carries a
+  // synthetic @cpk.internal address that goes nowhere.
   const {
     data: { user: parentUser },
   } = await supabase.auth.getUser();
-  if (parentUser?.email && !parentUser.email.endsWith("@cpk.internal")) {
-    await sendEmail(
-      parentUser.email,
-      "Compte CPK Learn créé pour votre enfant",
-      `<p>Identifiants de connexion :</p><p>Email : ${email}<br/>Mot de passe : ${password}</p>`,
+  const parentEmail =
+    profile.contactEmail ??
+    (parentUser?.email && !parentUser.email.endsWith("@cpk.internal") ? parentUser.email : null);
+
+  let sentByEmail = false;
+  if (parentEmail) {
+    const body =
+      `<p>Le compte de <b>${childName}</b> est créé.</p>` +
+      `<p>Faites scanner ce code par ${childName} pour ouvrir sa session. ` +
+      `Il choisira ensuite son propre mot de passe.</p>` +
+      `<p><img src="cid:qrlogin" alt="Code QR de connexion" width="220" height="220" /></p>` +
+      `<p>Si le code ne s'affiche pas, ce lien fait la même chose :<br/>` +
+      `<a href="${issued.url}">${issued.url}</a></p>` +
+      `<p>Valable 14 jours et utilisable une seule fois.</p>`;
+
+    const result = await sendEmail(
+      parentEmail,
+      `Compte CPK Learn créé pour ${childName}`,
+      renderEmail({ title: `Compte créé pour ${childName}`, bodyHtml: body }),
+      [
+        {
+          filename: "connexion-cpk.png",
+          content: Buffer.from(issued.qrDataUrl.split(",")[1], "base64"),
+          cid: "qrlogin",
+        },
+      ],
     );
+    sentByEmail = result.success;
   }
 
   revalidatePath("/dashboard");
-  return { success: true, email, password };
+  return { success: true, ...issued, sentBySms: sms.success, sentByEmail };
 }
 
 export async function resetChildPassword(
@@ -1179,29 +1256,10 @@ export async function generateLoginQrCode(
     .maybeSingle();
   if (!profile) return { success: false, error: "Utilisateur introuvable." };
 
-  // Kill any still-valid code issued earlier for this user.
-  await adminClient
-    .from("login_qr_tokens")
-    .update({ used_at: new Date().toISOString() })
-    .eq("user_id", profileId)
-    .is("used_at", null);
+  const issued = await issueLoginQrToken(profileId, admin?.id ?? null);
+  if ("error" in issued) return { success: false, error: issued.error };
 
-  const token = randomBytes(24).toString("hex");
-  const tokenHash = createHash("sha256").update(token).digest("hex");
-
-  const { data: row, error } = await adminClient
-    .from("login_qr_tokens")
-    .insert({ user_id: profileId, token_hash: tokenHash, created_by: admin?.id ?? null })
-    .select("expires_at")
-    .single();
-  if (error || !row) {
-    return { success: false, error: error?.message ?? "Échec de la génération du code." };
-  }
-
-  const url = `${SITE_URL}/api/qr-connexion/${token}`;
-  const qrDataUrl = await QRCode.toDataURL(url, { margin: 1, width: 400 });
-
-  return { success: true, url, qrDataUrl, expiresAt: row.expires_at };
+  return { success: true, ...issued };
 }
 
 export async function updateUserProfile(
