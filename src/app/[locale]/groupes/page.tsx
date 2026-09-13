@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { isFullAdmin } from "@/lib/auth/roles";
 import { listAllGroups } from "@/lib/groups/data";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -22,7 +23,7 @@ export default async function GroupsPage({
 
   const t = await getTranslations("groups");
 
-  if (profile.role !== "student" && profile.role !== "admin") {
+  if (profile.role !== "student" && !isFullAdmin(profile.role)) {
     return (
       <div className="mx-auto max-w-md text-center">
         <PageHeader title={t("title")} subtitle={t("studentsOnly")} />

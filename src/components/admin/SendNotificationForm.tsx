@@ -7,7 +7,7 @@ import {
 } from "@/lib/notifications/adminActions";
 import type { ClassRow, UserRow } from "@/lib/admin/data";
 
-const ROLES = ["parent", "student", "teacher", "staff", "admin"];
+const ROLES = ["parent", "student", "teacher", "staff", "director", "admin"];
 
 export default function SendNotificationForm({
   users,

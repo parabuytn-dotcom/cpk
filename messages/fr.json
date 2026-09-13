@@ -136,6 +136,7 @@
     "validate": "Valider",
     "timetableTab": "Emploi du temps",
     "absencesTab": "Absences",
+    "homeworkTab": "Devoirs",
     "selectClass": "Choisir une classe",
     "noClasses": "Aucune classe pour le moment.",
     "absencesEmpty": "Aucune absence déclarée.",
@@ -347,6 +348,7 @@
     "roleStudent": "Élève",
     "roleTeacher": "Professeur",
     "roleStaff": "Staff",
+    "roleDirector": "Direction",
     "roleAdmin": "Administration"
   },
   "assistant": {

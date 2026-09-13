@@ -20,6 +20,16 @@ export async function getAdminVerificationSettings() {
   };
 }
 
+/**
+ * Where the code for this account goes. The admin account uses the number set
+ * in Admin > Réglages; the director and staff get it on their own profile
+ * number, so their logins don't text the admin's phone.
+ */
+export async function getVerificationPhoneFor(profile: { role: string; phone: string | null }) {
+  if (profile.role === "admin") return (await getAdminVerificationSettings()).phone;
+  return profile.phone && /^\d{8}$/.test(profile.phone) ? profile.phone : null;
+}
+
 /** The signed-in user id and Supabase session id, read from the verified JWT. */
 export async function getSessionIdentity(): Promise<{ userId: string; sessionId: string } | null> {
   const supabase = await createClient();

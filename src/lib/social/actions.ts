@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { isFullAdmin } from "@/lib/auth/roles";
 import { checkJournalisteCpk } from "@/lib/badges/engine";
 import { notify } from "@/lib/notifications/engine";
 import { createPostSchema, createCommentSchema, type FormState } from "./schemas";
@@ -31,12 +32,12 @@ export async function createPost(_state: FormState, formData: FormData): Promise
   if (mediaType) {
     const requiredTag = mediaType === "video" ? "reels_publisher" : "feed_publisher";
     const canPost =
-      profile.role === "admin" || profile.role === "teacher" || profile.tags.includes(requiredTag);
+      isFullAdmin(profile.role) || profile.role === "teacher" || profile.tags.includes(requiredTag);
     if (!canPost) {
       return { message: mediaType === "video" ? t("noPermissionVideo") : t("noPermissionImage") };
     }
   } else if (
-    profile.role !== "admin" &&
+    !isFullAdmin(profile.role) &&
     profile.role !== "teacher" &&
     !profile.tags.includes("feed_publisher")
   ) {
@@ -72,7 +73,7 @@ export async function deletePost(postId: string) {
     .single();
 
   if (!post) return;
-  if (post.author_id !== profile.id && profile.role !== "admin") {
+  if (post.author_id !== profile.id && !isFullAdmin(profile.role)) {
     throw new Error("Non autorisé.");
   }
 

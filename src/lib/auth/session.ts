@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
-export type ProfileRole = "parent" | "student" | "teacher" | "admin" | "staff";
+export type ProfileRole = "parent" | "student" | "teacher" | "admin" | "director" | "staff";
 export type ProfileStatus = "pending" | "validated";
 
 export type CurrentProfile = {

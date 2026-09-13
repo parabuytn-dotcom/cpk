@@ -9,7 +9,7 @@ import DeleteUserButton from "./DeleteUserButton";
 import type { UserRow } from "@/lib/admin/data";
 import type { BadgeRow } from "@/lib/badges/data";
 
-const ROLES = ["parent", "student", "teacher", "admin", "staff"];
+const ROLES = ["parent", "student", "teacher", "staff", "director", "admin"];
 const STATUSES = ["pending", "validated"];
 
 export default function UserEditRow({ user, badges }: { user: UserRow; badges: BadgeRow[] }) {

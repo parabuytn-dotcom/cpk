@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { canUseAdminArea } from "@/lib/auth/roles";
 import { redirect } from "@/i18n/navigation";
 import { cookies } from "next/headers";
 import { ADMIN_PROOF_COOKIE } from "@/lib/admin/adminProof";
@@ -299,7 +300,7 @@ async function signInAndRedirect(email: string, password: string): Promise<FormS
     .single();
 
   redirect({
-    href: profile?.role === "admin" ? "/admin" : "/dashboard",
+    href: canUseAdminArea(profile?.role) ? "/admin" : "/dashboard",
     locale: await getLocale(),
   });
 }

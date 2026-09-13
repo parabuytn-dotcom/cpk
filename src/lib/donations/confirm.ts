@@ -51,7 +51,7 @@ export async function confirmDonation(donationId: string): Promise<DonationOutco
     await notify(updated.donor_id, "donation_thanks", `Merci pour ton don de ${amountTnd} DT ! 💙`);
   }
 
-  const { data: admins } = await adminClient.from("profiles").select("id").eq("role", "admin");
+  const { data: admins } = await adminClient.from("profiles").select("id").in("role", ["admin", "director"]);
   if (admins) {
     await Promise.all(
       admins.map((admin) =>

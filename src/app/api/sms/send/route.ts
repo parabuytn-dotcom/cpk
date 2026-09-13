@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { isFullAdmin } from "@/lib/auth/roles";
 import { sendSms, type SmsTrigger } from "@/lib/smsService";
 
 const bodySchema = z.object({
@@ -17,7 +18,7 @@ const bodySchema = z.object({
  */
 export async function POST(request: Request) {
   const profile = await getCurrentProfile();
-  if (!profile || profile.role !== "admin") {
+  if (!profile || !isFullAdmin(profile.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

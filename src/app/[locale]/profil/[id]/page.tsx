@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { isFullAdmin } from "@/lib/auth/roles";
 import { getUserProfile, getProfileStats } from "@/lib/profiles/data";
 import { listFeedPosts } from "@/lib/social/data";
 import Avatar from "@/components/ui/Avatar";
@@ -14,6 +15,7 @@ const ROLE_KEYS: Record<string, string> = {
   teacher: "roleTeacher",
   staff: "roleStaff",
   admin: "roleAdmin",
+  director: "roleDirector",
 };
 
 export default async function PublicProfilePage({
@@ -69,7 +71,7 @@ export default async function PublicProfilePage({
             <PostCard
               key={post.id}
               post={post}
-              canDelete={viewer?.role === "admin" || viewer?.id === post.authorId}
+              canDelete={isFullAdmin(viewer?.role) || viewer?.id === post.authorId}
             />
           ))}
         </div>

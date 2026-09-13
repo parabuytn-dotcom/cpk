@@ -6,7 +6,9 @@ import { getTranslations } from "next-intl/server";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/admin/guard";
+import { requireAdmin, requireSchoolStaff } from "@/lib/admin/guard";
+import { canUseAdminArea } from "@/lib/auth/roles";
+import { hasPassedAdminVerification } from "@/lib/admin/adminVerification";
 import { SITE_URL } from "@/lib/siteUrl";
 import { sendSms } from "@/lib/smsService";
 import { sendEmail } from "@/lib/emailService";
@@ -241,7 +243,7 @@ export async function importTimetableCsv(
   _state: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  await requireAdmin();
+  await requireSchoolStaff();
 
   const classId = formData.get("classId") as string;
   const className = formData.get("className") as string;
@@ -295,7 +297,7 @@ export async function upsertTimetableEntry(
   _state: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  await requireAdmin();
+  await requireSchoolStaff();
 
   const validated = timetableEntrySchema.safeParse({
     classId: formData.get("classId"),
@@ -330,7 +332,7 @@ export async function upsertTimetableEntry(
 }
 
 export async function deleteTimetableEntry(entryId: string) {
-  await requireAdmin();
+  await requireSchoolStaff();
   const supabase = await createClient();
   const { error } = await supabase.from("timetable_entries").delete().eq("id", entryId);
   if (error) throw new Error(error.message);
@@ -528,7 +530,7 @@ async function applyTeacherAbsence({
 }
 
 export async function deleteTeacherAbsence(absenceId: string) {
-  await requireAdmin();
+  await requireSchoolStaff();
   const supabase = await createClient();
   const { error } = await supabase.from("teacher_absences").delete().eq("id", absenceId);
   if (error) throw new Error(error.message);
@@ -545,7 +547,7 @@ export async function declareTeacherAbsence(
   _state: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const admin = await requireAdmin();
+  const admin = await requireSchoolStaff();
 
   const validated = teacherAbsenceSchema.safeParse({
     teacherId: formData.get("teacherId"),
@@ -681,8 +683,12 @@ export async function updateTeacherClasses(teacherId: string, classIds: string[]
 export async function createHomework(_state: FormState, formData: FormData): Promise<FormState> {
   const t = await getTranslations("homework");
   const profile = await getCurrentProfile();
-  if (!profile || (profile.role !== "teacher" && profile.role !== "admin")) {
+  if (!profile || (profile.role !== "teacher" && !canUseAdminArea(profile.role))) {
     return { message: "Non autorisé." };
+  }
+  // From the admin area (admin, director, staff), the SMS verification applies too.
+  if (canUseAdminArea(profile.role) && !(await hasPassedAdminVerification())) {
+    return { message: "Vérification par SMS requise." };
   }
 
   const validated = homeworkSchema.safeParse({
@@ -711,7 +717,7 @@ export async function createHomework(_state: FormState, formData: FormData): Pro
 
   if (error) return { message: error.message };
 
-  const { data: students } = await supabase
+  const { data: students } = await (createAdminClient() ?? supabase)
     .from("students")
     .select("user_id")
     .or(
@@ -732,7 +738,17 @@ export async function createHomework(_state: FormState, formData: FormData): Pro
   }
 
   revalidatePath("/dashboard");
+  revalidatePath("/admin/devoirs");
   return { success: t("added") };
+}
+
+export async function deleteHomework(homeworkId: string) {
+  await requireSchoolStaff();
+  const supabase = await createClient();
+  const { error } = await supabase.from("homework").delete().eq("id", homeworkId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/devoirs");
+  revalidatePath("/dashboard");
 }
 
 // Teacher-only — a one-off "rattrapage" session for one of their own
@@ -838,8 +854,12 @@ export async function toggleHomeworkCompletion(homeworkId: string, completed: bo
 
 export async function createExam(_state: FormState, formData: FormData): Promise<FormState> {
   const profile = await getCurrentProfile();
-  if (!profile || (profile.role !== "teacher" && profile.role !== "admin")) {
+  if (!profile || (profile.role !== "teacher" && !canUseAdminArea(profile.role))) {
     return { message: "Non autorisé." };
+  }
+  // From the admin area (admin, director, staff), the SMS verification applies too.
+  if (canUseAdminArea(profile.role) && !(await hasPassedAdminVerification())) {
+    return { message: "Vérification par SMS requise." };
   }
 
   const validated = examSchema.safeParse({
@@ -870,7 +890,7 @@ export async function createExam(_state: FormState, formData: FormData): Promise
 
   if (error) return { message: error.message };
 
-  const { data: students } = await supabase
+  const { data: students } = await (createAdminClient() ?? supabase)
     .from("students")
     .select("user_id")
     .or(
@@ -893,7 +913,17 @@ export async function createExam(_state: FormState, formData: FormData): Promise
 
   revalidatePath("/devoirs");
   revalidatePath("/dashboard");
+  revalidatePath("/admin/devoirs");
   return { success: "Devoir ajouté au calendrier." };
+}
+
+export async function deleteExam(examId: string) {
+  await requireSchoolStaff();
+  const supabase = await createClient();
+  const { error } = await supabase.from("exams").delete().eq("id", examId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/devoirs");
+  revalidatePath("/devoirs");
 }
 
 // ---------------------------------------------------------------------------

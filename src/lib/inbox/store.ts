@@ -71,7 +71,7 @@ export async function storeIncomingMessage(message: IncomingMessage): Promise<"s
 
   const from = message.senderName || message.sender;
   const label = message.channel === "sms" ? `Nouveau SMS de ${from}` : `Nouvel email de ${from}`;
-  const { data: admins } = await adminClient.from("profiles").select("id").eq("role", "admin");
+  const { data: admins } = await adminClient.from("profiles").select("id").in("role", ["admin", "director"]);
   await Promise.all(
     (admins ?? []).map((admin) => notify(admin.id, "inbox_message", label, "/admin/boite-de-reception")),
   );

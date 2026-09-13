@@ -39,7 +39,23 @@ stable
 as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
+    where id = auth.uid() and role in ('admin', 'director')
+  );
+$$;
+
+-- is_school_staff(): everyone allowed into the admin area — admin, director,
+-- and staff, who only manage the timetable, teacher absences and homework.
+-- Used by those tables' policies; everything else stays on is_admin().
+create or replace function public.is_school_staff()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role in ('admin', 'director', 'staff')
   );
 $$;
 
@@ -145,6 +161,13 @@ create policy "Admins manage teachers"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- A timetable import creates the teachers it doesn't know yet, and staff can
+-- import timetables — so they may add teachers, but not edit or remove them.
+drop policy if exists "Staff add teachers" on public.teachers;
+create policy "Staff add teachers"
+  on public.teachers for insert
+  with check (public.is_school_staff());
+
 -- ----------------------------------------------------------------------------
 -- timetable_entries — one row per (class, day, time slot).
 -- `is_cancelled` is toggled automatically when a teacher_absences row covers
@@ -173,8 +196,8 @@ create policy "Anyone authenticated can read timetable"
 drop policy if exists "Admins manage timetable" on public.timetable_entries;
 create policy "Admins manage timetable"
   on public.timetable_entries for all
-  using (public.is_admin())
-  with check (public.is_admin());
+  using (public.is_school_staff())
+  with check (public.is_school_staff());
 
 -- ----------------------------------------------------------------------------
 -- teacher_absences — declared by an admin, drives SMS alerts + timetable
@@ -200,8 +223,8 @@ create policy "Anyone authenticated can read teacher absences"
 drop policy if exists "Admins manage teacher absences" on public.teacher_absences;
 create policy "Admins manage teacher absences"
   on public.teacher_absences for all
-  using (public.is_admin())
-  with check (public.is_admin());
+  using (public.is_school_staff())
+  with check (public.is_school_staff());
 
 -- A teacher declares their own absence from their dashboard ("Je suis
 -- absent(e)"), which the admin-only policy above refused. Restricted to the
@@ -425,7 +448,7 @@ alter table public.profiles add column if not exists tags text[] not null defaul
 
 alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check
-  check (role in ('parent', 'student', 'teacher', 'admin', 'staff'));
+  check (role in ('parent', 'student', 'teacher', 'admin', 'staff', 'director'));
 
 alter table public.teachers add column if not exists user_id uuid references public.profiles (id) on delete set null;
 
@@ -456,8 +479,8 @@ create policy "Anyone authenticated can read homework"
 drop policy if exists "Teachers and admins manage homework" on public.homework;
 create policy "Teachers and admins manage homework"
   on public.homework for all
-  using (public.is_admin() or auth.uid() = created_by)
-  with check (public.is_admin() or auth.uid() = created_by);
+  using (public.is_school_staff() or auth.uid() = created_by)
+  with check (public.is_school_staff() or auth.uid() = created_by);
 
 create table if not exists public.homework_completions (
   id uuid primary key default gen_random_uuid(),
@@ -936,8 +959,8 @@ create policy "Anyone authenticated can read exams"
 drop policy if exists "Teachers and admins manage exams" on public.exams;
 create policy "Teachers and admins manage exams"
   on public.exams for all
-  using (public.is_admin() or auth.uid() = created_by)
-  with check (public.is_admin() or auth.uid() = created_by);
+  using (public.is_school_staff() or auth.uid() = created_by)
+  with check (public.is_school_staff() or auth.uid() = created_by);
 
 create index if not exists idx_exams_class_id on public.exams (class_id);
 create index if not exists idx_exams_exam_date on public.exams (exam_date);

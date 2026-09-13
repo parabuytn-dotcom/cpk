@@ -4,6 +4,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ClassSelector from "@/components/admin/ClassSelector";
 import TimetableGrid from "@/components/admin/TimetableGrid";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { isFullAdmin } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 import { listClasses, listTimetableEntries, listMakeupSessionsForClass } from "@/lib/admin/data";
 import MakeupSessionsList from "@/components/dashboard/MakeupSessionsList";
@@ -47,7 +48,7 @@ export default async function TimetablePage({
       ])
     : [[], []];
 
-  const canManageMakeupSessions = profile?.role === "teacher" || profile?.role === "admin";
+  const canManageMakeupSessions = profile?.role === "teacher" || isFullAdmin(profile?.role);
 
   return (
     <div className="flex flex-col gap-8">

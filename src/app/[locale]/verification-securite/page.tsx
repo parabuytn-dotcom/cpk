@@ -3,6 +3,7 @@ import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { hasPassedAdminVerification } from "@/lib/admin/adminVerification";
 import AdminSmsChallenge from "@/components/admin/AdminSmsChallenge";
+import { canUseAdminArea } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function SecurityVerificationPage({
     redirect({ href: "/login", locale });
     return null;
   }
-  if (profile.role !== "admin") {
+  if (!canUseAdminArea(profile.role)) {
     redirect({ href: "/dashboard", locale });
     return null;
   }

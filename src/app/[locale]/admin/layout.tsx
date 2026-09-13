@@ -3,6 +3,7 @@ import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { countUnreadInbox } from "@/lib/admin/data";
 import { Link } from "@/i18n/navigation";
+import { canOpenAdminPath, canUseAdminArea } from "@/lib/auth/roles";
 
 export default async function AdminLayout({
   children,
@@ -13,19 +14,20 @@ export default async function AdminLayout({
 }) {
   const { locale } = await params;
   const profile = await getCurrentProfile();
-  if (!profile || profile.role !== "admin") {
+  if (!profile || !canUseAdminArea(profile.role)) {
     redirect({ href: "/login", locale });
     return null;
   }
 
   const [t, unread] = await Promise.all([getTranslations("admin"), countUnreadInbox()]);
-  const tabs: { href: string; label: string; badge?: number }[] = [
+  const allTabs: { href: string; label: string; badge?: number }[] = [
     { href: "/admin/comptes", label: t("accounts") },
     { href: "/admin/documents", label: t("documentsTab") },
     { href: "/admin/utilisateurs", label: t("usersTab") },
     { href: "/admin/classes", label: t("classesTab") },
     { href: "/admin/emploi-du-temps", label: t("timetableTab") },
     { href: "/admin/absences", label: t("absencesTab") },
+    { href: "/admin/devoirs", label: t("homeworkTab") },
     { href: "/admin/profs", label: t("teachersTab") },
     { href: "/admin/staff", label: t("staffTab") },
     { href: "/admin/boite-de-reception", label: t("inboxTab"), badge: unread.total },
@@ -38,6 +40,8 @@ export default async function AdminLayout({
     { href: "/admin/parametres", label: t("parametresTab") },
     { href: "/admin/dons", label: t("donationsTab") },
   ];
+  // Staff only see the tabs they can actually open.
+  const tabs = allTabs.filter((tab) => canOpenAdminPath(profile.role, tab.href));
 
   return (
     <div>

@@ -49,7 +49,7 @@ export const csvRowSchema = z.object({
 
 export const userUpdateSchema = z.object({
   profileId: z.string().uuid(),
-  role: z.enum(["parent", "student", "teacher", "admin", "staff"]),
+  role: z.enum(["parent", "student", "teacher", "admin", "director", "staff"]),
   status: z.enum(["pending", "validated"]),
   phone: z.string().trim().optional().or(z.literal("")),
   tags: z.string().trim().optional().or(z.literal("")),

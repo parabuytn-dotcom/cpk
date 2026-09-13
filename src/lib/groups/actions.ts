@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { isFullAdmin } from "@/lib/auth/roles";
 import { notify } from "@/lib/notifications/engine";
 import { getOwnClass } from "./data";
 import { groupSchema, groupMessageSchema, type FormState } from "./schemas";
@@ -163,7 +164,7 @@ export async function deleteGroup(groupId: string) {
     .eq("user_id", profile.id)
     .eq("role", "owner")
     .maybeSingle();
-  if (!owner && profile.role !== "admin") {
+  if (!owner && !isFullAdmin(profile.role)) {
     throw new Error("Seul le créateur du groupe peut le supprimer.");
   }
 

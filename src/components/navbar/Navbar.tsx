@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { canUseAdminArea, isFullAdmin } from "@/lib/auth/roles";
 import { listNotifications, countUnreadNotifications } from "@/lib/notifications/data";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationBell from "./NotificationBell";
@@ -20,7 +21,7 @@ export default async function Navbar() {
           { href: "/devoirs", label: t("exams") },
           { href: "/feed", label: t("feed") },
           { href: "/idees", label: t("ideas") },
-          ...(profile.role === "student" || profile.role === "admin"
+          ...(profile.role === "student" || isFullAdmin(profile.role)
             ? [{ href: "/groupes", label: t("groups") }]
             : []),
           { href: "/messages", label: t("messages") },
@@ -32,12 +33,12 @@ export default async function Navbar() {
   ];
 
   const authHref = profile
-    ? profile.role === "admin"
+    ? canUseAdminArea(profile.role)
       ? "/admin"
       : "/dashboard"
     : "/login";
   const authLabel = profile
-    ? profile.role === "admin"
+    ? canUseAdminArea(profile.role)
       ? t("admin")
       : t("dashboard")
     : t("login");

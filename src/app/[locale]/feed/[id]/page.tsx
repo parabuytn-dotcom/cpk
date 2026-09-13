@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { isFullAdmin } from "@/lib/auth/roles";
 import { getFeedPost } from "@/lib/social/data";
 import PostCard from "@/components/feed/PostCard";
 
@@ -29,7 +30,7 @@ export default async function FeedPostPage({
         ← {t("title")}
       </Link>
 
-      <PostCard post={post} canDelete={profile.role === "admin" || profile.id === post.authorId} />
+      <PostCard post={post} canDelete={isFullAdmin(profile.role) || profile.id === post.authorId} />
     </div>
   );
 }

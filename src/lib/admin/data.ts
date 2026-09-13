@@ -1042,3 +1042,60 @@ export async function countUnreadInbox(): Promise<{ sms: number; email: number; 
   const counts = { sms: sms.count ?? 0, email: email.count ?? 0, help: help.count ?? 0 };
   return { ...counts, total: counts.sms + counts.email + counts.help };
 }
+
+// ---------------------------------------------------------------------------
+// Devoirs — vue de l'administration, toutes classes confondues
+// ---------------------------------------------------------------------------
+
+export type SchoolHomeworkRow = HomeworkRow & { kind: "homework" };
+export type SchoolExamRow = ExamRow & { kind: "exam"; className: string };
+
+/** From a week back, so something just past its date can still be corrected or removed. */
+function sinceLastWeek() {
+  const date = new Date();
+  date.setDate(date.getDate() - 7);
+  return date.toISOString().slice(0, 10);
+}
+
+export async function listSchoolHomework(): Promise<SchoolHomeworkRow[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("homework")
+    .select("id, class_name, subject, description, due_date, priority")
+    .gte("due_date", sinceLastWeek())
+    .order("due_date", { ascending: true })
+    .limit(200);
+
+  return (data ?? []).map((row) => ({
+    kind: "homework" as const,
+    id: row.id,
+    className: row.class_name,
+    subject: row.subject,
+    description: row.description,
+    dueDate: row.due_date,
+    priority: row.priority,
+  }));
+}
+
+export async function listSchoolExams(): Promise<SchoolExamRow[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exams")
+    .select("id, class_name, subject, type, exam_date, description, teacher_notes")
+    .gte("exam_date", sinceLastWeek())
+    .order("exam_date", { ascending: true })
+    .limit(200);
+
+  return (data ?? []).map((row) => ({
+    kind: "exam" as const,
+    id: row.id,
+    className: row.class_name,
+    subject: row.subject,
+    type: row.type,
+    examDate: row.exam_date,
+    description: row.description,
+    teacherNotes: row.teacher_notes,
+  }));
+}

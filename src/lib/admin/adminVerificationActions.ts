@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { requireAdmin } from "@/lib/admin/guard";
 import { ensurePhoneOtpSent, sendPhoneOtp, verifyPhoneOtp } from "@/lib/phoneVerification";
-import { getAdminVerificationSettings, getSessionIdentity } from "@/lib/admin/adminVerification";
+import { getSessionIdentity, getVerificationPhoneFor } from "@/lib/admin/adminVerification";
+import { canUseAdminArea } from "@/lib/auth/roles";
 import { ADMIN_PROOF_COOKIE, ADMIN_PROOF_TTL_SECONDS, createAdminProof } from "@/lib/admin/adminProof";
 import type { FormState } from "./schemas";
 
@@ -19,18 +20,23 @@ function maskPhone(phone: string) {
 }
 
 // Not requireAdmin(): that one demands the very verification these actions
-// perform. A signed-in admin role is the only prerequisite here.
-async function assertAdminRole() {
+// perform. Being allowed into the admin area is the only prerequisite here.
+async function assertAdminAreaRole() {
   const profile = await getCurrentProfile();
-  return profile?.role === "admin" ? profile : null;
+  return profile && canUseAdminArea(profile.role) ? profile : null;
 }
+
+const NO_PHONE =
+  "Aucun numéro de téléphone valide sur ton profil : ajoute-le dans Mon espace, ou demande à l'administration de désactiver la vérification.";
 
 export async function sendAdminVerificationCode(
   resend: boolean,
 ): Promise<{ success: true; hint: string } | { success: false; error: string; mustWait?: boolean }> {
-  if (!(await assertAdminRole())) return { success: false, error: "Non autorisé." };
+  const profile = await assertAdminAreaRole();
+  if (!profile) return { success: false, error: "Non autorisé." };
 
-  const { phone } = await getAdminVerificationSettings();
+  const phone = await getVerificationPhoneFor(profile);
+  if (!phone) return { success: false, error: NO_PHONE };
   const result = resend
     ? await sendPhoneOtp(phone, "admin_login", OTP_OPTIONS)
     : await ensurePhoneOtpSent(phone, "admin_login", OTP_OPTIONS);
@@ -48,9 +54,11 @@ export async function sendAdminVerificationCode(
 }
 
 export async function verifyAdminCode(code: string): Promise<{ success: false; error: string } | undefined> {
-  if (!(await assertAdminRole())) return { success: false, error: "Non autorisé." };
+  const profile = await assertAdminAreaRole();
+  if (!profile) return { success: false, error: "Non autorisé." };
 
-  const { phone } = await getAdminVerificationSettings();
+  const phone = await getVerificationPhoneFor(profile);
+  if (!phone) return { success: false, error: NO_PHONE };
   const result = await verifyPhoneOtp(phone, code.trim(), "admin_login", OTP_OPTIONS);
   if (!result.success) return { success: false, error: result.error };
 

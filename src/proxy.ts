@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 import { updateSession } from "@/lib/supabase/middleware";
 import { ADMIN_PROOF_COOKIE, isAdminVerificationEnabled, isValidAdminProof } from "@/lib/admin/adminProof";
+import { canOpenAdminPath, canUseAdminArea, STAFF_ADMIN_HOME } from "@/lib/auth/roles";
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -29,15 +30,19 @@ export default async function proxy(request: NextRequest) {
   const pathWithoutLocale = stripLocale(request.nextUrl.pathname);
 
   if (pathWithoutLocale.startsWith("/admin")) {
-    if (!user || role !== "admin") {
+    if (!user || !canUseAdminArea(role)) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // A password alone doesn't open the admin area: the session also needs the
-    // code texted to the admin phone, unless that's been switched off in
-    // Admin > Réglages.
+    // Staff only get the school-life pages; anything else sends them there.
+    if (!canOpenAdminPath(role, pathWithoutLocale)) {
+      return NextResponse.redirect(new URL(STAFF_ADMIN_HOME, request.url));
+    }
+
+    // A password alone doesn't open the admin area: the session also needs a
+    // code texted by SMS, unless that's been switched off in Admin > Réglages.
     if (supabase) {
       const { data: setting } = await supabase
         .from("site_settings")

@@ -18,8 +18,9 @@ export default function AdminVerificationForm({
       <div>
         <p className="text-sm font-medium">Vérification par SMS de l&apos;espace admin</p>
         <p className="mt-1 text-xs text-foreground/50">
-          Quand elle est activée, ouvrir l&apos;espace admin demande, en plus du mot de passe, un code envoyé par SMS
-          au numéro ci-dessous. Un code validé reste valable 12 heures sur cette session.
+          Quand elle est activée, ouvrir l&apos;espace admin demande, en plus du mot de passe, un code envoyé par SMS.
+          Le compte admin le reçoit au numéro ci-dessous ; le directeur et le staff le reçoivent sur le numéro de leur
+          propre profil. Un code validé reste valable 12 heures sur cette session.
         </p>
       </div>
 
@@ -47,7 +48,7 @@ export default function AdminVerificationForm({
       <input type="hidden" name="enabled" value={enabled ? "true" : "false"} />
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Numéro qui reçoit le code</span>
+        <span className="font-medium">Numéro qui reçoit le code du compte admin</span>
         <input
           name="phone"
           type="tel"

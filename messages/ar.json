@@ -136,6 +136,7 @@
     "validate": "تحقق",
     "timetableTab": "جدول الحصص",
     "absencesTab": "الغيابات",
+    "homeworkTab": "الواجبات",
     "selectClass": "اختر قسما",
     "noClasses": "لا يوجد قسم بعد.",
     "absencesEmpty": "لم يتم تسجيل أي غياب بعد.",
@@ -347,6 +348,7 @@
     "roleStudent": "تلميذ",
     "roleTeacher": "أستاذ",
     "roleStaff": "طاقم العمل",
+    "roleDirector": "المدير",
     "roleAdmin": "الإدارة"
   },
   "assistant": {
