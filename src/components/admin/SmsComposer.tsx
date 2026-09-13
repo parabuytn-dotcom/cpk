@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { sendBulkSms, type SmsSendResult } from "@/lib/admin/smsActions";
 import type { ClassRow } from "@/lib/admin/data";
 import { countSmsSegments } from "@/lib/smsSegments";
+import RecipientSearch from "@/components/admin/RecipientSearch";
 
 const AUDIENCES = [
   { value: "all", label: "Tout le monde (membres du site)" },
@@ -15,9 +16,20 @@ const AUDIENCES = [
   { value: "manual", label: "Uniquement des numéros saisis à la main" },
 ] as const;
 
+function tokens(list: string) {
+  return list.split(/[\s,;]+/).map((t) => t.trim()).filter(Boolean);
+}
+
+function appendRecipient(list: string, value: string) {
+  const existing = tokens(list);
+  if (existing.some((t) => t.toLowerCase() === value.toLowerCase())) return list;
+  return [...existing, value].join(", ");
+}
+
 export default function SmsComposer({ classes }: { classes: ClassRow[] }) {
   const [audience, setAudience] = useState<string>("manual");
   const [message, setMessage] = useState("");
+  const [extraPhones, setExtraPhones] = useState("");
   const [result, setResult] = useState<SmsSendResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -30,6 +42,7 @@ export default function SmsComposer({ classes }: { classes: ClassRow[] }) {
       if (res.success) {
         formRef.current?.reset();
         setMessage("");
+        setExtraPhones("");
       }
     });
   }
@@ -82,9 +95,18 @@ export default function SmsComposer({ classes }: { classes: ClassRow[] }) {
         <label className="mb-1 block text-sm font-medium">
           Numéros saisis à la main {audience === "manual" ? "" : "(en plus de la sélection)"}
         </label>
+        <div className="mb-2">
+          <RecipientSearch
+            channel="sms"
+            alreadyAdded={tokens(extraPhones)}
+            onPick={(value) => setExtraPhones((list) => appendRecipient(list, value))}
+          />
+        </div>
         <textarea
           name="extraPhones"
           rows={2}
+          value={extraPhones}
+          onChange={(e) => setExtraPhones(e.target.value)}
           placeholder="99766801, 22334455"
           className={inputClass}
         />

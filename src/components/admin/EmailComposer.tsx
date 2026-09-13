@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { sendBulkEmail, type EmailSendResult } from "@/lib/admin/emailActions";
 import type { ClassRow } from "@/lib/admin/data";
+import RecipientSearch from "@/components/admin/RecipientSearch";
 
 const AUDIENCES = [
   { value: "all", label: "Tout le monde (membres du site)" },
@@ -14,9 +15,20 @@ const AUDIENCES = [
   { value: "manual", label: "Uniquement des adresses externes" },
 ] as const;
 
+function tokens(list: string) {
+  return list.split(/[\s,;]+/).map((t) => t.trim()).filter(Boolean);
+}
+
+function appendRecipient(list: string, value: string) {
+  const existing = tokens(list);
+  if (existing.some((t) => t.toLowerCase() === value.toLowerCase())) return list;
+  return [...existing, value].join(", ");
+}
+
 export default function EmailComposer({ classes }: { classes: ClassRow[] }) {
   const [audience, setAudience] = useState<string>("manual");
   const [result, setResult] = useState<EmailSendResult | null>(null);
+  const [extraEmails, setExtraEmails] = useState("");
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -25,7 +37,10 @@ export default function EmailComposer({ classes }: { classes: ClassRow[] }) {
     startTransition(async () => {
       const res = await sendBulkEmail(formData);
       setResult(res);
-      if (res.success) formRef.current?.reset();
+      if (res.success) {
+        formRef.current?.reset();
+        setExtraEmails("");
+      }
     });
   }
 
@@ -75,9 +90,18 @@ export default function EmailComposer({ classes }: { classes: ClassRow[] }) {
         <label className="mb-1 block text-sm font-medium">
           Adresses externes {audience === "manual" ? "" : "(en plus de la sélection)"}
         </label>
+        <div className="mb-2">
+          <RecipientSearch
+            channel="email"
+            alreadyAdded={tokens(extraEmails)}
+            onPick={(value) => setExtraEmails((list) => appendRecipient(list, value))}
+          />
+        </div>
         <textarea
           name="extraEmails"
           rows={2}
+          value={extraEmails}
+          onChange={(e) => setExtraEmails(e.target.value)}
           placeholder="parent@example.com, autre@example.com"
           className={inputClass}
         />
