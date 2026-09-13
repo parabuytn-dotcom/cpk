@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { sendSms } from "@/lib/smsService";
+import { countSmsSegments } from "@/lib/smsSegments";
+import { getSmsBalance } from "@/lib/admin/data";
 
 export type SmsSendResult =
   | { success: true; sent: number; failed: number; skipped: number; lastError: string | null }
@@ -95,6 +97,17 @@ export async function sendBulkSms(formData: FormData): Promise<SmsSendResult> {
     return {
       success: false,
       error: `${list.length} destinataires : au-dessus de la limite de ${MAX_PER_SEND} par envoi, pour protéger la carte SIM du collège d'un blocage anti-spam de l'opérateur. Restreins la sélection.`,
+    };
+  }
+
+  // Only enforced once a balance has been entered — before that there's
+  // nothing to measure against.
+  const balance = await getSmsBalance();
+  const cost = countSmsSegments(message) * list.length;
+  if (balance && cost > balance.remaining) {
+    return {
+      success: false,
+      error: `Cet envoi coûte ${cost} SMS (${list.length} destinataires × ${countSmsSegments(message)}), mais il n'en reste que ${balance.remaining} sur le forfait. Recharge le solde ou restreins la sélection.`,
     };
   }
 

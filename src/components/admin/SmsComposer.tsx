@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { sendBulkSms, type SmsSendResult } from "@/lib/admin/smsActions";
 import type { ClassRow } from "@/lib/admin/data";
+import { countSmsSegments } from "@/lib/smsSegments";
 
 const AUDIENCES = [
   { value: "all", label: "Tout le monde (membres du site)" },
@@ -13,8 +14,6 @@ const AUDIENCES = [
   { value: "tag", label: "Par tag" },
   { value: "manual", label: "Uniquement des numéros saisis à la main" },
 ] as const;
-
-const SMS_SEGMENT_LENGTH = 160;
 
 export default function SmsComposer({ classes }: { classes: ClassRow[] }) {
   const [audience, setAudience] = useState<string>("manual");
@@ -35,7 +34,7 @@ export default function SmsComposer({ classes }: { classes: ClassRow[] }) {
     });
   }
 
-  const segments = Math.max(1, Math.ceil(message.length / SMS_SEGMENT_LENGTH));
+  const segments = countSmsSegments(message);
 
   const inputClass =
     "w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5";

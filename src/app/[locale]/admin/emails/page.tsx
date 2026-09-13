@@ -1,7 +1,9 @@
 import { setRequestLocale } from "next-intl/server";
 import PageHeader from "@/components/ui/PageHeader";
 import EmailComposer from "@/components/admin/EmailComposer";
-import { listClasses, listSentEmails } from "@/lib/admin/data";
+import QuotaBar from "@/components/admin/QuotaBar";
+import EmailQuotaForm from "@/components/admin/EmailQuotaForm";
+import { getEmailQuota, listClasses, listSentEmails } from "@/lib/admin/data";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,7 @@ export default async function AdminEmailsPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [classes, sent] = await Promise.all([listClasses(), listSentEmails()]);
+  const [classes, sent, quota] = await Promise.all([listClasses(), listSentEmails(), getEmailQuota()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -21,6 +23,16 @@ export default async function AdminEmailsPage({
         title="Emails"
         subtitle="Envoie un message personnalisé aux membres du site et/ou à des adresses externes."
       />
+
+      <section className="glass-surface flex flex-col gap-5 rounded-3xl p-6">
+        <QuotaBar
+          quota={quota}
+          label="Emails restants aujourd'hui"
+          unit="emails"
+          caption={`${quota.used} envoyés aujourd'hui. Le compteur de Brevo repart à zéro chaque nuit à minuit UTC (1 h du matin en Tunisie).`}
+        />
+        <EmailQuotaForm currentLimit={quota.total} />
+      </section>
 
       <EmailComposer classes={classes} />
 

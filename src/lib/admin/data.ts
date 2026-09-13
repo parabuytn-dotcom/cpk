@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
 import { getPublicProfiles } from "@/lib/social/data";
+import { countSmsSegments } from "@/lib/smsSegments";
 
 export type PendingProfile = {
   id: string;
@@ -884,4 +885,79 @@ export async function listSentSms(): Promise<SentSmsRow[]> {
     error: row.error,
     createdAt: row.created_at,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Quotas — SMS plan balance and Brevo's daily email allowance
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_EMAIL_DAILY_LIMIT = 300;
+
+export type QuotaStatus = {
+  /** What the bar is measured against: the balance at the last top-up, or the daily limit. */
+  total: number;
+  used: number;
+  remaining: number;
+};
+
+/**
+ * The SMS balance is a snapshot plus what went out after it: site_settings
+ * holds the balance entered at the last top-up and when, and every SMS sent
+ * since (from any trigger — sms_logs records them all) is subtracted, counted
+ * the way the carrier bills them. Null until a balance has been entered once.
+ */
+export async function getSmsBalance(): Promise<QuotaStatus | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  const [balanceRaw, setAtRaw] = await Promise.all([
+    getSiteSetting("sms_balance"),
+    getSiteSetting("sms_balance_set_at"),
+  ]);
+  const balance = Number(balanceRaw);
+  if (balanceRaw === null || !Number.isFinite(balance) || !setAtRaw) return null;
+
+  const supabase = await createClient();
+  const PAGE = 1000;
+  let used = 0;
+  // Paged: PostgREST caps a single response at 1000 rows.
+  for (let from = 0; ; from += PAGE) {
+    const { data } = await supabase
+      .from("sms_logs")
+      .select("message")
+      .eq("status", "sent")
+      .gte("created_at", setAtRaw)
+      .order("created_at")
+      .range(from, from + PAGE - 1);
+    const rows = data ?? [];
+    for (const row of rows) used += countSmsSegments(row.message);
+    if (rows.length < PAGE) break;
+  }
+
+  return { total: balance, used, remaining: Math.max(balance - used, 0) };
+}
+
+/**
+ * Brevo's allowance refills every day, so only today's successful sends count.
+ * "Today" starts at midnight UTC — when Brevo resets it — which is 1 a.m. in
+ * Tunisia, not local midnight.
+ */
+export async function getEmailQuota(): Promise<QuotaStatus> {
+  const limitRaw = isSupabaseConfigured() ? await getSiteSetting("email_daily_limit") : null;
+  const parsed = Number(limitRaw);
+  const total = limitRaw !== null && Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_EMAIL_DAILY_LIMIT;
+
+  if (!isSupabaseConfigured()) return { total, used: 0, remaining: total };
+
+  const now = new Date();
+  const startOfUtcDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("email_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "sent")
+    .gte("created_at", startOfUtcDay.toISOString());
+
+  const used = count ?? 0;
+  return { total, used, remaining: Math.max(total - used, 0) };
 }

@@ -384,14 +384,6 @@ async function emailAbsenceAlert(
 
   const subject = `Absence de ${teacherName}`;
   const html = renderEmail({ title: subject, bodyHtml: plainTextToHtml(message) });
-  const logs: {
-    sent_by: string | null;
-    recipient: string;
-    subject: string;
-    body: string;
-    status: string;
-    error: string | null;
-  }[] = [];
 
   for (const recipient of recipients) {
     // A declared contact_email wins; otherwise the auth address, which is
@@ -410,20 +402,8 @@ async function emailAbsenceAlert(
     }
     if (!email) continue;
 
-    const result = await sendEmail(email, subject, html);
-    logs.push({
-      sent_by: sentBy,
-      recipient: email,
-      subject,
-      body: message,
-      status: result.success ? "sent" : "failed",
-      error: result.success ? null : result.error,
-    });
+    await sendEmail(email, subject, html, { sentBy, logBody: message });
   }
-
-  // Logged like any other send so a failure shows up in Admin → Emails
-  // instead of vanishing.
-  if (logs.length > 0) await adminClient.from("email_logs").insert(logs);
 }
 
 async function applyTeacherAbsence({
@@ -1052,13 +1032,16 @@ export async function createChildAccount(studentId: string): Promise<ChildAccoun
       parentEmail,
       `Compte CPK Learn créé pour ${childName}`,
       renderEmail({ title: `Compte créé pour ${childName}`, bodyHtml: body }),
-      [
-        {
-          filename: "connexion-cpk.png",
-          content: Buffer.from(issued.qrDataUrl.split(",")[1], "base64"),
-          cid: "qrlogin",
-        },
-      ],
+      {
+        sentBy: profile.id,
+        attachments: [
+          {
+            filename: "connexion-cpk.png",
+            content: Buffer.from(issued.qrDataUrl.split(",")[1], "base64"),
+            cid: "qrlogin",
+          },
+        ],
+      },
     );
     sentByEmail = result.success;
   }
@@ -1112,6 +1095,7 @@ export async function resetChildPassword(
       parentUser.email,
       "Mot de passe réinitialisé — CPK Learn",
       `<p>Nouveaux identifiants de connexion :</p><p>Email : ${email}<br/>Mot de passe : ${password}</p>`,
+      { sentBy: profile.id },
     );
   }
 

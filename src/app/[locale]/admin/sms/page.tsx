@@ -1,7 +1,9 @@
 import { setRequestLocale } from "next-intl/server";
 import PageHeader from "@/components/ui/PageHeader";
 import SmsComposer from "@/components/admin/SmsComposer";
-import { listClasses, listSentSms } from "@/lib/admin/data";
+import QuotaBar from "@/components/admin/QuotaBar";
+import SmsBalanceForm from "@/components/admin/SmsBalanceForm";
+import { getSmsBalance, listClasses, listSentSms } from "@/lib/admin/data";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,7 @@ export default async function AdminSmsPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [classes, sent] = await Promise.all([listClasses(), listSentSms()]);
+  const [classes, sent, balance] = await Promise.all([listClasses(), listSentSms(), getSmsBalance()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -28,6 +30,22 @@ export default async function AdminSmsPage({
         title="SMS"
         subtitle="Envoie un SMS aux membres du site et/ou à des numéros externes, via la passerelle du collège."
       />
+
+      <section className="glass-surface flex flex-col gap-5 rounded-3xl p-6">
+        {balance ? (
+          <QuotaBar
+            quota={balance}
+            label="SMS restants sur le forfait"
+            unit="SMS"
+            caption={`${balance.used} SMS envoyés depuis la dernière recharge — un message long ou contenant de l'arabe compte pour plusieurs SMS.`}
+          />
+        ) : (
+          <p className="text-sm text-foreground/70">
+            Aucun solde enregistré. Saisis le nombre de SMS de ton forfait pour suivre ce qu&apos;il reste.
+          </p>
+        )}
+        <SmsBalanceForm hasBalance={balance !== null} />
+      </section>
 
       <SmsComposer classes={classes} />
 

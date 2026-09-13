@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { sendEmail } from "@/lib/emailService";
 import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
+import { getEmailQuota } from "@/lib/admin/data";
 
 export type EmailSendResult =
   | { success: true; sent: number; failed: number; skipped: number; lastError: string | null }
@@ -23,9 +24,6 @@ const schema = z.object({
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Brevo's free tier allows 300 emails/day. Refuse rather than send half a
-// batch and silently hit the wall mid-way through.
-const MAX_PER_SEND = 280;
 
 export async function sendBulkEmail(formData: FormData): Promise<EmailSendResult> {
   await requireAdmin();
@@ -108,10 +106,12 @@ export async function sendBulkEmail(formData: FormData): Promise<EmailSendResult
   if (list.length === 0) {
     return { success: false, error: "Aucun destinataire joignable par email dans cette sélection." };
   }
-  if (list.length > MAX_PER_SEND) {
+  // Refuse rather than send half the batch and hit Brevo's daily wall mid-way.
+  const quota = await getEmailQuota();
+  if (list.length > quota.remaining) {
     return {
       success: false,
-      error: `${list.length} destinataires : au-dessus de la limite de ${MAX_PER_SEND} par envoi (quota Brevo gratuit : 300 emails/jour). Restreins la sélection.`,
+      error: `${list.length} destinataires, mais il ne reste que ${quota.remaining} emails aujourd'hui sur ${quota.total} (le quota Brevo repart à zéro à minuit UTC). Restreins la sélection ou attends demain.`,
     };
   }
 
@@ -120,42 +120,19 @@ export async function sendBulkEmail(formData: FormData): Promise<EmailSendResult
   let sent = 0;
   let failed = 0;
   let lastError: string | null = null;
-  const logs: {
-    sent_by: string | null;
-    recipient: string;
-    subject: string;
-    body: string;
-    status: string;
-    error: string | null;
-  }[] = [];
 
   for (const recipient of list) {
-    const result = await sendEmail(recipient, subject, html);
+    const result = await sendEmail(recipient, subject, html, {
+      sentBy: admin?.id ?? null,
+      logBody: body,
+    });
     if (result.success) {
       sent++;
-      logs.push({
-        sent_by: admin?.id ?? null,
-        recipient,
-        subject,
-        body,
-        status: "sent",
-        error: null,
-      });
     } else {
       failed++;
       lastError = result.error;
-      logs.push({
-        sent_by: admin?.id ?? null,
-        recipient,
-        subject,
-        body,
-        status: "failed",
-        error: result.error,
-      });
     }
   }
-
-  if (logs.length > 0) await adminClient.from("email_logs").insert(logs);
 
   revalidatePath("/admin/emails");
   return { success: true, sent, failed, skipped, lastError };
