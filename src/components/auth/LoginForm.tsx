@@ -95,6 +95,17 @@ export default function LoginForm({
         <p className="mt-4 text-sm text-red-600 dark:text-red-400">{state.message}</p>
       )}
 
+      {method !== "child" && (
+        <p className="mt-4 text-center text-sm">
+          <Link
+            href="/mot-de-passe-oublie"
+            className="font-medium text-brand-600 hover:underline"
+          >
+            {t("forgotPassword")}
+          </Link>
+        </p>
+      )}
+
       <p className="mt-6 text-center text-sm text-foreground/60">
         {t("noAccount")}{" "}
         <Link href="/register" className="font-medium text-brand-600 hover:underline">

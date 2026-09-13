@@ -92,7 +92,8 @@
     "pendingBanner": "Account not yet verified. Waiting for verification. To speed things up, call 99766801 or email us at contact@cpkef.tn.",
     "validatedTitle": "Account verified!",
     "validatedBody": "Your account has been verified by the administration. Social features (mutual help, comments) are now unlocked.",
-    "validatedClose": "Continue"
+    "validatedClose": "Continue",
+    "forgotPassword": "Forgot your password?"
   },
   "timetable": {
     "title": "Timetable",
@@ -462,5 +463,21 @@
     "notFriends": "You both need to follow each other to chat.",
     "youBlocked": "You blocked this person. Unblock them to resume the conversation.",
     "conversationUnavailable": "This conversation is no longer available."
+  },
+  "forgotPassword": {
+    "title": "Forgot password",
+    "intro": "Enter your account's phone number. We'll send you a code to choose a new password.",
+    "phone": "Phone number",
+    "sendCode": "Send me a code",
+    "sending": "Sending…",
+    "sentByEmail": "A code was just emailed to {hint}. It expires in 10 minutes.",
+    "sentBySms": "A code was just sent by SMS to {hint}. It expires in 10 minutes.",
+    "code": "Code received",
+    "newPassword": "New password (6 characters min.)",
+    "submit": "Change my password",
+    "saving": "Saving…",
+    "resend": "Send a new code",
+    "backToLogin": "Back to login",
+    "genericError": "Couldn't change the password."
   }
 }

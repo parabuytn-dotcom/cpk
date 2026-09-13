@@ -92,7 +92,8 @@
     "pendingBanner": "Compte non validé. En attente de vérification. Pour accélérer le processus, appelez le 99766801 ou envoyez-nous un message sur contact@cpkef.tn.",
     "validatedTitle": "Compte validé !",
     "validatedBody": "Votre compte a été vérifié par l'administration. Les fonctionnalités sociales (entraide, commentaires) sont maintenant débloquées.",
-    "validatedClose": "Continuer"
+    "validatedClose": "Continuer",
+    "forgotPassword": "Mot de passe oublié ?"
   },
   "timetable": {
     "title": "Emploi du temps",
@@ -462,5 +463,21 @@
     "notFriends": "Vous devez vous suivre mutuellement pour discuter.",
     "youBlocked": "Tu as bloqué cette personne. Débloque-la pour reprendre la conversation.",
     "conversationUnavailable": "Cette conversation n'est plus disponible."
+  },
+  "forgotPassword": {
+    "title": "Mot de passe oublié",
+    "intro": "Saisis le numéro de téléphone de ton compte. Nous t'enverrons un code pour choisir un nouveau mot de passe.",
+    "phone": "Numéro de téléphone",
+    "sendCode": "Recevoir un code",
+    "sending": "Envoi…",
+    "sentByEmail": "Un code vient d'être envoyé par email à {hint}. Il expire dans 10 minutes.",
+    "sentBySms": "Un code vient d'être envoyé par SMS au {hint}. Il expire dans 10 minutes.",
+    "code": "Code reçu",
+    "newPassword": "Nouveau mot de passe (6 caractères min.)",
+    "submit": "Changer mon mot de passe",
+    "saving": "Enregistrement…",
+    "resend": "Renvoyer un code",
+    "backToLogin": "Retour à la connexion",
+    "genericError": "Impossible de changer le mot de passe."
   }
 }

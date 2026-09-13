@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteSetting } from "@/lib/admin/data";
 import { sendSms } from "@/lib/smsService";
 
-export type OtpPurpose = "register" | "update" | "qr_login";
+export type OtpPurpose = "register" | "update" | "qr_login" | "password_reset";
 
 const CODE_TTL_MINUTES = 10;
 const DEFAULT_RESEND_COOLDOWN_SECONDS = 60;
@@ -25,12 +25,17 @@ function hashCode(code: string) {
   return createHash("sha256").update(code).digest("hex");
 }
 
-/** Generates and SMS's a 6-digit code, replacing any still-valid code for the same phone+purpose. */
-export async function sendPhoneOtp(
+/**
+ * Generates and stores a 6-digit code, replacing any still-valid one for the
+ * same phone+purpose, and returns it <b>in clear</b> so the caller can deliver
+ * it over the channel it chooses. Server-side only: this value must never be
+ * returned to a browser. Callers delivering by SMS should use sendPhoneOtp().
+ */
+export async function createPhoneOtp(
   phone: string,
   purpose: OtpPurpose,
   options: OtpOptions = {},
-): Promise<OtpResult> {
+): Promise<{ success: true; code: string } | { success: false; error: string }> {
   const cooldownSeconds = options.cooldownSeconds ?? DEFAULT_RESEND_COOLDOWN_SECONDS;
 
   const adminClient = createAdminClient();
@@ -74,11 +79,23 @@ export async function sendPhoneOtp(
   });
   if (insertError) return { success: false, error: insertError.message };
 
-  const sms = await sendSms(
-    phone,
-    `Votre code de vérification CPK Learn est : ${code}. Il expire dans ${CODE_TTL_MINUTES} minutes.`,
-    "phone_verification",
-  );
+  return { success: true, code };
+}
+
+export function otpMessage(code: string) {
+  return `Votre code de vérification CPK Learn est : ${code}. Il expire dans ${CODE_TTL_MINUTES} minutes.`;
+}
+
+/** Generates a code and texts it to the number itself. */
+export async function sendPhoneOtp(
+  phone: string,
+  purpose: OtpPurpose,
+  options: OtpOptions = {},
+): Promise<OtpResult> {
+  const created = await createPhoneOtp(phone, purpose, options);
+  if (!created.success) return created;
+
+  const sms = await sendSms(phone, otpMessage(created.code), "phone_verification");
   if (!sms.success) return { success: false, error: sms.error };
 
   return { success: true };
