@@ -1451,14 +1451,6 @@ export async function submitHelpRequest(
   return { success: "Ta demande a bien été envoyée." };
 }
 
-export async function updateHelpRequestStatus(requestId: string, status: string) {
-  await requireAdmin();
-  const supabase = await createClient();
-  const { error } = await supabase.from("help_requests").update({ status }).eq("id", requestId);
-  if (error) throw new Error(error.message);
-  revalidatePath("/admin/aide");
-}
-
 // ---------------------------------------------------------------------------
 // Boîte à idées — propositions des parents/élèves, validées par l'admin
 // ---------------------------------------------------------------------------

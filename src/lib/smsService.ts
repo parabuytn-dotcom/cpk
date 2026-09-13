@@ -10,6 +10,9 @@ const COUNTRY_CODE = "216";
 
 function toInternational(phone: string) {
   const digits = phone.replace(/\D/g, "");
+  // Already international (e.g. replying to a foreign number from the inbox):
+  // keep its own country code rather than prefixing Tunisia's.
+  if (phone.trim().startsWith("+")) return `+${digits}`;
   const withCountryCode = digits.startsWith(COUNTRY_CODE) ? digits : `${COUNTRY_CODE}${digits}`;
   // The gateway's API rejects numbers without a leading "+" as "invalid phone
   // number" (confirmed by a live test send) — every SMS sent before this fix
@@ -84,5 +87,31 @@ async function logSmsAttempt(
     trigger,
     status: result.success ? "sent" : "failed",
     error: result.success ? null : result.error,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Gateway management API — used to point the phone's "SMS received" webhook at
+// the site, so incoming texts land in the admin inbox.
+// ---------------------------------------------------------------------------
+
+function gatewayApiBase() {
+  const messagesUrl = process.env.SMS_GATEWAY_URL || DEFAULT_GATEWAY_URL;
+  return messagesUrl.replace(/\/messages\/?$/, "");
+}
+
+export async function gatewayRequest(path: string, init: RequestInit = {}) {
+  const username = process.env.SMS_GATEWAY_USERNAME;
+  const password = process.env.SMS_GATEWAY_PASSWORD;
+  if (!username || !password) throw new Error("SMS_GATEWAY_USERNAME/PASSWORD is not configured.");
+
+  return fetch(`${gatewayApiBase()}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
+      ...init.headers,
+    },
+    cache: "no-store",
   });
 }

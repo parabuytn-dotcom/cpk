@@ -398,32 +398,6 @@ export async function listStaffMembers(): Promise<StaffMemberRow[]> {
   }));
 }
 
-export type HelpRequestRow = {
-  id: string;
-  subject: string;
-  description: string;
-  status: string;
-  createdAt: string;
-};
-
-export async function listHelpRequests(): Promise<HelpRequestRow[]> {
-  if (!isSupabaseConfigured()) return [];
-
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("help_requests")
-    .select("id, subject, description, status, created_at")
-    .order("created_at", { ascending: false });
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    subject: row.subject,
-    description: row.description,
-    status: row.status,
-    createdAt: row.created_at,
-  }));
-}
-
 export type PendingSuggestionRow = {
   id: string;
   content: string;
@@ -960,4 +934,111 @@ export async function getEmailQuota(): Promise<QuotaStatus> {
 
   const used = count ?? 0;
   return { total, used, remaining: Math.max(total - used, 0) };
+}
+
+// ---------------------------------------------------------------------------
+// Boîte de réception — SMS et emails reçus + demandes d'aide, en un seul flux
+// ---------------------------------------------------------------------------
+
+export type InboxKind = "sms" | "email" | "help";
+
+export type InboxItem = {
+  kind: InboxKind;
+  id: string;
+  /** Phone number, email address, or — for help requests — the author's name. */
+  from: string;
+  fromName: string | null;
+  profileId: string | null;
+  subject: string | null;
+  body: string;
+  receivedAt: string;
+  unread: boolean;
+  /** Help requests only. */
+  status: string | null;
+  reply: string | null;
+  repliedAt: string | null;
+};
+
+export async function listInbox(kind?: InboxKind): Promise<InboxItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+
+  const wantMessages = kind !== "help";
+  const wantHelp = !kind || kind === "help";
+
+  const [{ data: messages }, { data: help }] = await Promise.all([
+    wantMessages
+      ? (() => {
+          let query = supabase
+            .from("inbox_messages")
+            .select("id, channel, sender, sender_name, subject, body, profile_id, received_at, read_at, reply_body, replied_at")
+            .order("received_at", { ascending: false })
+            .limit(200);
+          if (kind === "sms" || kind === "email") query = query.eq("channel", kind);
+          return query;
+        })()
+      : Promise.resolve({ data: [] as never[] }),
+    wantHelp
+      ? supabase
+          .from("help_requests")
+          .select("id, author_id, subject, description, status, created_at, admin_reply, replied_at")
+          .order("created_at", { ascending: false })
+          .limit(200)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
+
+  const authorIds = [
+    ...(help ?? []).map((h) => h.author_id),
+    ...(messages ?? []).map((m) => m.profile_id),
+  ].filter((id): id is string => Boolean(id));
+  const profiles = await getPublicProfiles(supabase, authorIds);
+
+  const items: InboxItem[] = [
+    ...(messages ?? []).map((m) => ({
+      kind: m.channel as "sms" | "email",
+      id: m.id,
+      from: m.sender,
+      fromName: m.sender_name ?? (m.profile_id ? (profiles.get(m.profile_id)?.displayName ?? null) : null),
+      profileId: m.profile_id,
+      subject: m.subject,
+      body: m.body,
+      receivedAt: m.received_at,
+      unread: m.read_at === null,
+      status: null,
+      reply: m.reply_body,
+      repliedAt: m.replied_at,
+    })),
+    ...(help ?? []).map((h) => ({
+      kind: "help" as const,
+      id: h.id,
+      from: h.author_id ? (profiles.get(h.author_id)?.displayName ?? "?") : "Compte supprimé",
+      fromName: null,
+      profileId: h.author_id,
+      subject: h.subject,
+      body: h.description,
+      receivedAt: h.created_at,
+      // A help request is "unread" until someone has picked it up.
+      unread: h.status === "open",
+      status: h.status,
+      reply: h.admin_reply,
+      repliedAt: h.replied_at,
+    })),
+  ];
+
+  return items.sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+}
+
+export async function countUnreadInbox(): Promise<{ sms: number; email: number; help: number; total: number }> {
+  const empty = { sms: 0, email: 0, help: 0, total: 0 };
+  if (!isSupabaseConfigured()) return empty;
+  const supabase = await createClient();
+
+  const [sms, email, help] = await Promise.all([
+    supabase.from("inbox_messages").select("id", { count: "exact", head: true }).eq("channel", "sms").is("read_at", null),
+    supabase.from("inbox_messages").select("id", { count: "exact", head: true }).eq("channel", "email").is("read_at", null),
+    supabase.from("help_requests").select("id", { count: "exact", head: true }).eq("status", "open"),
+  ]);
+
+  const counts = { sms: sms.count ?? 0, email: email.count ?? 0, help: help.count ?? 0 };
+  return { ...counts, total: counts.sms + counts.email + counts.help };
 }

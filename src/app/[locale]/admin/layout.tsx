@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { countUnreadInbox } from "@/lib/admin/data";
 import { Link } from "@/i18n/navigation";
 
 export default async function AdminLayout({
@@ -17,8 +18,8 @@ export default async function AdminLayout({
     return null;
   }
 
-  const t = await getTranslations("admin");
-  const tabs = [
+  const [t, unread] = await Promise.all([getTranslations("admin"), countUnreadInbox()]);
+  const tabs: { href: string; label: string; badge?: number }[] = [
     { href: "/admin/comptes", label: t("accounts") },
     { href: "/admin/documents", label: t("documentsTab") },
     { href: "/admin/utilisateurs", label: t("usersTab") },
@@ -27,7 +28,7 @@ export default async function AdminLayout({
     { href: "/admin/absences", label: t("absencesTab") },
     { href: "/admin/profs", label: t("teachersTab") },
     { href: "/admin/staff", label: t("staffTab") },
-    { href: "/admin/aide", label: t("helpTab") },
+    { href: "/admin/boite-de-reception", label: t("inboxTab"), badge: unread.total },
     { href: "/admin/signalements", label: t("reportsTab") },
     { href: "/admin/emails", label: t("emailsTab") },
     { href: "/admin/sms", label: t("smsTab") },
@@ -46,9 +47,14 @@ export default async function AdminLayout({
           <Link
             key={tab.href}
             href={tab.href}
-            className="glass-surface rounded-full px-4 py-2 text-sm font-medium transition hover:bg-brand-500/10"
+            className="glass-surface flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition hover:bg-brand-500/10"
           >
             {tab.label}
+            {tab.badge ? (
+              <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
+                {tab.badge}
+              </span>
+            ) : null}
           </Link>
         ))}
       </div>

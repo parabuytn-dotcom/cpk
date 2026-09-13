@@ -1498,3 +1498,54 @@ create policy "Admins read email logs"
   using (public.is_admin());
 
 create index if not exists idx_email_logs_created on public.email_logs (created_at desc);
+
+-- ----------------------------------------------------------------------------
+-- Boîte de réception admin — SMS reçus sur la ligne du collège et emails reçus
+-- (contact@cpkef.tn, une fois le domaine en place), affichés dans un seul
+-- onglet avec les demandes d'aide. Les lignes arrivent uniquement par les
+-- routes webhook (/api/sms/received, /api/email/inbound), qui écrivent avec la
+-- clé service_role : aucune règle d'insertion côté utilisateur.
+-- `external_id` est l'identifiant du message chez l'expéditeur (passerelle SMS
+-- ou Brevo) : un webhook renvoyé après une coupure ne crée pas de doublon.
+-- ----------------------------------------------------------------------------
+create table if not exists public.inbox_messages (
+  id uuid primary key default gen_random_uuid(),
+  channel text not null check (channel in ('sms', 'email')),
+  external_id text not null,
+  sender text not null,
+  sender_name text,
+  subject text,
+  body text not null,
+  profile_id uuid references public.profiles (id) on delete set null,
+  received_at timestamptz not null default now(),
+  read_at timestamptz,
+  reply_body text,
+  replied_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (channel, external_id)
+);
+
+create index if not exists idx_inbox_messages_received on public.inbox_messages (received_at desc);
+
+alter table public.inbox_messages enable row level security;
+
+drop policy if exists "Admins read inbox messages" on public.inbox_messages;
+create policy "Admins read inbox messages"
+  on public.inbox_messages for select
+  using (public.is_admin());
+
+drop policy if exists "Admins update inbox messages" on public.inbox_messages;
+create policy "Admins update inbox messages"
+  on public.inbox_messages for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "Admins delete inbox messages" on public.inbox_messages;
+create policy "Admins delete inbox messages"
+  on public.inbox_messages for delete
+  using (public.is_admin());
+
+-- Réponse de l'administration à une demande d'aide, envoyée à son auteur en
+-- notification et conservée ici pour l'historique.
+alter table public.help_requests add column if not exists admin_reply text;
+alter table public.help_requests add column if not exists replied_at timestamptz;
