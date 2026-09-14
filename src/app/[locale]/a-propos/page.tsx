@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import PageHeader from "@/components/ui/PageHeader";
 import Avatar from "@/components/ui/Avatar";
 import { getSiteSetting } from "@/lib/admin/data";
+import { getAboutPhotos } from "@/lib/siteMedia";
 
 export default async function AboutPage({
   params,
@@ -11,9 +12,10 @@ export default async function AboutPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [t, trainingUrl] = await Promise.all([
+  const [t, trainingUrl, photos] = await Promise.all([
     getTranslations("about"),
     getSiteSetting("training_url"),
+    getAboutPhotos(),
   ]);
 
   return (
@@ -22,11 +24,11 @@ export default async function AboutPage({
 
       <div className="mb-8 flex justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
-          <Avatar name="Melik Messaoudi" photoUrl="/melik-messaoudi.jpg" size={112} />
+          <Avatar name="Melik Messaoudi" photoUrl={photos.melik} size={112} />
           <p className="text-sm font-medium">Melik Messaoudi</p>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Avatar name="Edem Aifia" photoUrl="/edem-aifia.jpg" size={112} />
+          <Avatar name="Edem Aifia" photoUrl={photos.edem} size={112} />
           <p className="text-sm font-medium">Edem Aifia</p>
         </div>
       </div>

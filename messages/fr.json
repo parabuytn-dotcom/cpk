@@ -28,11 +28,7 @@
   "onboarding": {
     "title": "Bienvenue sur CPK Learn",
     "subtitle": "Comment veux-tu commencer ?",
-    "tutorialTitle": "Tutoriel",
-    "tutorialComingSoon": "Vidéo bientôt disponible.",
-    "skip": "Passer",
     "scanQrOption": "📷 Scanner le code QR",
-    "loginWithCredentialsOption": "🔑 Se connecter avec les identifiants",
     "scanTitle": "Scanner le code QR",
     "scanHint": "Pointe la caméra vers le QR code de ta fiche.",
     "scanCameraError": "Impossible d'accéder à la caméra. Vérifie les autorisations du navigateur.",
@@ -54,7 +50,9 @@
         "title": "Je suis un enfant",
         "subtitle": "Élève : choisis ta classe et ton nom."
       }
-    }
+    },
+    "watchTitle": "Découvrir CPK Learn en vidéo",
+    "watchSubtitle": "2 minutes pour comprendre ce que le site apporte aux familles."
   },
   "auth": {
     "loginTitle": "Connexion",
@@ -479,5 +477,30 @@
     "resend": "Renvoyer un code",
     "backToLogin": "Retour à la connexion",
     "genericError": "Impossible de changer le mot de passe."
+  },
+  "introducing": {
+    "eyebrow": "Collège Pilote du Kef",
+    "title": "Découvrez CPK Learn",
+    "subtitle": "Le site du collège qui relie parents, élèves et administration : emploi du temps, absences des professeurs et devoirs, au même endroit.",
+    "videoSoon": "La vidéo de présentation arrive très bientôt.",
+    "features": {
+      "timetable": {
+        "title": "Emploi du temps",
+        "body": "Toujours à jour pour la classe de votre enfant, avec les cours annulés barrés."
+      },
+      "absences": {
+        "title": "Absences des profs",
+        "body": "Un SMS et une notification dès qu'un cours de votre enfant est annulé."
+      },
+      "homework": {
+        "title": "Devoirs",
+        "body": "Le cahier de texte et les devoirs surveillés, consultables à tout moment."
+      }
+    },
+    "register": "Créer mon compte",
+    "scan": "Scanner mon code QR",
+    "login": "J'ai déjà un compte",
+    "credits": "CPK Learn est un projet de Melik Messaoudi, en collaboration avec Edem Aifia.",
+    "privacy": "Vos informations servent uniquement à relier les comptes des parents et des élèves. Elles ne sont jamais partagées."
   }
 }

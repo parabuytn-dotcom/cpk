@@ -28,15 +28,11 @@
   "onboarding": {
     "title": "Welcome to CPK Learn",
     "subtitle": "How do you want to start?",
-    "tutorialTitle": "Tutorial",
-    "tutorialComingSoon": "Video coming soon.",
     "scanQrOption": "📷 Scan the QR code",
-    "loginWithCredentialsOption": "🔑 Log in with credentials",
     "scanTitle": "Scan the QR code",
     "scanHint": "Point the camera at the QR code on your document.",
     "scanCameraError": "Couldn't access the camera. Check the browser's permissions.",
     "scanInvalid": "This QR code isn't recognized by CPK Learn.",
-    "skip": "Skip",
     "option": {
       "document": {
         "title": "Log in with my document",
@@ -54,7 +50,9 @@
         "title": "I'm a student",
         "subtitle": "Pick your class and your name."
       }
-    }
+    },
+    "watchTitle": "Watch the CPK Learn video",
+    "watchSubtitle": "2 minutes to see what the site does for families."
   },
   "auth": {
     "loginTitle": "Login",
@@ -479,5 +477,30 @@
     "resend": "Send a new code",
     "backToLogin": "Back to login",
     "genericError": "Couldn't change the password."
+  },
+  "introducing": {
+    "eyebrow": "Collège Pilote du Kef",
+    "title": "Discover CPK Learn",
+    "subtitle": "The school website that connects parents, students and staff: timetable, teacher absences and homework in one place.",
+    "videoSoon": "The introduction video is coming very soon.",
+    "features": {
+      "timetable": {
+        "title": "Timetable",
+        "body": "Always up to date for your child's class, with cancelled lessons struck out."
+      },
+      "absences": {
+        "title": "Teacher absences",
+        "body": "A text message and a notification as soon as one of your child's lessons is cancelled."
+      },
+      "homework": {
+        "title": "Homework",
+        "body": "The homework log and upcoming tests, available at any time."
+      }
+    },
+    "register": "Create my account",
+    "scan": "Scan my QR code",
+    "login": "I already have an account",
+    "credits": "CPK Learn is a project by Melik Messaoudi, in collaboration with Edem Aifia.",
+    "privacy": "Your information is only used to link parent and student accounts. It is never shared."
   }
 }

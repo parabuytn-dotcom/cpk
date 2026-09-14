@@ -1572,3 +1572,13 @@ create policy "Admins delete inbox messages"
 -- notification et conservée ici pour l'historique.
 alter table public.help_requests add column if not exists admin_reply text;
 alter table public.help_requests add column if not exists replied_at timestamptz;
+
+-- ----------------------------------------------------------------------------
+-- site-media — files the admin uploads from Réglages: the intro video shown on
+-- /introducing (the page behind the QR code of the paper forms) and the photos
+-- of "Plus de nous". Public read; uploads only go through one-time signed URLs
+-- issued server-side after an admin check, so no insert policy is needed.
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+  values ('site-media', 'site-media', true)
+  on conflict (id) do update set public = true;
