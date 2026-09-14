@@ -2,6 +2,7 @@
 
 import { randomBytes, createHash } from "crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { getTranslations } from "next-intl/server";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
@@ -15,6 +16,13 @@ import { sendEmail } from "@/lib/emailService";
 import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
 import { getSiteSetting } from "@/lib/admin/data";
 import { getCurrentProfile } from "@/lib/auth/session";
+import {
+  formatSchoolDateTime,
+  isoWeekdayOf,
+  parseSchoolDateTime,
+  schoolCalendarDay,
+  slotInstant,
+} from "@/lib/schoolTime";
 import { checkToujoursAJour } from "@/lib/badges/engine";
 import { notify, notifyMany } from "@/lib/notifications/engine";
 import {
@@ -344,28 +352,15 @@ export async function deleteTimetableEntry(entryId: string) {
 // Absences — déclaration + propagation automatique + alerte SMS
 // ---------------------------------------------------------------------------
 
-/** day_of_week convention: 1 = Lundi ... 7 = Dimanche (matches schema check). */
-function isoWeekday(date: Date) {
-  const day = date.getUTCDay();
-  return day === 0 ? 7 : day;
-}
+/** How many sends run at once: fast enough for a whole grade, gentle on the gateway phone. */
+const FANOUT_CONCURRENCY = 5;
 
-function atTime(date: Date, hhmm: string) {
-  const [h, m] = hhmm.split(":").map(Number);
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h, m));
-  return d;
-}
-
-function everyDayBetween(start: Date, end: Date) {
-  const days: Date[] = [];
-  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
-  const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
-  // Safety cap matches the 90-day zod validation on the absence window.
-  for (let i = 0; cursor <= last && i < 120; i++) {
-    days.push(new Date(cursor));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
+async function inBatches<T>(items: T[], worker: (item: T) => Promise<unknown>) {
+  for (let i = 0; i < items.length; i += FANOUT_CONCURRENCY) {
+    await Promise.all(
+      items.slice(i, i + FANOUT_CONCURRENCY).map((item) => worker(item).catch(() => undefined)),
+    );
   }
-  return days;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -375,37 +370,116 @@ async function isAbsenceEmailEnabled() {
   return (await getSiteSetting("absence_email_enabled")) !== "false";
 }
 
+type AbsenceRecipient = { id: string; phone: string | null; contact_email: string | null };
+
+/** Last 8 digits: "52 254 129", "+216 52254129" and "21652254129" are one phone. */
+function phoneKey(phone: string) {
+  return phone.replace(/\D/g, "").slice(-8);
+}
+
 async function emailAbsenceAlert(
-  recipients: { id: string; contact_email: string | null }[],
-  teacherName: string,
+  recipients: AbsenceRecipient[],
+  subject: string,
   message: string,
   sentBy: string,
 ) {
   const adminClient = createAdminClient();
   if (!adminClient) return;
 
-  const subject = `Absence de ${teacherName}`;
   const html = renderEmail({ title: subject, bodyHtml: plainTextToHtml(message) });
 
-  for (const recipient of recipients) {
+  const addresses = new Set<string>();
+  await inBatches(recipients, async (recipient) => {
     // A declared contact_email wins; otherwise the auth address, which is
     // only a real inbox for email signups — phone signups carry a synthetic
     // @cpk.internal address that goes nowhere.
-    let email =
-      recipient.contact_email && EMAIL_RE.test(recipient.contact_email)
-        ? recipient.contact_email
-        : null;
-    if (!email) {
-      const { data: userData } = await adminClient.auth.admin.getUserById(recipient.id);
-      const authEmail = userData.user?.email ?? "";
-      if (authEmail && !authEmail.endsWith("@cpk.internal") && EMAIL_RE.test(authEmail)) {
-        email = authEmail;
+    if (recipient.contact_email && EMAIL_RE.test(recipient.contact_email.trim())) {
+      addresses.add(recipient.contact_email.trim().toLowerCase());
+      return;
+    }
+    const { data: userData } = await adminClient.auth.admin.getUserById(recipient.id);
+    const authEmail = userData.user?.email ?? "";
+    if (authEmail && !authEmail.endsWith("@cpk.internal") && EMAIL_RE.test(authEmail)) {
+      addresses.add(authEmail.toLowerCase());
+    }
+  });
+
+  // A parent and the child account they created often share one inbox: one email, not two.
+  await inBatches(Array.from(addresses), (email) =>
+    sendEmail(email, subject, html, { sentBy, logBody: message }),
+  );
+}
+
+/**
+ * Which recurring slots of `teacherId` an absence window hits, and who must
+ * hear about it: the parents AND the students (whichever have an account) of
+ * every affected class. Reads with the service-role client because a
+ * teacher's own session can't see other families' rows under RLS.
+ */
+async function findAbsenceImpact(teacherId: string, startsAt: Date, endsAt: Date) {
+  const supabase = await createClient();
+  const db = createAdminClient() ?? supabase;
+
+  const { data: candidateEntries } = await db
+    .from("timetable_entries")
+    .select("id, class_id, class_name, day_of_week, start_time, end_time")
+    .eq("teacher_id", teacherId);
+
+  // Walk calendar days as they are in Tunis, not in the server's zone (UTC on
+  // Vercel), and place each "HH:MM" slot at Tunisian time.
+  const days: Date[] = [];
+  const cursor = schoolCalendarDay(startsAt);
+  const last = schoolCalendarDay(endsAt);
+  // Safety cap matches the 90-day zod validation on the absence window.
+  for (let i = 0; cursor <= last && i < 120; i++) {
+    days.push(new Date(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  const affectedEntryIds = new Set<string>();
+  const classIds = new Set<string>();
+  const classNames = new Set<string>();
+
+  for (const entry of candidateEntries ?? []) {
+    for (const day of days) {
+      if (isoWeekdayOf(day) !== entry.day_of_week) continue;
+      if (slotInstant(day, entry.start_time) < endsAt && slotInstant(day, entry.end_time) > startsAt) {
+        affectedEntryIds.add(entry.id);
+        if (entry.class_id) classIds.add(entry.class_id);
+        classNames.add(entry.class_name);
+        break;
       }
     }
-    if (!email) continue;
-
-    await sendEmail(email, subject, html, { sentBy, logBody: message });
   }
+
+  let recipients: AbsenceRecipient[] = [];
+  if (affectedEntryIds.size > 0) {
+    // Match on class_id OR class_name: a student registered under a class
+    // name that had no classes row yet carries a null class_id.
+    const [byId, byName] = await Promise.all([
+      classIds.size > 0
+        ? db.from("students").select("parent_id, user_id").in("class_id", Array.from(classIds))
+        : Promise.resolve({ data: [] as { parent_id: string | null; user_id: string | null }[] }),
+      db.from("students").select("parent_id, user_id").in("class_name", Array.from(classNames)),
+    ]);
+    const students = [...(byId.data ?? []), ...(byName.data ?? [])];
+
+    // user_id is only set once the student has their own account — a Set
+    // both dedupes siblings sharing one parent and drops the nulls.
+    const recipientIds = Array.from(
+      new Set(students.flatMap((s) => [s.parent_id, s.user_id]).filter(Boolean)),
+    ) as string[];
+
+    if (recipientIds.length > 0) {
+      const { data } = await db
+        .from("profiles")
+        .select("id, phone, contact_email")
+        .in("id", recipientIds);
+      recipients = data ?? [];
+    }
+  }
+
+  return { affectedEntryIds, classCount: classNames.size, recipients };
 }
 
 async function applyTeacherAbsence({
@@ -422,12 +496,32 @@ async function applyTeacherAbsence({
   createdBy: string;
 }): Promise<FormState> {
   const supabase = await createClient();
+  const db = createAdminClient() ?? supabase;
+
+  if (endsAt.getTime() <= Date.now()) {
+    return { message: "Cette absence est déjà terminée : il n'y a rien à annoncer aux familles." };
+  }
 
   const { data: teacher } = await supabase
     .from("teachers")
     .select("first_name, last_name")
     .eq("id", teacherId)
     .single();
+
+  // A double click, or the same absence declared from the teacher's dashboard
+  // and from the admin panel, would otherwise text every family twice.
+  const { data: overlapping } = await db
+    .from("teacher_absences")
+    .select("starts_at, ends_at")
+    .eq("teacher_id", teacherId)
+    .lt("starts_at", endsAt.toISOString())
+    .gt("ends_at", startsAt.toISOString())
+    .limit(1);
+  if (overlapping && overlapping.length > 0) {
+    return {
+      message: `Une absence est déjà déclarée pour ce professeur sur cette période (${formatSchoolDateTime(overlapping[0].starts_at)} → ${formatSchoolDateTime(overlapping[0].ends_at)}). Supprime-la d'abord pour la modifier.`,
+    };
+  }
 
   const { error: absenceError } = await supabase.from("teacher_absences").insert({
     teacher_id: teacherId,
@@ -438,93 +532,58 @@ async function applyTeacherAbsence({
   });
   if (absenceError) return { message: absenceError.message };
 
-  // Fanning the alert out is inherently privileged: under RLS a teacher's own
-  // session can't read other families' students/profiles, so a self-declared
-  // absence would save and then quietly notify nobody. Who may declare an
-  // absence is enforced by the callers and by RLS on the insert above; only
-  // the reads below run with the service-role client.
-  const db = createAdminClient() ?? supabase;
+  // The cancelled state of each slot is derived at read time from this row
+  // (see listTimetableEntries() in data.ts), never written on the recurring
+  // timetable_entries rows — that struck the course out every week forever.
+  const { affectedEntryIds, classCount, recipients } = await findAbsenceImpact(
+    teacherId,
+    startsAt,
+    endsAt,
+  );
 
-  // 1. Find every recurring slot for this teacher that falls inside the window.
-  const { data: candidateEntries } = await db
-    .from("timetable_entries")
-    .select("id, class_id, class_name, day_of_week, start_time, end_time")
-    .eq("teacher_id", teacherId);
+  const teacherName = teacher ? `${teacher.first_name} ${teacher.last_name}` : "Un professeur";
+  const when = (d: Date) =>
+    formatSchoolDateTime(d, "fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const verb = startsAt.getTime() > Date.now() ? "sera absent(e)" : "est absent(e)";
+  // Kept inside the GSM-7 alphabet (no "ê", no curly quotes): one character
+  // outside it switches the SMS to UCS-2 and triples its cost.
+  const message = `CPK Learn : ${teacherName} ${verb} du ${when(startsAt)} au ${when(endsAt)}. Les cours concernes sont annules, consultez l'emploi du temps.`;
 
-  const days = everyDayBetween(startsAt, endsAt);
-  const affectedEntryIds = new Set<string>();
-  const affectedClasses = new Map<string, string>(); // class_id -> class_name
-
-  for (const entry of candidateEntries ?? []) {
-    for (const day of days) {
-      if (isoWeekday(day) !== entry.day_of_week) continue;
-      const slotStart = atTime(day, entry.start_time);
-      const slotEnd = atTime(day, entry.end_time);
-      if (slotStart < endsAt && slotEnd > startsAt) {
-        affectedEntryIds.add(entry.id);
-        affectedClasses.set(entry.class_id, entry.class_name);
-        break;
+  if (recipients.length > 0) {
+    const recipientIds = recipients.map((r) => r.id);
+    // A parent and their child's account usually share one phone: one SMS per number.
+    const phones = new Map<string, string>();
+    for (const recipient of recipients) {
+      if (recipient.phone && phoneKey(recipient.phone).length === 8) {
+        phones.set(phoneKey(recipient.phone), recipient.phone);
       }
     }
-  }
+    const sendEmails = await isAbsenceEmailEnabled();
 
-  // Deliberately NOT writing is_cancelled on those rows: timetable_entries
-  // holds the recurring weekly pattern, so flipping the flag struck the course
-  // out every week forever instead of just during the absence. The cancelled
-  // state is derived at read time from this absence row — see
-  // listTimetableEntries() in data.ts. affectedEntryIds is still computed here
-  // only to report how many slots this absence hits and to know which classes
-  // to alert.
-
-  // 2. Alert parents AND students (whichever have their own account) of every
-  // affected class — by SMS, in-app notification, and email (the email leg is
-  // switchable from /admin/parametres).
-  const teacherName = teacher ? `${teacher.first_name} ${teacher.last_name}` : "Le professeur";
-  const durationHours = Math.round((endsAt.getTime() - startsAt.getTime()) / 3600000);
-  const formatFr = (d: Date) =>
-    d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  const message = `CPKef Info : ${teacherName} est absent(e) pendant ${durationHours} heure(s), du ${formatFr(startsAt)} au ${formatFr(endsAt)}. Merci de vérifier l'emploi du temps pour les cours annulés.`;
-
-  if (affectedClasses.size > 0) {
-    const classNames = Array.from(affectedClasses.values());
-    const { data: students } = await db
-      .from("students")
-      .select("parent_id, user_id")
-      .in("class_name", classNames);
-
-    // user_id is only set once the student has their own account — a Set
-    // both dedupes siblings sharing one parent and drops the nulls from
-    // students who don't have an account yet.
-    const recipientIds = Array.from(
-      new Set((students ?? []).flatMap((s) => [s.parent_id, s.user_id]).filter(Boolean)),
-    ) as string[];
-
-    if (recipientIds.length > 0) {
-      const { data: recipients } = await db
-        .from("profiles")
-        .select("id, phone, contact_email")
-        .in("id", recipientIds);
-
-      for (const recipient of recipients ?? []) {
-        if (recipient.phone) await sendSms(recipient.phone, message, "teacher_absence");
-      }
-
+    // Alerting a whole grade one SMS at a time took longer than a server
+    // action may run: the form hung and the last families were never
+    // reached. Answer now and keep sending after the response.
+    after(async () => {
       await notifyMany(recipientIds, "teacher_absence", message, "/emploi-du-temps");
-
-      if (await isAbsenceEmailEnabled()) {
-        await emailAbsenceAlert(recipients ?? [], teacherName, message, createdBy);
+      await inBatches(Array.from(phones.values()), (phone) =>
+        sendSms(phone, message, "teacher_absence"),
+      );
+      if (sendEmails) {
+        await emailAbsenceAlert(recipients, `Absence de ${teacherName}`, message, createdBy);
       }
-    }
+    });
   }
 
   const t = await getTranslations("homework");
   revalidatePath("/admin/absences");
   revalidatePath("/admin/emploi-du-temps");
+  revalidatePath("/emploi-du-temps");
   revalidatePath("/dashboard");
   return {
     success: t("absenceRecorded", {
       slots: affectedEntryIds.size,
-      classes: affectedClasses.size,
+      classes: classCount,
+      people: recipients.length,
     }),
   };
 }
@@ -532,8 +591,31 @@ async function applyTeacherAbsence({
 export async function deleteTeacherAbsence(absenceId: string) {
   await requireSchoolStaff();
   const supabase = await createClient();
+
+  const { data: absence } = await supabase
+    .from("teacher_absences")
+    .select("teacher_id, starts_at, ends_at, teachers(first_name, last_name)")
+    .eq("id", absenceId)
+    .maybeSingle();
+
   const { error } = await supabase.from("teacher_absences").delete().eq("id", absenceId);
   if (error) throw new Error(error.message);
+
+  // Families were told the courses are off. If the absence isn't over yet,
+  // tell them they're back on — in the app and by push only, so fixing a
+  // typo (delete, then declare again) doesn't cost an extra round of SMS.
+  if (absence && new Date(absence.ends_at).getTime() > Date.now()) {
+    const startsAt = new Date(absence.starts_at);
+    const endsAt = new Date(absence.ends_at);
+    const { recipients } = await findAbsenceImpact(absence.teacher_id, startsAt, endsAt);
+    if (recipients.length > 0) {
+      const teacher = Array.isArray(absence.teachers) ? absence.teachers[0] : absence.teachers;
+      const teacherName = teacher ? `${teacher.first_name} ${teacher.last_name}` : "du professeur";
+      const message = `Absence annulée : ${teacherName} sera bien présent(e) du ${formatSchoolDateTime(startsAt)} au ${formatSchoolDateTime(endsAt)}. Les cours ont lieu normalement.`;
+      const recipientIds = recipients.map((r) => r.id);
+      after(() => notifyMany(recipientIds, "teacher_absence", message, "/emploi-du-temps"));
+    }
+  }
 
   // Nothing else to undo: the strike-through on the timetable is derived from
   // this row, so deleting it restores the affected courses on its own.
@@ -562,8 +644,8 @@ export async function declareTeacherAbsence(
 
   return applyTeacherAbsence({
     teacherId: validated.data.teacherId,
-    startsAt: new Date(validated.data.startsAt),
-    endsAt: new Date(validated.data.endsAt),
+    startsAt: parseSchoolDateTime(validated.data.startsAt),
+    endsAt: parseSchoolDateTime(validated.data.endsAt),
     reason: validated.data.reason,
     createdBy: admin.id,
   });
@@ -600,8 +682,8 @@ export async function declareOwnAbsence(_state: FormState, formData: FormData): 
 
   return applyTeacherAbsence({
     teacherId: teacher.id,
-    startsAt: new Date(validated.data.startsAt),
-    endsAt: new Date(validated.data.endsAt),
+    startsAt: parseSchoolDateTime(validated.data.startsAt),
+    endsAt: parseSchoolDateTime(validated.data.endsAt),
     reason: validated.data.reason,
     createdBy: profile.id,
   });
@@ -1379,9 +1461,23 @@ export async function createClass(_state: FormState, formData: FormData): Promis
 export async function renameClass(classId: string, name: string) {
   await requireAdmin();
   const supabase = await createClient();
-  const { error } = await supabase.from("classes").update({ name }).eq("id", classId);
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Le nom de la classe est vide.");
+  const { error } = await supabase.from("classes").update({ name: trimmed }).eq("id", classId);
   if (error) throw new Error(error.message);
+
+  // class_name is copied onto these rows. Left stale, a renamed class kept its
+  // old name on the timetable and absence alerts, which also match students
+  // by name, could stop reaching families registered under it.
+  const db = createAdminClient() ?? supabase;
+  await Promise.all(
+    ["students", "timetable_entries", "homework", "exams"].map((table) =>
+      db.from(table).update({ class_name: trimmed }).eq("class_id", classId),
+    ),
+  );
+
   revalidatePath("/admin/classes");
+  revalidatePath("/emploi-du-temps");
 }
 
 export async function deleteClass(classId: string) {

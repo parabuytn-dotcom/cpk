@@ -242,7 +242,7 @@
     "reasonPlaceholder": "Motif (optionnel)",
     "declare": "Déclarer mon absence",
     "dueFor": "pour le",
-    "absenceRecorded": "Absence enregistrée. {slots} créneau(x) annulé(s) sur {classes} classe(s).",
+    "absenceRecorded": "Absence enregistrée : {slots} créneau(x) annulé(s) sur {classes} classe(s). {people} personne(s) prévenue(s) par notification, SMS et email.",
     "noClassesAssigned": "Aucune classe ne t'a été attribuée pour le moment. Contacte l'administration."
   },
   "exams": {

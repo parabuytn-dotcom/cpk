@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseSchoolDateTime } from "@/lib/schoolTime";
 
 export const timetableEntrySchema = z.object({
   classId: z.string().uuid(),
@@ -28,13 +29,13 @@ export const teacherAbsenceSchema = z
     endsAt: z.string().min(1),
     reason: z.string().trim().optional(),
   })
-  .refine((data) => new Date(data.endsAt) > new Date(data.startsAt), {
+  .refine((data) => parseSchoolDateTime(data.endsAt) > parseSchoolDateTime(data.startsAt), {
     message: "La date de fin doit être après la date de début.",
     path: ["endsAt"],
   })
   .refine(
     (data) =>
-      new Date(data.endsAt).getTime() - new Date(data.startsAt).getTime() <=
+      parseSchoolDateTime(data.endsAt).getTime() - parseSchoolDateTime(data.startsAt).getTime() <=
       90 * 24 * 60 * 60 * 1000,
     { message: "La période d'absence ne peut pas dépasser 90 jours.", path: ["endsAt"] },
   );

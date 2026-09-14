@@ -4,6 +4,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import AbsenceForm from "@/components/admin/AbsenceForm";
 import DeleteAbsenceButton from "@/components/admin/DeleteAbsenceButton";
 import { listTeachers, listTeacherAbsences } from "@/lib/admin/data";
+import { formatSchoolDateTime } from "@/lib/schoolTime";
 
 export default async function AdminAbsencesPage({
   params,
@@ -33,8 +34,8 @@ export default async function AdminAbsencesPage({
             <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
               <span className="font-medium">{a.teacherName}</span>
               <span className="text-sm text-foreground/60">
-                {new Date(a.startsAt).toLocaleString("fr-FR")} →{" "}
-                {new Date(a.endsAt).toLocaleString("fr-FR")}
+                {formatSchoolDateTime(a.startsAt)} →{" "}
+                {formatSchoolDateTime(a.endsAt)}
               </span>
               {a.reason && <span className="text-sm text-foreground/60">{a.reason}</span>}
               <DeleteAbsenceButton absenceId={a.id} />

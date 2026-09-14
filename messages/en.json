@@ -242,7 +242,7 @@
     "reasonPlaceholder": "Reason (optional)",
     "declare": "Declare my absence",
     "dueFor": "due",
-    "absenceRecorded": "Absence recorded. {slots} slot(s) cancelled across {classes} class(es).",
+    "absenceRecorded": "Absence recorded: {slots} slot(s) cancelled across {classes} class(es). {people} person(s) alerted by notification, SMS and email.",
     "noClassesAssigned": "No class has been assigned to you yet. Contact the administration."
   },
   "exams": {
