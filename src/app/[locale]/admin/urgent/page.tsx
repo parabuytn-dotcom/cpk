@@ -51,7 +51,14 @@ export default async function AdminUrgentPage({ params }: { params: Promise<{ lo
               <article key={b.id} className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold">{b.subject}</p>
+                    <p className="font-semibold">
+                      {b.kind === "convocation" && (
+                        <span className="me-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                          Convocation{b.senderName ? ` · ${b.senderName}` : ""}
+                        </span>
+                      )}
+                      {b.subject}
+                    </p>
                     <p className="text-xs text-foreground/55">
                       {formatSchoolDateTime(b.createdAt)} · {b.audienceLabel} · {b.recipients} personne(s)
                       {b.cancelledAt && " · envois restants annulés"}

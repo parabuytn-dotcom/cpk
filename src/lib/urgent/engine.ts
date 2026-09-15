@@ -15,9 +15,11 @@ type Db = NonNullable<ReturnType<typeof createAdminClient>>;
 
 export type UrgentAudience = "all" | "parents" | "teachers" | "students" | "class" | "person";
 export type UrgentChannel = "email" | "sms" | "notification";
+/** "urgent" from the admin page, "convocation" from a teacher's dashboard. */
+export type UrgentKind = "urgent" | "convocation";
 
 export type UrgentChannels = {
-  email: { enabled: boolean };
+  email: { enabled: boolean; count: number; intervalMinutes: number };
   sms: { enabled: boolean; count: number; intervalMinutes: number };
   notification: { enabled: boolean; count: number; intervalMinutes: number; intrusive: boolean };
 };
@@ -119,6 +121,17 @@ function roundLabel(round: number, rounds: number) {
   return rounds > 1 && round > 1 ? ` (rappel ${round}/${rounds})` : "";
 }
 
+const KIND_WORDING = {
+  urgent: { sms: "CPK Learn - URGENT", email: "URGENT", notification: "🚨" },
+  // Short SMS prefix: every character counts towards fitting one SMS.
+  convocation: { sms: "CPK Learn", email: "Convocation", notification: "📩" },
+} as const;
+
+/** The SMS exactly as sent, so its cost can be measured before sending. */
+export function smsText(kind: UrgentKind, message: string, round: number, rounds: number) {
+  return `${KIND_WORDING[kind].sms}${roundLabel(round, rounds)} : ${message}`;
+}
+
 async function inFives<T>(items: T[], worker: (item: T) => Promise<boolean>) {
   let ok = 0;
   for (let i = 0; i < items.length; i += 5) {
@@ -144,7 +157,7 @@ export async function runUrgentDelivery(deliveryId: string) {
 
   const { data: broadcast } = await db
     .from("urgent_broadcasts")
-    .select("subject, message, recipient_ids, channels, created_by, cancelled_at")
+    .select("kind, subject, message, recipient_ids, channels, created_by, cancelled_at")
     .eq("id", delivery.broadcast_id)
     .maybeSingle();
 
@@ -160,6 +173,8 @@ export async function runUrgentDelivery(deliveryId: string) {
   }
 
   const channels = broadcast.channels as UrgentChannels;
+  const kind = (broadcast.kind ?? "urgent") as UrgentKind;
+  const wording = KIND_WORDING[kind];
   const suffix = roundLabel(delivery.round, delivery.rounds);
 
   try {
@@ -167,7 +182,7 @@ export async function runUrgentDelivery(deliveryId: string) {
       await notifyMany(broadcast.recipient_ids, "urgent", `${broadcast.message}${suffix}`, undefined, {
         // Only the first round blocks the screen; the reminders go to the bell and the phone.
         intrusive: delivery.round === 1 && channels.notification.intrusive,
-        title: `🚨 ${broadcast.subject}`,
+        title: `${wording.notification} ${broadcast.subject}`,
         sentBy: broadcast.created_by ?? undefined,
       });
       await finish({ sent: broadcast.recipient_ids.length });
@@ -178,7 +193,7 @@ export async function runUrgentDelivery(deliveryId: string) {
 
     if (delivery.channel === "sms") {
       const targets = phones.slice(0, MAX_SMS_PER_ROUND);
-      const text = `CPK Learn - URGENT${suffix} : ${broadcast.message}`;
+      const text = smsText(kind, broadcast.message, delivery.round, delivery.rounds);
       let lastError: string | null = null;
       const sent = await inFives(targets, async (phone) => {
         const result = await sendSms(phone, text, "manual");
@@ -197,10 +212,10 @@ export async function runUrgentDelivery(deliveryId: string) {
     // email
     const quota = await getEmailQuota();
     const targets = emails.slice(0, quota.remaining);
-    const html = renderEmail({ title: `Urgent : ${broadcast.subject}`, bodyHtml: plainTextToHtml(broadcast.message) });
+    const html = renderEmail({ title: `${wording.email} : ${broadcast.subject}`, bodyHtml: plainTextToHtml(broadcast.message) });
     let lastError: string | null = null;
     const sent = await inFives(targets, async (to) => {
-      const result = await sendEmail(to, `URGENT : ${broadcast.subject}`, html, {
+      const result = await sendEmail(to, `${wording.email}${suffix} : ${broadcast.subject}`, html, {
         sentBy: broadcast.created_by,
         logBody: broadcast.message,
       });

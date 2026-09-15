@@ -17,6 +17,9 @@ export type UrgentDeliveryRow = {
 
 export type UrgentBroadcastRow = {
   id: string;
+  kind: "urgent" | "convocation";
+  /** Name of whoever sent it, for convocations sent by teachers. */
+  senderName: string | null;
   subject: string;
   message: string;
   audienceLabel: string;
@@ -27,15 +30,22 @@ export type UrgentBroadcastRow = {
   deliveries: UrgentDeliveryRow[];
 };
 
-export async function listUrgentBroadcasts(limit = 20): Promise<UrgentBroadcastRow[]> {
+export async function listUrgentBroadcasts({
+  limit = 20,
+  createdBy,
+  kind,
+}: { limit?: number; createdBy?: string; kind?: "urgent" | "convocation" } = {}): Promise<UrgentBroadcastRow[]> {
   const db = createAdminClient();
   if (!db) return [];
 
-  const { data: broadcasts } = await db
+  let query = db
     .from("urgent_broadcasts")
-    .select("id, subject, message, audience_label, recipient_ids, channels, created_at, cancelled_at")
+    .select("id, kind, subject, message, audience_label, recipient_ids, channels, created_at, cancelled_at, created_by")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (createdBy) query = query.eq("created_by", createdBy);
+  if (kind) query = query.eq("kind", kind);
+  const { data: broadcasts } = await query;
   if (!broadcasts || broadcasts.length === 0) return [];
 
   const { data: deliveries } = await db
@@ -44,8 +54,18 @@ export async function listUrgentBroadcasts(limit = 20): Promise<UrgentBroadcastR
     .in("broadcast_id", broadcasts.map((b) => b.id))
     .order("run_at");
 
+  const senderIds = Array.from(new Set(broadcasts.map((b) => b.created_by).filter((id): id is string => Boolean(id))));
+  const { data: senders } = senderIds.length
+    ? await db.from("profiles").select("id, full_name, parent_first_name, parent_last_name").in("id", senderIds)
+    : { data: [] };
+  const senderName = new Map(
+    (senders ?? []).map((p) => [p.id, p.full_name ?? ([p.parent_first_name, p.parent_last_name].filter(Boolean).join(" ") || null)]),
+  );
+
   return broadcasts.map((b) => ({
     id: b.id,
+    kind: (b.kind ?? "urgent") as "urgent" | "convocation",
+    senderName: b.created_by ? (senderName.get(b.created_by) ?? null) : null,
     subject: b.subject,
     message: b.message,
     audienceLabel: b.audience_label,

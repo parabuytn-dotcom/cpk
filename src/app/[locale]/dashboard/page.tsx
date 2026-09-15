@@ -1,4 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import ConvocationForm from "@/components/dashboard/ConvocationForm";
+import { getTeacherScope } from "@/lib/urgent/convocationData";
+import { listUrgentBroadcasts } from "@/lib/urgent/data";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import {
@@ -147,8 +150,43 @@ async function TeacherDashboard({ profileId, locale }: { profileId: string; loca
 
       {classes.length > 0 && <MakeupSessionForm classes={classes} />}
 
+      <TeacherConvocation profileId={profileId} />
+
       <TeacherAbsenceForm />
     </div>
+  );
+}
+
+async function TeacherConvocation({ profileId }: { profileId: string }) {
+  const [scope, broadcasts] = await Promise.all([
+    getTeacherScope(profileId),
+    listUrgentBroadcasts({ createdBy: profileId, kind: "convocation", limit: 10 }),
+  ]);
+  if (!scope) return null;
+
+  const history = broadcasts.map((b) => {
+    const done = (channel: "notification" | "sms" | "email") =>
+      b.deliveries.filter((d) => d.channel === channel && d.status === "done" && d.sent > 0).length;
+    return {
+      id: b.id,
+      subject: b.subject,
+      audienceLabel: b.audienceLabel,
+      createdAt: b.createdAt,
+      cancelled: Boolean(b.cancelledAt),
+      pending: b.deliveries.filter((d) => d.status === "pending").length,
+      sent: { notification: done("notification"), sms: done("sms"), email: done("email") },
+    };
+  });
+
+  return (
+    <ConvocationForm
+      teacherName={scope.teacherName}
+      subject={scope.subject}
+      defaultPhone={scope.defaultPhone}
+      classes={scope.classes}
+      students={scope.students}
+      history={history}
+    />
   );
 }
 

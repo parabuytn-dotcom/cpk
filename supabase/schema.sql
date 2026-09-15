@@ -1732,3 +1732,18 @@ drop policy if exists "Admins read urgent broadcasts" on public.urgent_broadcast
 create policy "Admins read urgent broadcasts" on public.urgent_broadcasts for select using (public.is_admin());
 drop policy if exists "Admins read urgent deliveries" on public.urgent_deliveries;
 create policy "Admins read urgent deliveries" on public.urgent_deliveries for select using (public.is_admin());
+
+-- Teachers' convocations reuse the urgent broadcast machinery: kind tells them
+-- apart, student_id is the pupil concerned, and a teacher can read (and so
+-- follow) only the convocations they sent.
+alter table public.urgent_broadcasts add column if not exists kind text not null default 'urgent';
+alter table public.urgent_broadcasts drop constraint if exists urgent_broadcasts_kind_check;
+alter table public.urgent_broadcasts add constraint urgent_broadcasts_kind_check check (kind in ('urgent', 'convocation'));
+alter table public.urgent_broadcasts add column if not exists student_id uuid references public.students (id) on delete set null;
+create index if not exists idx_urgent_broadcasts_creator on public.urgent_broadcasts (created_by, created_at desc);
+
+drop policy if exists "Teachers read their convocations" on public.urgent_broadcasts;
+create policy "Teachers read their convocations" on public.urgent_broadcasts for select using (auth.uid() = created_by);
+drop policy if exists "Teachers read their convocation deliveries" on public.urgent_deliveries;
+create policy "Teachers read their convocation deliveries" on public.urgent_deliveries for select
+  using (exists (select 1 from public.urgent_broadcasts b where b.id = broadcast_id and b.created_by = auth.uid()));

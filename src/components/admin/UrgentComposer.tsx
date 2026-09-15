@@ -10,6 +10,11 @@ import {
 } from "@/lib/admin/urgentActions";
 import { countSmsSegments } from "@/lib/smsSegments";
 import type { ClassRow } from "@/lib/admin/data";
+import {
+  ChannelCard,
+  RepeatFields,
+  urgentInputClass as inputClass,
+} from "@/components/urgent/ChannelFields";
 
 const AUDIENCES = [
   { value: "person", label: "Une seule personne (convocation, cours annulé…)" },
@@ -19,103 +24,6 @@ const AUDIENCES = [
   { value: "teachers", label: "Professeurs" },
   { value: "class", label: "Une classe (élèves + parents)" },
 ] as const;
-
-const INTERVALS = [5, 10, 15, 20, 30, 45, 60, 120, 180, 360];
-
-const inputClass =
-  "w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 text-sm outline-none focus:border-red-500 dark:border-white/10 dark:bg-white/5";
-
-function formatInterval(minutes: number) {
-  return minutes < 60 ? `${minutes} min` : `${minutes / 60} h`;
-}
-
-function ChannelCard({
-  title,
-  icon,
-  enabled,
-  onToggle,
-  children,
-}: {
-  title: string;
-  icon: string;
-  enabled: boolean;
-  onToggle: () => void;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div
-      className={`flex flex-col gap-3 rounded-2xl border p-4 transition ${
-        enabled
-          ? "border-red-500/40 bg-red-500/5"
-          : "border-dashed border-black/15 bg-transparent opacity-70 dark:border-white/15"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-semibold">
-          <span aria-hidden>{icon}</span> {title}
-        </p>
-        <button
-          type="button"
-          onClick={onToggle}
-          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-            enabled
-              ? "bg-black/5 text-foreground/70 hover:bg-black/10 dark:bg-white/10"
-              : "bg-red-600 text-white hover:bg-red-700"
-          }`}
-        >
-          {enabled ? "Retirer" : "Ajouter"}
-        </button>
-      </div>
-      {enabled ? children : <p className="text-xs text-foreground/50">Non envoyé.</p>}
-    </div>
-  );
-}
-
-function RepeatFields({
-  count,
-  setCount,
-  interval,
-  setInterval,
-  max,
-  noun,
-}: {
-  count: number;
-  setCount: (n: number) => void;
-  interval: number;
-  setInterval: (n: number) => void;
-  max: number;
-  noun: string;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      <label className="flex flex-col gap-1 text-xs text-foreground/60">
-        Nombre d&apos;envois
-        <select value={count} onChange={(e) => setCount(Number(e.target.value))} className={inputClass}>
-          {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>
-              {n === 1 ? `1 ${noun}` : `${n} ${noun}s`}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-foreground/60">
-        Délai entre deux
-        <select
-          value={interval}
-          disabled={count === 1}
-          onChange={(e) => setInterval(Number(e.target.value))}
-          className={`${inputClass} disabled:opacity-50`}
-        >
-          {INTERVALS.map((m) => (
-            <option key={m} value={m}>
-              {formatInterval(m)}
-            </option>
-          ))}
-        </select>
-      </label>
-    </div>
-  );
-}
 
 function PersonPicker({
   selected,
@@ -221,6 +129,8 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
   const [message, setMessage] = useState("");
 
   const [emailOn, setEmailOn] = useState(true);
+  const [emailCount, setEmailCount] = useState(1);
+  const [emailInterval, setEmailInterval] = useState(120);
   const [smsOn, setSmsOn] = useState(true);
   const [smsCount, setSmsCount] = useState(1);
   const [smsInterval, setSmsInterval] = useState(30);
@@ -259,7 +169,7 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
     const channelsText = [
       notifOn && `notification${notifCount > 1 ? ` ×${notifCount}` : ""}`,
       smsOn && `SMS${smsCount > 1 ? ` ×${smsCount}` : ""}`,
-      emailOn && "email",
+      emailOn && `email${emailCount > 1 ? ` ×${emailCount}` : ""}`,
     ]
       .filter(Boolean)
       .join(", ");
@@ -274,7 +184,7 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
         subject,
         message,
         channels: {
-          email: { enabled: emailOn },
+          email: { enabled: emailOn, count: emailCount, intervalMinutes: emailInterval },
           sms: { enabled: smsOn, count: smsCount, intervalMinutes: smsInterval },
           notification: { enabled: notifOn, count: notifCount, intervalMinutes: notifInterval, intrusive },
         },
@@ -371,7 +281,6 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
             interval={notifInterval}
             setInterval={setNotifInterval}
             max={12}
-            noun="envoi"
           />
           <label className="flex items-start gap-2 text-xs">
             <input type="checkbox" checked={intrusive} onChange={(e) => setIntrusive(e.target.checked)} className="mt-0.5" />
@@ -389,7 +298,6 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
             interval={smsInterval}
             setInterval={setSmsInterval}
             max={10}
-            noun="envoi"
           />
           <p className="text-xs text-foreground/50">
             150 numéros maximum par envoi. Les 30 SMS des codes de vérification et les alertes de recharge restent protégés.
@@ -397,7 +305,14 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
         </ChannelCard>
 
         <ChannelCard title="Email" icon="✉️" enabled={emailOn} onToggle={() => setEmailOn(!emailOn)}>
-          <p className="text-xs text-foreground/60">Un seul envoi, à l&apos;adresse de contact de chaque personne.</p>
+          <RepeatFields
+            count={emailCount}
+            setCount={setEmailCount}
+            interval={emailInterval}
+            setInterval={setEmailInterval}
+            max={3}
+          />
+          <p className="text-xs text-foreground/60">À l&apos;adresse de contact de chaque personne.</p>
         </ChannelCard>
       </div>
 
