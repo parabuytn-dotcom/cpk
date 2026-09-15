@@ -21,6 +21,7 @@ export default async function AdminLayout({
 
   const [t, unread] = await Promise.all([getTranslations("admin"), countUnreadInbox()]);
   const allTabs: { href: string; label: string; badge?: number }[] = [
+    { href: "/admin/urgent", label: t("urgentTab") },
     { href: "/admin/comptes", label: t("accounts") },
     { href: "/admin/documents", label: t("documentsTab") },
     { href: "/admin/utilisateurs", label: t("usersTab") },

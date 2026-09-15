@@ -2,6 +2,7 @@ import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runSmsPriorityTick } from "@/lib/sms/schoolSms";
+import { runDueUrgentDeliveries } from "@/lib/urgent/engine";
 
 export const maxDuration = 60;
 
@@ -14,7 +15,8 @@ function sameSecret(given: string, expected: string | null | undefined) {
 
 /**
  * POST /api/cron/sms-priority
- * Called every 5 minutes by pg_cron in Supabase (Vercel's free crons only run
+ * Called every 5 minutes by pg_cron in Supabase for the SMS priority ladder and
+ * the repeated rounds of urgent broadcasts (Vercel's free crons only run
  * daily). The bearer secret lives in public.private_settings, readable only
  * with the service role, so no extra Vercel variable is needed; CRON_SECRET
  * is accepted too for a manual run.
@@ -29,5 +31,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return NextResponse.json(await runSmsPriorityTick());
+  const sms = await runSmsPriorityTick();
+  // Later rounds of urgent broadcasts ride on the same 5-minute tick.
+  const urgentDeliveries = await runDueUrgentDeliveries();
+  return NextResponse.json({ ...sms, urgentDeliveries });
 }

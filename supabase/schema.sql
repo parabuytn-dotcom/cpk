@@ -1687,3 +1687,48 @@ select cron.schedule(
 -- "with check (true)" insert policy let any visitor forge "sent" rows and
 -- drain the tracked balance.
 drop policy if exists "Service role writes sms logs" on public.sms_logs;
+
+-- ----------------------------------------------------------------------------
+-- Urgent broadcasts (/admin/urgent) — one message sent by email, SMS and
+-- notification at once. Each channel × round is a row in urgent_deliveries:
+-- round 1 runs immediately, later rounds are run by the 5-minute cron above.
+-- Written with the service-role key only; admins read them.
+-- ----------------------------------------------------------------------------
+create table if not exists public.urgent_broadcasts (
+  id uuid primary key default gen_random_uuid(),
+  subject text not null,
+  message text not null,
+  audience text not null,
+  audience_label text not null,
+  recipient_ids uuid[] not null default '{}',
+  channels jsonb not null,
+  created_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now(),
+  cancelled_at timestamptz
+);
+
+create table if not exists public.urgent_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  broadcast_id uuid not null references public.urgent_broadcasts (id) on delete cascade,
+  channel text not null check (channel in ('email', 'sms', 'notification')),
+  round integer not null,
+  rounds integer not null,
+  run_at timestamptz not null,
+  status text not null default 'pending' check (status in ('pending', 'running', 'done', 'cancelled')),
+  sent integer not null default 0,
+  failed integer not null default 0,
+  skipped integer not null default 0,
+  error text,
+  done_at timestamptz
+);
+
+create index if not exists idx_urgent_deliveries_due on public.urgent_deliveries (status, run_at);
+create index if not exists idx_urgent_deliveries_broadcast on public.urgent_deliveries (broadcast_id);
+
+alter table public.urgent_broadcasts enable row level security;
+alter table public.urgent_deliveries enable row level security;
+
+drop policy if exists "Admins read urgent broadcasts" on public.urgent_broadcasts;
+create policy "Admins read urgent broadcasts" on public.urgent_broadcasts for select using (public.is_admin());
+drop policy if exists "Admins read urgent deliveries" on public.urgent_deliveries;
+create policy "Admins read urgent deliveries" on public.urgent_deliveries for select using (public.is_admin());

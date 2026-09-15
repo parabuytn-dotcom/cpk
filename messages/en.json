@@ -176,7 +176,8 @@
     "reportsTab": "Reports",
     "reportsEmpty": "No reports.",
     "emailsTab": "Emails",
-    "smsTab": "SMS"
+    "smsTab": "SMS",
+    "urgentTab": "🚨 Urgent"
   },
   "privacy": {
     "title": "Your data, privacy",
