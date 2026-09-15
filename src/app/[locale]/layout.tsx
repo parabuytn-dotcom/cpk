@@ -12,7 +12,7 @@ import OnboardingTour, { type TourStep } from "@/components/onboarding/Onboardin
 import { getCurrentProfile } from "@/lib/auth/session";
 import ChatWidget from "@/components/assistant/ChatWidget";
 import SplashScreen from "@/components/SplashScreen";
-import PushAutoRegister from "@/components/push/PushAutoRegister";
+import PushPermissionPrompt from "@/components/push/PushPermissionPrompt";
 import IntrusiveNotificationModal from "@/components/notifications/IntrusiveNotificationModal";
 import { listUnreadIntrusiveNotifications } from "@/lib/notifications/data";
 import "../globals.css";
@@ -93,7 +93,7 @@ export default async function LocaleLayout({
           {intrusiveNotifications.length > 0 && (
             <IntrusiveNotificationModal notifications={intrusiveNotifications} />
           )}
-          {profile && <PushAutoRegister />}
+          {profile && !profile.mustChangePassword && <PushPermissionPrompt />}
           <ChatWidget />
         </NextIntlClientProvider>
       </body>

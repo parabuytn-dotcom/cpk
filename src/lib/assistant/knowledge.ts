@@ -108,6 +108,11 @@ d'inventer une réponse.
 # Notifications
 - Une cloche en haut du site affiche les notifications (validation de compte, absence prof,
   nouveau devoir, like/commentaire sur une publication). Cliquer dessus les marque comme lues.
+- Pour recevoir les notifications même quand le site est fermé : à chaque visite, tant qu'elles ne
+  sont pas activées, une fenêtre propose un grand bouton « Activer les notifications » ; il suffit
+  ensuite d'appuyer sur « Autoriser ». Si elles ont été bloquées, la fenêtre explique comment les
+  débloquer (cadenas à côté de l'adresse du site, ou Réglages du téléphone pour l'application).
+  Sur iPhone, il faut d'abord ajouter le site à l'écran d'accueil (bouton Partager de Safari).
 
 # Aide, nouveautés, staff, confidentialité
 - La page "Aide" permet d'envoyer une demande écrite à l'administration (nécessite d'être connecté).

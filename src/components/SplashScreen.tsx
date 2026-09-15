@@ -43,6 +43,7 @@ export default function SplashScreen() {
   return (
     <div
       aria-hidden="true"
+      data-blocking-modal
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[var(--background)] px-6 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)] ${
         phase === "out" ? "animate-splash-out" : ""
       }`}

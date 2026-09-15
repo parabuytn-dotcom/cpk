@@ -266,11 +266,6 @@
     "title": "Notifications",
     "markAllRead": "Tout marquer comme lu",
     "empty": "Aucune notification pour le moment.",
-    "pushEnable": "🔔 Activer les notifications sur cet appareil",
-    "pushEnabling": "Activation…",
-    "pushEnabled": "Notifications activées sur cet appareil ✓",
-    "pushDenied": "Notifications bloquées — active-les dans les réglages de ton navigateur/téléphone.",
-    "pushIosAddToHome": "📲 Sur iPhone, les notifications ne sont possibles qu'après avoir ajouté ce site à l'écran d'accueil : appuie sur l'icône Partager de Safari, puis « Sur l'écran d'accueil ».",
     "announcementTitle": "Message de l'administration",
     "announcementClose": "J'ai compris",
     "announcementOpenLink": "Ouvrir le lien"
@@ -502,5 +497,25 @@
     "login": "J'ai déjà un compte",
     "credits": "CPK Learn est un projet de Melik Messaoudi, en collaboration avec Edem Aifia.",
     "privacy": "Vos informations servent uniquement à relier les comptes des parents et des élèves. Elles ne sont jamais partagées."
+  },
+  "pushPrompt": {
+    "askTitle": "Activez les notifications",
+    "askBody": "Recevez tout de suite, même quand le site est fermé : les absences des professeurs, les séances de rattrapage, les nouveaux devoirs et les messages du collège.",
+    "enable": "Activer les notifications",
+    "enabling": "Activation…",
+    "enablingHint": "Appuyez sur « Autoriser » dans la fenêtre qui s'ouvre.",
+    "enabledTitle": "Notifications activées ✓",
+    "failed": "L'activation n'a pas abouti. Réessayez, et appuyez bien sur « Autoriser ».",
+    "later": "Plus tard",
+    "understood": "J'ai compris",
+    "blockedTitle": "Les notifications sont bloquées",
+    "blockedBody": "Vous risquez de manquer une absence de professeur ou un rattrapage. Pour les débloquer :",
+    "blockedStepsBrowser": "Appuyez sur le cadenas 🔒 à gauche de l'adresse du site, puis sur « Autorisations » ou « Notifications », choisissez « Autoriser », puis rechargez la page.",
+    "blockedStepsApp": "Ouvrez les Réglages du téléphone, puis Applications, CPK Learn, Notifications, et activez-les.",
+    "iosTitle": "Recevez les notifications sur iPhone",
+    "iosBody": "Sur iPhone, les notifications d'un site ne fonctionnent qu'une fois le site ajouté à l'écran d'accueil :",
+    "iosStep1": "1. Dans Safari, appuyez sur le bouton Partager (le carré avec une flèche vers le haut).",
+    "iosStep2": "2. Choisissez « Sur l'écran d'accueil », puis « Ajouter ».",
+    "iosStep3": "3. Ouvrez CPK Learn depuis la nouvelle icône : cette fenêtre vous proposera d'activer les notifications."
   }
 }

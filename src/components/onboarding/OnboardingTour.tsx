@@ -60,6 +60,7 @@ export default function OnboardingTour({
 
   return (
     <div
+      data-blocking-modal
       className={`fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-black/50 p-4 backdrop-blur-xl transition-opacity duration-300 ${
         closing ? "opacity-0" : "animate-tour-fade-in opacity-100"
       }`}
