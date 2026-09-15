@@ -3,7 +3,10 @@ import PageHeader from "@/components/ui/PageHeader";
 import SmsComposer from "@/components/admin/SmsComposer";
 import QuotaBar from "@/components/admin/QuotaBar";
 import SmsBalanceForm from "@/components/admin/SmsBalanceForm";
+import SmsLadderPanel from "@/components/admin/SmsLadderPanel";
 import { getSmsBalance, listClasses, listSentSms } from "@/lib/admin/data";
+import { getSmsLadderStatus } from "@/lib/sms/status";
+import { CODE_RESERVE, LOW_BALANCE_THRESHOLD, RECHARGE_ALERT_COUNT, REMINDER_COUNT } from "@/lib/sms/ladder";
 
 export const dynamic = "force-dynamic";
 
@@ -12,17 +15,27 @@ const TRIGGER_LABELS: Record<string, string> = {
   generated_password: "Accès compte",
   phone_verification: "Vérification",
   manual: "Manuel",
+  makeup_session: "Rattrapage",
+  low_balance_alert: "Alerte solde",
 };
 
 export default async function AdminSmsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ forcer?: string }>;
 }) {
   const { locale } = await params;
+  const { forcer } = await searchParams;
   setRequestLocale(locale);
 
-  const [classes, sent, balance] = await Promise.all([listClasses(), listSentSms(), getSmsBalance()]);
+  const [classes, sent, balance, ladder] = await Promise.all([
+    listClasses(),
+    listSentSms(),
+    getSmsBalance(),
+    getSmsLadderStatus(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,6 +59,20 @@ export default async function AdminSmsPage({
         )}
         <SmsBalanceForm hasBalance={balance !== null} />
       </section>
+
+      <SmsLadderPanel
+        remaining={ladder.plan?.remaining ?? null}
+        alertsLeft={ladder.plan?.alertsLeft ?? RECHARGE_ALERT_COUNT}
+        pending={ladder.pending}
+        pendingCost={ladder.pendingCost}
+        highlightForce={forcer === "1"}
+        thresholds={{
+          low: LOW_BALANCE_THRESHOLD,
+          codeReserve: CODE_RESERVE,
+          alertCount: RECHARGE_ALERT_COUNT,
+          reminderCount: REMINDER_COUNT,
+        }}
+      />
 
       <SmsComposer classes={classes} />
 

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/isConfigured";
 import { getPublicProfiles } from "@/lib/social/data";
-import { countSmsSegments } from "@/lib/smsSegments";
+import { getSmsPlanState } from "@/lib/sms/balance";
 
 export type PendingProfile = {
   id: string;
@@ -888,32 +888,8 @@ export type QuotaStatus = {
  */
 export async function getSmsBalance(): Promise<QuotaStatus | null> {
   if (!isSupabaseConfigured()) return null;
-
-  const [balanceRaw, setAtRaw] = await Promise.all([
-    getSiteSetting("sms_balance"),
-    getSiteSetting("sms_balance_set_at"),
-  ]);
-  const balance = Number(balanceRaw);
-  if (balanceRaw === null || !Number.isFinite(balance) || !setAtRaw) return null;
-
-  const supabase = await createClient();
-  const PAGE = 1000;
-  let used = 0;
-  // Paged: PostgREST caps a single response at 1000 rows.
-  for (let from = 0; ; from += PAGE) {
-    const { data } = await supabase
-      .from("sms_logs")
-      .select("message")
-      .eq("status", "sent")
-      .gte("created_at", setAtRaw)
-      .order("created_at")
-      .range(from, from + PAGE - 1);
-    const rows = data ?? [];
-    for (const row of rows) used += countSmsSegments(row.message);
-    if (rows.length < PAGE) break;
-  }
-
-  return { total: balance, used, remaining: Math.max(balance - used, 0) };
+  const plan = await getSmsPlanState();
+  return plan ? { total: plan.total, used: plan.used, remaining: plan.remaining } : null;
 }
 
 /**

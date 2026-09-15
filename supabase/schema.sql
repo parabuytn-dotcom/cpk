@@ -421,10 +421,9 @@ create policy "Admins read sms logs"
   on public.sms_logs for select
   using (public.is_admin());
 
+-- No insert policy: logs are written with the service-role key only (see the
+-- SMS priority ladder section below).
 drop policy if exists "Service role writes sms logs" on public.sms_logs;
-create policy "Service role writes sms logs"
-  on public.sms_logs for insert
-  with check (true);
 
 -- ----------------------------------------------------------------------------
 -- Indexes
@@ -1582,3 +1581,109 @@ alter table public.help_requests add column if not exists replied_at timestamptz
 insert into storage.buckets (id, name, public)
   values ('site-media', 'site-media', true)
   on conflict (id) do update set public = true;
+
+-- ----------------------------------------------------------------------------
+-- SMS priority ladder — what gets the last SMS of the plan once fewer than 100
+-- remain: verification codes keep 30 for themselves, then 10 recharge alerts
+-- to the admin's phone (20 min apart), then makeup sessions before absences.
+-- School SMS that can't go out wait in sms_queue; their families get an
+-- intrusive notification plus a reminder every 30 min for 6 hours instead.
+-- ----------------------------------------------------------------------------
+
+-- How many SMS each send cost at the carrier, written at send time, so the
+-- remaining balance is one SUM instead of re-measuring every message.
+alter table public.sms_logs add column if not exists segments integer;
+
+alter table public.sms_logs drop constraint if exists sms_logs_trigger_check;
+alter table public.sms_logs add constraint sms_logs_trigger_check
+  check (trigger in ('teacher_absence', 'generated_password', 'manual', 'phone_verification',
+                     'makeup_session', 'low_balance_alert'));
+
+
+create index if not exists idx_sms_logs_sent_created on public.sms_logs (created_at) where status = 'sent';
+
+create or replace function public.sms_segments_sent_since(since timestamptz)
+returns bigint
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(sum(coalesce(segments, 1)), 0)
+  from public.sms_logs
+  where status = 'sent' and created_at >= since;
+$$;
+revoke all on function public.sms_segments_sent_since(timestamptz) from public, anon, authenticated;
+
+create table if not exists public.sms_queue (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('makeup_session', 'teacher_absence')),
+  source_id uuid,
+  phone text not null,
+  message text not null,
+  segments integer not null default 1,
+  recipient_ids uuid[] not null default '{}',
+  status text not null default 'pending' check (status in ('pending', 'sent', 'expired', 'failed')),
+  expires_at timestamptz,
+  intrusive_sent boolean not null default false,
+  reminders_sent integer not null default 0,
+  attempts integer not null default 0,
+  last_reminder_at timestamptz,
+  error text,
+  created_at timestamptz not null default now(),
+  sent_at timestamptz
+);
+
+create index if not exists idx_sms_queue_pending on public.sms_queue (status, kind, created_at);
+create index if not exists idx_sms_queue_source on public.sms_queue (source_id);
+
+alter table public.sms_queue enable row level security;
+
+drop policy if exists "Admins read sms queue" on public.sms_queue;
+create policy "Admins read sms queue"
+  on public.sms_queue for select
+  using (public.is_admin());
+
+-- Server-only key/values (cron secret, ladder state). RLS on with no policy:
+-- only the service role and the database itself can read them.
+create table if not exists public.private_settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default now()
+);
+alter table public.private_settings enable row level security;
+
+insert into public.private_settings (key, value)
+  values ('cron_secret', encode(extensions.gen_random_bytes(32), 'hex'))
+  on conflict (key) do nothing;
+insert into public.private_settings (key, value)
+  values ('cron_base_url', 'https://cpk-platform.vercel.app')
+  on conflict (key) do nothing;
+
+-- Vercel's free plan only runs crons once a day; the ladder needs a tick every
+-- few minutes (alerts every 20 min, reminders every 30 min), so the database
+-- calls the site itself.
+create extension if not exists pg_net;
+create extension if not exists pg_cron;
+
+select cron.unschedule(jobid) from cron.job where jobname = 'cpk-sms-priority';
+select cron.schedule(
+  'cpk-sms-priority',
+  '*/5 * * * *',
+  $job$
+    select net.http_post(
+      url := (select value from public.private_settings where key = 'cron_base_url') || '/api/cron/sms-priority',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer ' || (select value from public.private_settings where key = 'cron_secret')
+      ),
+      body := '{}'::jsonb,
+      timeout_milliseconds := 55000
+    );
+  $job$
+);
+
+-- Logs are written by the server with the service-role key only. The old
+-- "with check (true)" insert policy let any visitor forge "sent" rows and
+-- drain the tracked balance.
+drop policy if exists "Service role writes sms logs" on public.sms_logs;

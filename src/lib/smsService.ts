@@ -1,9 +1,22 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { countSmsSegments } from "@/lib/smsSegments";
+import { getSmsPlanState } from "@/lib/sms/balance";
+import { RECHARGE_ALERT_COUNT, canSpend, tierOf } from "@/lib/sms/ladder";
 
-export type SmsTrigger = "teacher_absence" | "generated_password" | "manual" | "phone_verification";
+export type SmsTrigger =
+  | "teacher_absence"
+  | "generated_password"
+  | "manual"
+  | "phone_verification"
+  | "makeup_session"
+  | "low_balance_alert";
 
-export type SendSmsResult = { success: true } | { success: false; error: string };
+export type SendSmsResult =
+  | { success: true }
+  /** heldByLadder: not sent because the remaining SMS are reserved for a higher priority. */
+  | { success: false; error: string; heldByLadder?: boolean };
 
 const DEFAULT_GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/messages";
 const COUNTRY_CODE = "216";
@@ -36,6 +49,20 @@ export async function sendSms(
   const gatewayUrl = process.env.SMS_GATEWAY_URL || DEFAULT_GATEWAY_URL;
   const username = process.env.SMS_GATEWAY_USERNAME;
   const password = process.env.SMS_GATEWAY_PASSWORD;
+  const segments = countSmsSegments(message);
+
+  // Priority ladder (lib/sms/ladder.ts): below 100 SMS left, each kind of
+  // message may only spend down to its own floor.
+  const plan = await getSmsPlanState();
+  if (!canSpend(tierOf(trigger), plan?.remaining ?? null, segments, plan?.alertsLeft ?? RECHARGE_ALERT_COUNT)) {
+    const held: SendSmsResult = {
+      success: false,
+      heldByLadder: true,
+      error: `Retenu : il ne reste que ${plan?.remaining} SMS sur le forfait, réservés aux messages plus prioritaires.`,
+    };
+    await logSmsAttempt(phone, message, trigger, held, segments);
+    return held;
+  }
 
   let result: SendSmsResult;
 
@@ -69,7 +96,7 @@ export async function sendSms(
     }
   }
 
-  await logSmsAttempt(phone, message, trigger, result);
+  await logSmsAttempt(phone, message, trigger, result, segments);
 
   return result;
 }
@@ -79,12 +106,16 @@ async function logSmsAttempt(
   message: string,
   trigger: SmsTrigger,
   result: SendSmsResult,
+  segments: number,
 ) {
-  const supabase = await createClient();
-  await supabase.from("sms_logs").insert({
+  // Service role: logs are what the balance is computed from, so they must not
+  // be writable by visitors (no insert policy on sms_logs).
+  const db = createAdminClient() ?? (await createClient());
+  await db.from("sms_logs").insert({
     phone,
     message,
     trigger,
+    segments,
     status: result.success ? "sent" : "failed",
     error: result.success ? null : result.error,
   });

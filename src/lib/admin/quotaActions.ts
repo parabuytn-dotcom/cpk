@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getSmsBalance } from "@/lib/admin/data";
+import { dispatchSmsQueue } from "@/lib/sms/schoolSms";
 import type { FormState } from "./schemas";
 
 /**
@@ -32,6 +34,10 @@ export async function adjustSmsBalance(_state: FormState, formData: FormData): P
     { key: "sms_balance_set_at", value: new Date().toISOString() },
   ]);
   if (error) return { message: error.message };
+
+  // A recharge is exactly when held absence / makeup texts may go out, or when
+  // the admin must hear how many SMS are still missing for them.
+  after(() => dispatchSmsQueue());
 
   revalidatePath("/admin/sms");
   return {

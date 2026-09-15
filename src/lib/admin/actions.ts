@@ -12,6 +12,7 @@ import { canUseAdminArea } from "@/lib/auth/roles";
 import { hasPassedAdminVerification } from "@/lib/admin/adminVerification";
 import { SITE_URL } from "@/lib/siteUrl";
 import { sendSms } from "@/lib/smsService";
+import { cancelQueuedSchoolSms, sendOrQueueSchoolSms } from "@/lib/sms/schoolSms";
 import { sendEmail } from "@/lib/emailService";
 import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
 import { getSiteSetting } from "@/lib/admin/data";
@@ -377,6 +378,19 @@ function phoneKey(phone: string) {
   return phone.replace(/\D/g, "").slice(-8);
 }
 
+/** A parent and their child's account usually share one phone: one SMS per number, for everyone on it. */
+function groupByPhone(people: { id: string; phone: string | null }[]) {
+  const groups = new Map<string, { phone: string; ids: string[] }>();
+  for (const person of people) {
+    if (!person.phone || phoneKey(person.phone).length !== 8) continue;
+    const key = phoneKey(person.phone);
+    const group = groups.get(key) ?? { phone: person.phone, ids: [] };
+    group.ids.push(person.id);
+    groups.set(key, group);
+  }
+  return Array.from(groups.values());
+}
+
 async function emailAbsenceAlert(
   recipients: AbsenceRecipient[],
   subject: string,
@@ -523,14 +537,18 @@ async function applyTeacherAbsence({
     };
   }
 
-  const { error: absenceError } = await supabase.from("teacher_absences").insert({
-    teacher_id: teacherId,
-    starts_at: startsAt.toISOString(),
-    ends_at: endsAt.toISOString(),
-    reason: reason || null,
-    created_by: createdBy,
-  });
-  if (absenceError) return { message: absenceError.message };
+  const { data: absence, error: absenceError } = await supabase
+    .from("teacher_absences")
+    .insert({
+      teacher_id: teacherId,
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      reason: reason || null,
+      created_by: createdBy,
+    })
+    .select("id")
+    .single();
+  if (absenceError || !absence) return { message: absenceError?.message ?? "Enregistrement impossible." };
 
   // The cancelled state of each slot is derived at read time from this row
   // (see listTimetableEntries() in data.ts), never written on the recurring
@@ -551,23 +569,23 @@ async function applyTeacherAbsence({
 
   if (recipients.length > 0) {
     const recipientIds = recipients.map((r) => r.id);
-    // A parent and their child's account usually share one phone: one SMS per number.
-    const phones = new Map<string, string>();
-    for (const recipient of recipients) {
-      if (recipient.phone && phoneKey(recipient.phone).length === 8) {
-        phones.set(phoneKey(recipient.phone), recipient.phone);
-      }
-    }
+    const texts = groupByPhone(recipients).map(({ phone, ids }) => ({
+      kind: "teacher_absence" as const,
+      sourceId: absence.id,
+      phone,
+      message,
+      recipientIds: ids,
+      expiresAt: endsAt,
+    }));
     const sendEmails = await isAbsenceEmailEnabled();
 
-    // Alerting a whole grade one SMS at a time took longer than a server
-    // action may run: the form hung and the last families were never
-    // reached. Answer now and keep sending after the response.
+    // Alerting a whole grade takes longer than a server action may run: the
+    // form hung and the last families were never reached. Answer now and keep
+    // sending after the response. Texts the SMS priority ladder holds back are
+    // queued, and those families get notification reminders instead.
     after(async () => {
       await notifyMany(recipientIds, "teacher_absence", message, "/emploi-du-temps");
-      await inBatches(Array.from(phones.values()), (phone) =>
-        sendSms(phone, message, "teacher_absence"),
-      );
+      await sendOrQueueSchoolSms(texts);
       if (sendEmails) {
         await emailAbsenceAlert(recipients, `Absence de ${teacherName}`, message, createdBy);
       }
@@ -600,6 +618,7 @@ export async function deleteTeacherAbsence(absenceId: string) {
 
   const { error } = await supabase.from("teacher_absences").delete().eq("id", absenceId);
   if (error) throw new Error(error.message);
+  await cancelQueuedSchoolSms(absenceId);
 
   // Families were told the courses are off. If the absence isn't over yet,
   // tell them they're back on — in the app and by push only, so fixing a
@@ -864,33 +883,53 @@ export async function createMakeupSession(_state: FormState, formData: FormData)
     return { message: validated.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
-  const { error } = await supabase.from("makeup_sessions").insert({
-    class_id: validated.data.classId,
-    class_name: validated.data.className,
-    teacher_id: teacher.id,
-    subject: validated.data.subject,
-    session_date: validated.data.sessionDate,
-    start_time: validated.data.startTime,
-    end_time: validated.data.endTime,
-    reason: validated.data.reason || null,
-    created_by: profile.id,
-  });
-  if (error) return { message: error.message };
+  const { data: session, error } = await supabase
+    .from("makeup_sessions")
+    .insert({
+      class_id: validated.data.classId,
+      class_name: validated.data.className,
+      teacher_id: teacher.id,
+      subject: validated.data.subject,
+      session_date: validated.data.sessionDate,
+      start_time: validated.data.startTime,
+      end_time: validated.data.endTime,
+      reason: validated.data.reason || null,
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
+  if (error || !session) return { message: error?.message ?? "Enregistrement impossible." };
 
-  const { data: students } = await supabase
-    .from("students")
-    .select("user_id")
-    .eq("class_id", validated.data.classId)
-    .not("user_id", "is", null);
+  // Parents AND students of the class (used to be students only), read with
+  // the service role: a teacher's session can't see other families under RLS.
+  const db = createAdminClient() ?? supabase;
+  const [byId, byName] = await Promise.all([
+    db.from("students").select("parent_id, user_id").eq("class_id", validated.data.classId),
+    db.from("students").select("parent_id, user_id").eq("class_name", validated.data.className),
+  ]);
+  const familyIds = Array.from(
+    new Set([...(byId.data ?? []), ...(byName.data ?? [])].flatMap((s) => [s.parent_id, s.user_id]).filter(Boolean)),
+  ) as string[];
 
-  const studentIds = (students ?? []).map((s) => s.user_id).filter(Boolean) as string[];
-  if (studentIds.length > 0) {
-    await notifyMany(
-      studentIds,
-      "makeup_session",
-      `Séance de rattrapage ajoutée : ${validated.data.subject} le ${new Date(validated.data.sessionDate).toLocaleDateString("fr-FR")}.`,
-      "/emploi-du-temps",
-    );
+  if (familyIds.length > 0) {
+    const day = schoolCalendarDay(parseSchoolDateTime(validated.data.sessionDate));
+    const dateLabel = `${String(day.getUTCDate()).padStart(2, "0")}/${String(day.getUTCMonth() + 1).padStart(2, "0")}`;
+    // Kept inside the GSM-7 alphabet so it costs a single SMS.
+    const message = `CPK Learn : seance de rattrapage de ${validated.data.subject} (${validated.data.className}) le ${dateLabel} de ${validated.data.startTime} a ${validated.data.endTime}.`;
+    const { data: people } = await db.from("profiles").select("id, phone").in("id", familyIds);
+    const texts = groupByPhone(people ?? []).map(({ phone, ids }) => ({
+      kind: "makeup_session" as const,
+      sourceId: session.id,
+      phone,
+      message,
+      recipientIds: ids,
+      expiresAt: slotInstant(day, validated.data.endTime),
+    }));
+
+    after(async () => {
+      await notifyMany(familyIds, "makeup_session", message, "/emploi-du-temps");
+      await sendOrQueueSchoolSms(texts);
+    });
   }
 
   revalidatePath("/emploi-du-temps");
@@ -904,6 +943,7 @@ export async function deleteMakeupSession(sessionId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("makeup_sessions").delete().eq("id", sessionId);
   if (error) throw new Error(error.message);
+  await cancelQueuedSchoolSms(sessionId);
 
   revalidatePath("/emploi-du-temps");
 }

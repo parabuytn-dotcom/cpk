@@ -6,7 +6,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { sendSms } from "@/lib/smsService";
 import { countSmsSegments } from "@/lib/smsSegments";
-import { getSmsBalance } from "@/lib/admin/data";
+import { getSmsPlanState } from "@/lib/sms/balance";
+import { canSpend, floorFor } from "@/lib/sms/ladder";
+import { sendRechargeAlertIfDue } from "@/lib/sms/schoolSms";
 
 export type SmsSendResult =
   | { success: true; sent: number; failed: number; skipped: number; lastError: string | null }
@@ -102,12 +104,13 @@ export async function sendBulkSms(formData: FormData): Promise<SmsSendResult> {
 
   // Only enforced once a balance has been entered — before that there's
   // nothing to measure against.
-  const balance = await getSmsBalance();
+  const plan = await getSmsPlanState();
   const cost = countSmsSegments(message) * list.length;
-  if (balance && cost > balance.remaining) {
+  if (plan && !canSpend("school", plan.remaining, cost, plan.alertsLeft)) {
+    const usable = Math.max(plan.remaining - floorFor("school", plan.alertsLeft), 0);
     return {
       success: false,
-      error: `Cet envoi coûte ${cost} SMS (${list.length} destinataires × ${countSmsSegments(message)}), mais il n'en reste que ${balance.remaining} sur le forfait. Recharge le solde ou restreins la sélection.`,
+      error: `Cet envoi coûte ${cost} SMS (${list.length} destinataires × ${countSmsSegments(message)}). Il reste ${plan.remaining} SMS, dont ${plan.remaining - usable} réservés aux codes de vérification et aux alertes de recharge : ${usable} utilisables. Recharge le solde ou restreins la sélection.`,
     };
   }
 
@@ -126,6 +129,7 @@ export async function sendBulkSms(formData: FormData): Promise<SmsSendResult> {
     }
   }
 
+  await sendRechargeAlertIfDue();
   revalidatePath("/admin/sms");
   return { success: true, sent, failed, skipped, lastError };
 }
