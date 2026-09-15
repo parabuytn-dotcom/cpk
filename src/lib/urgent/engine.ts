@@ -13,7 +13,7 @@ import { getEmailQuota } from "@/lib/admin/data";
 
 type Db = NonNullable<ReturnType<typeof createAdminClient>>;
 
-export type UrgentAudience = "all" | "parents" | "teachers" | "students" | "class";
+export type UrgentAudience = "all" | "parents" | "teachers" | "students" | "class" | "person";
 export type UrgentChannel = "email" | "sms" | "notification";
 
 export type UrgentChannels = {
@@ -28,7 +28,31 @@ export const MAX_SMS_PER_ROUND = 150;
 /** The cron ticks every 5 minutes; a little slack keeps rounds from slipping a whole tick. */
 const DUE_SLACK_MS = 90 * 1000;
 
-export async function resolveAudience(db: Db, audience: UrgentAudience, classId?: string) {
+const ROLE_LABELS: Record<string, string> = {
+  parent: "parent",
+  student: "élève",
+  teacher: "professeur",
+  staff: "staff",
+  director: "direction",
+  admin: "admin",
+};
+
+export function displayName(p: { full_name: string | null; parent_first_name: string | null; parent_last_name: string | null }) {
+  return p.full_name ?? ([p.parent_first_name, p.parent_last_name].filter(Boolean).join(" ") || "Sans nom");
+}
+
+export async function resolveAudience(db: Db, audience: UrgentAudience, classId?: string, personId?: string) {
+  if (audience === "person") {
+    if (!personId) return { ids: [], label: "Une personne" };
+    const { data: person } = await db
+      .from("profiles")
+      .select("id, full_name, parent_first_name, parent_last_name, role")
+      .eq("id", personId)
+      .maybeSingle();
+    if (!person) return { ids: [], label: "Une personne" };
+    return { ids: [person.id], label: `${displayName(person)} (${ROLE_LABELS[person.role] ?? person.role})` };
+  }
+
   if (audience === "class") {
     if (!classId) return { ids: [], label: "Classe" };
     const [{ data: klass }, { data: students }] = await Promise.all([
@@ -44,16 +68,16 @@ export async function resolveAudience(db: Db, audience: UrgentAudience, classId?
     return { ids: Array.from(ids), label: `Classe ${klass?.name ?? ""} (élèves + parents)`.trim() };
   }
 
-  const roles: Record<Exclude<UrgentAudience, "class" | "all">, string> = {
+  const roles: Record<Exclude<UrgentAudience, "class" | "all" | "person">, string> = {
     parents: "parent",
     teachers: "teacher",
     students: "student",
   };
   let query = db.from("profiles").select("id");
-  if (audience !== "all") query = query.eq("role", roles[audience]);
+  if (audience !== "all") query = query.eq("role", roles[audience as keyof typeof roles]);
   const { data } = await query;
   const labels = { all: "Tout le monde", parents: "Parents", teachers: "Professeurs", students: "Élèves" };
-  return { ids: (data ?? []).map((p) => p.id), label: labels[audience] };
+  return { ids: (data ?? []).map((p) => p.id), label: labels[audience as keyof typeof labels] };
 }
 
 /** One phone per number and one address per inbox, however many accounts share them. */

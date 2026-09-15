@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { previewUrgent, sendUrgent, type UrgentPreview } from "@/lib/admin/urgentActions";
+import {
+  previewUrgent,
+  searchUrgentPeople,
+  sendUrgent,
+  type UrgentPerson,
+  type UrgentPreview,
+} from "@/lib/admin/urgentActions";
 import { countSmsSegments } from "@/lib/smsSegments";
 import type { ClassRow } from "@/lib/admin/data";
 
 const AUDIENCES = [
+  { value: "person", label: "Une seule personne (convocation, cours annulé…)" },
   { value: "parents", label: "Parents" },
   { value: "all", label: "Tout le monde (membres du site)" },
   { value: "students", label: "Élèves" },
@@ -110,9 +117,106 @@ function RepeatFields({
   );
 }
 
+function PersonPicker({
+  selected,
+  onSelect,
+}: {
+  selected: UrgentPerson | null;
+  onSelect: (person: UrgentPerson | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<UrgentPerson[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (query.trim().length < 2) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setSearching(true);
+      searchUrgentPeople(query)
+        .then((found) => {
+          if (!cancelled) setResults(found);
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (!cancelled) setSearching(false);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
+  if (selected) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-red-500/40 bg-red-500/5 px-4 py-2.5">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{selected.name}</p>
+          <p className="truncate text-xs text-foreground/60">
+            {selected.detail}
+            {!selected.hasPhone && " · pas de numéro de téléphone"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          className="shrink-0 rounded-full bg-black/5 px-3 py-1 text-xs font-semibold text-foreground/70 hover:bg-black/10 dark:bg-white/10"
+        >
+          Changer
+        </button>
+      </div>
+    );
+  }
+
+  const showResults = query.trim().length >= 2;
+  return (
+    <div className="flex flex-col gap-1">
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Nom du parent, de l'élève, ou numéro de téléphone"
+        className={inputClass}
+        autoFocus
+      />
+      <span className="text-xs text-foreground/50">
+        Tape le prénom d&apos;un élève pour trouver son parent.
+      </span>
+      {showResults && (
+        <ul className="mt-1 flex max-h-64 flex-col overflow-y-auto rounded-xl border border-black/10 bg-white/80 dark:border-white/10 dark:bg-gray-900/80">
+          {results.length === 0 ? (
+            <li className="px-4 py-3 text-sm text-foreground/60">{searching ? "Recherche…" : "Aucun résultat."}</li>
+          ) : (
+            results.map((person) => (
+              <li key={person.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelect(person);
+                    setQuery("");
+                    setResults([]);
+                  }}
+                  className="flex w-full flex-col items-start px-4 py-2 text-left transition hover:bg-red-500/10"
+                >
+                  <span className="text-sm font-medium">{person.name}</span>
+                  <span className="text-xs text-foreground/60">
+                    {person.detail}
+                    {!person.hasPhone && " · pas de numéro"}
+                  </span>
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
-  const [audience, setAudience] = useState<string>("parents");
+  const [audience, setAudience] = useState<string>("person");
   const [classId, setClassId] = useState("");
+  const [person, setPerson] = useState<UrgentPerson | null>(null);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
@@ -131,8 +235,9 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
 
   useEffect(() => {
     if (audience === "class" && !classId) return;
+    if (audience === "person" && !person) return;
     let cancelled = false;
-    previewUrgent({ audience, classId })
+    previewUrgent({ audience, classId, personId: person?.id })
       .then((p) => {
         if (!cancelled) setPreview(p);
       })
@@ -142,7 +247,7 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
     return () => {
       cancelled = true;
     };
-  }, [audience, classId]);
+  }, [audience, classId, person]);
 
   const smsSegments = countSmsSegments(`CPK Learn - URGENT (rappel 2/2) : ${message}`);
   const reach = preview?.ok ? preview : null;
@@ -158,12 +263,14 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
     ]
       .filter(Boolean)
       .join(", ");
-    if (!confirm(`Envoyer ce message urgent (${channelsText}) ? Le premier envoi part immédiatement.`)) return;
+    const to = audience === "person" && person ? ` à ${person.name}` : "";
+    if (!confirm(`Envoyer ce message urgent${to} (${channelsText}) ? Le premier envoi part immédiatement.`)) return;
 
     startSending(async () => {
       const res = await sendUrgent({
         audience: audience as "all",
         classId,
+        personId: person?.id,
         subject,
         message,
         channels: {
@@ -195,6 +302,12 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
             ))}
           </select>
         </label>
+        {audience === "person" && (
+          <div className="flex flex-col gap-1 text-sm font-medium">
+            Personne
+            <PersonPicker selected={person} onSelect={setPerson} />
+          </div>
+        )}
         {audience === "class" && (
           <label className="flex flex-col gap-1 text-sm font-medium">
             Classe
@@ -210,9 +323,11 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
         )}
       </div>
 
-      {reach && (
+      {reach && (audience !== "person" || person) && (
         <p className="text-xs text-foreground/60">
-          {reach.people} personne(s) · {reach.phones} numéro(s) · {reach.emails} adresse(s) email
+          {audience === "person"
+            ? `${reach.phones ? "Numéro de téléphone ✓" : "Pas de numéro de téléphone"} · ${reach.emails ? "Adresse email ✓" : "Pas d'adresse email"}`
+            : `${reach.people} personne(s) · ${reach.phones} numéro(s) · ${reach.emails} adresse(s) email`}
           {reach.smsUsable !== null && <> · {reach.smsUsable} SMS utilisables</>} · {reach.emailRemaining} emails
           restants aujourd&apos;hui
         </p>
@@ -224,7 +339,7 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           maxLength={120}
-          placeholder="Ex. : Fermeture exceptionnelle du collège"
+          placeholder="Ex. : Convocation au collège, Pas de cours demain matin"
           className={inputClass}
         />
         <span className="text-xs font-normal text-foreground/50">Objet de l&apos;email et titre de la notification.</span>
@@ -294,7 +409,14 @@ export default function UrgentComposer({ classes }: { classes: ClassRow[] }) {
       <button
         type="button"
         onClick={submit}
-        disabled={isSending || nothingSelected || !subject.trim() || !message.trim() || (audience === "class" && !classId)}
+        disabled={
+          isSending ||
+          nothingSelected ||
+          !subject.trim() ||
+          !message.trim() ||
+          (audience === "class" && !classId) ||
+          (audience === "person" && !person)
+        }
         className="self-start rounded-full bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-600/30 transition hover:bg-red-700 disabled:opacity-50"
       >
         {isSending ? "Envoi en cours…" : "🚨 Envoyer le message urgent"}

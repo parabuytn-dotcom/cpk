@@ -11,6 +11,7 @@ import { floorFor } from "@/lib/sms/ladder";
 import { getEmailQuota } from "@/lib/admin/data";
 import {
   MAX_SMS_PER_ROUND,
+  displayName,
   resolveAudience,
   resolveContacts,
   runUrgentDelivery,
@@ -19,9 +20,90 @@ import {
 } from "@/lib/urgent/engine";
 
 const audienceSchema = z.object({
-  audience: z.enum(["all", "parents", "teachers", "students", "class"]),
+  audience: z.enum(["all", "parents", "teachers", "students", "class", "person"]),
   classId: z.string().uuid().optional(),
+  personId: z.string().uuid().optional(),
 });
+
+export type UrgentPerson = {
+  id: string;
+  name: string;
+  role: string;
+  /** "Parent de Sami (7B)", "Élève en 8A", or the phone number. */
+  detail: string;
+  hasPhone: boolean;
+};
+
+/**
+ * Finds one person to write to — by their own name or phone, or by a child's
+ * name, which returns the child's parent: convoking a parent usually starts
+ * from the pupil.
+ */
+export async function searchUrgentPeople(rawQuery: string): Promise<UrgentPerson[]> {
+  await requireAdmin();
+  // Characters that carry meaning in a PostgREST filter are stripped before
+  // the query goes into .or(), so a search can only match, never rewrite it.
+  const query = rawQuery.replace(/[%,()*\\"'.:]/g, " ").trim().slice(0, 60);
+  if (query.length < 2) return [];
+  const db = createAdminClient();
+  if (!db) return [];
+
+  const like = `%${query}%`;
+  const [{ data: byProfile }, { data: byChild }] = await Promise.all([
+    db
+      .from("profiles")
+      .select("id")
+      .or(`full_name.ilike.${like},parent_first_name.ilike.${like},parent_last_name.ilike.${like},phone.ilike.${like}`)
+      .limit(15),
+    db
+      .from("students")
+      .select("parent_id, user_id")
+      .or(`first_name.ilike.${like},last_name.ilike.${like}`)
+      .limit(15),
+  ]);
+
+  const ids = Array.from(
+    new Set([
+      ...(byProfile ?? []).map((p) => p.id),
+      ...(byChild ?? []).flatMap((s) => [s.parent_id, s.user_id]).filter((id): id is string => Boolean(id)),
+    ]),
+  ).slice(0, 20);
+  if (ids.length === 0) return [];
+
+  const [{ data: people }, { data: children }] = await Promise.all([
+    db.from("profiles").select("id, full_name, parent_first_name, parent_last_name, role, phone").in("id", ids),
+    db.from("students").select("parent_id, user_id, first_name, class_name").or(`parent_id.in.(${ids.join(",")}),user_id.in.(${ids.join(",")})`),
+  ]);
+
+  const roleLabels: Record<string, string> = {
+    parent: "Parent",
+    student: "Élève",
+    teacher: "Professeur",
+    staff: "Staff",
+    director: "Direction",
+    admin: "Admin",
+  };
+
+  return (people ?? [])
+    .map((p) => {
+      const kids = (children ?? []).filter((c) => c.parent_id === p.id);
+      const own = (children ?? []).find((c) => c.user_id === p.id);
+      const detail =
+        p.role === "parent" && kids.length > 0
+          ? `Parent de ${kids.map((k) => `${k.first_name} (${k.class_name})`).join(", ")}`
+          : p.role === "student" && own
+            ? `Élève en ${own.class_name}`
+            : (roleLabels[p.role] ?? p.role);
+      return {
+        id: p.id,
+        name: displayName(p),
+        role: roleLabels[p.role] ?? p.role,
+        detail,
+        hasPhone: (p.phone ?? "").replace(/\D/g, "").length >= 8,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
 
 export type UrgentPreview =
   | {
@@ -35,14 +117,18 @@ export type UrgentPreview =
   | { ok: false; error: string };
 
 /** Who a broadcast would reach, and what's left to reach them with. */
-export async function previewUrgent(input: { audience: string; classId?: string }): Promise<UrgentPreview> {
+export async function previewUrgent(input: { audience: string; classId?: string; personId?: string }): Promise<UrgentPreview> {
   await requireAdmin();
-  const parsed = audienceSchema.safeParse({ audience: input.audience, classId: input.classId || undefined });
+  const parsed = audienceSchema.safeParse({
+    audience: input.audience,
+    classId: input.classId || undefined,
+    personId: input.personId || undefined,
+  });
   if (!parsed.success) return { ok: false, error: "Destinataires invalides." };
   const db = createAdminClient();
   if (!db) return { ok: false, error: "Supabase (clé service_role) n'est pas configuré." };
 
-  const { ids } = await resolveAudience(db, parsed.data.audience, parsed.data.classId);
+  const { ids } = await resolveAudience(db, parsed.data.audience, parsed.data.classId, parsed.data.personId);
   const [{ phones, emails }, plan, quota] = await Promise.all([
     resolveContacts(db, ids),
     getSmsPlanState(),
@@ -81,26 +167,39 @@ export type UrgentSendInput = z.input<typeof sendSchema>;
 
 export async function sendUrgent(input: UrgentSendInput): Promise<{ ok: true; summary: string } | { ok: false; error: string }> {
   const admin = await requireAdmin();
-  const parsed = sendSchema.safeParse({ ...input, classId: input.classId || undefined });
+  const parsed = sendSchema.safeParse({
+    ...input,
+    classId: input.classId || undefined,
+    personId: input.personId || undefined,
+  });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { audience, classId, subject, message, channels } = parsed.data;
+  const { audience, classId, personId, subject, message, channels } = parsed.data;
 
   if (!channels.email.enabled && !channels.sms.enabled && !channels.notification.enabled) {
     return { ok: false, error: "Garde au moins un moyen d'envoi : email, SMS ou notification." };
   }
   if (audience === "class" && !classId) return { ok: false, error: "Choisis une classe." };
+  if (audience === "person" && !personId) return { ok: false, error: "Choisis la personne à prévenir." };
 
   const db = createAdminClient();
   if (!db) return { ok: false, error: "Supabase (clé service_role) n'est pas configuré." };
 
-  const { ids, label } = await resolveAudience(db, audience, classId);
+  const { ids, label } = await resolveAudience(db, audience, classId, personId);
   if (ids.length === 0) return { ok: false, error: "Aucun membre du site ne correspond à ces destinataires." };
 
   const { phones, emails } = await resolveContacts(db, ids);
 
   // Refuse up front rather than discover half-way that the first round can't go out.
   if (channels.sms.enabled) {
-    if (phones.length === 0) return { ok: false, error: "Personne n'a de numéro de téléphone dans cette sélection : retire le SMS." };
+    if (phones.length === 0) {
+      return {
+        ok: false,
+        error:
+          audience === "person"
+            ? "Cette personne n'a pas de numéro de téléphone : retire le SMS."
+            : "Personne n'a de numéro de téléphone dans cette sélection : retire le SMS.",
+      };
+    }
     const plan = await getSmsPlanState();
     const perRound = Math.min(phones.length, MAX_SMS_PER_ROUND) * countSmsSegments(`CPK Learn - URGENT (rappel 10/10) : ${message}`);
     if (plan) {
@@ -114,7 +213,15 @@ export async function sendUrgent(input: UrgentSendInput): Promise<{ ok: true; su
     }
   }
   if (channels.email.enabled) {
-    if (emails.length === 0) return { ok: false, error: "Personne n'a d'adresse email dans cette sélection : retire l'email." };
+    if (emails.length === 0) {
+      return {
+        ok: false,
+        error:
+          audience === "person"
+            ? "Cette personne n'a pas d'adresse email : retire l'email."
+            : "Personne n'a d'adresse email dans cette sélection : retire l'email.",
+      };
+    }
     const quota = await getEmailQuota();
     if (emails.length > quota.remaining) {
       return {
