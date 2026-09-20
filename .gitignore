@@ -46,3 +46,7 @@ rapport-cpk-*.xlsx
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor iOS project (built locally, not tracked)
+ios/
+.claude/launch.json
