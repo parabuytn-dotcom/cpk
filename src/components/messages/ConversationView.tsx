@@ -1,15 +1,15 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Avatar from "@/components/ui/Avatar";
 import MiroTalkCall from "@/components/groups/MiroTalkCall";
 import ReportUserDialog from "./ReportUserDialog";
-import { sendDirectMessage, markConversationRead, setBlocked } from "@/lib/messages/actions";
+import ChatWindow from "@/components/chat/ChatWindow";
+import { markConversationRead, setBlocked } from "@/lib/messages/actions";
 import type { ConversationDetail } from "@/lib/messages/data";
-import { formatDateTime } from "@/lib/formatDate";
 
 export default function ConversationView({
   conversation,
@@ -27,33 +27,14 @@ export default function ConversationView({
   const [view, setView] = useState<"chat" | "call">("chat");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [state, action, pending] = useActionState(sendDirectMessage, undefined);
-  const formRef = useRef<HTMLFormElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
 
   const blocked = conversation.isBlockedByMe || conversation.isBlockedByThem;
   const canChat = conversation.areFriends && !blocked;
-
-  // Same "live enough" approach as the group chat: a short poll while the
-  // conversation is open, rather than a realtime subscription.
-  useEffect(() => {
-    if (!canChat || view !== "chat") return;
-    const interval = setInterval(() => router.refresh(), 6000);
-    return () => clearInterval(interval);
-  }, [canChat, view, router]);
 
   useEffect(() => {
     if (!canChat) return;
     markConversationRead(conversation.friend.userId);
   }, [canChat, conversation.friend.userId]);
-
-  useEffect(() => {
-    if (state?.success !== undefined) formRef.current?.reset();
-  }, [state]);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
-  }, [conversation.messages.length]);
 
   function toggleBlock() {
     setError(null);
@@ -132,65 +113,22 @@ export default function ConversationView({
           {view === "call" ? (
             <MiroTalkCall roomSlug={conversation.roomSlug} displayName={currentUserName} />
           ) : (
-            <div className="glass-surface flex flex-col gap-3 rounded-3xl p-5">
-              <div className="flex max-h-[55vh] min-h-[35vh] flex-col gap-3 overflow-y-auto">
-                {conversation.messages.length === 0 ? (
-                  <p className="m-auto text-sm text-foreground/50">{t("noMessagesYet")}</p>
-                ) : (
-                  conversation.messages.map((message) => {
-                    const isMine = message.senderId === currentUserId;
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`flex max-w-[75%] flex-col ${isMine ? "items-end" : "items-start"}`}
-                        >
-                          <div
-                            className={`rounded-2xl px-4 py-2 text-sm ${
-                              isMine
-                                ? "bg-brand-600 text-white"
-                                : "bg-black/5 text-foreground dark:bg-white/10"
-                            }`}
-                          >
-                            {message.content}
-                          </div>
-                          <span className="mt-0.5 text-[11px] text-foreground/40">
-                            {formatDateTime(locale, message.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={endRef} />
-              </div>
-
-              <form
-                ref={formRef}
-                action={action}
-                className="flex gap-2 border-t border-black/5 pt-3 dark:border-white/10"
-              >
-                <input type="hidden" name="recipientId" value={conversation.friend.userId} />
-                <input
-                  name="content"
-                  placeholder={t("placeholder")}
-                  required
-                  className="flex-1 rounded-full border border-black/10 bg-white/70 px-4 py-2 text-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
-                />
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
-                >
-                  {t("send")}
-                </button>
-              </form>
-              {state?.message && (
-                <p className="text-sm text-red-600 dark:text-red-400">{state.message}</p>
-              )}
-            </div>
+            <ChatWindow
+              scope="dm"
+              targetId={conversation.friend.userId}
+              currentUserId={currentUserId}
+              locale={locale}
+              placeholder={t("placeholder")}
+              initialMessages={conversation.messages.map((message) => ({
+                id: message.id,
+                authorId: message.senderId,
+                content: message.content,
+                mediaPath: message.mediaPath,
+                mediaType: message.mediaType,
+                mediaDuration: message.mediaDuration,
+                createdAt: message.createdAt,
+              }))}
+            />
           )}
         </>
       )}

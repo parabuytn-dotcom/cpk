@@ -82,7 +82,10 @@ export async function listFriends(profileId: string): Promise<FriendRow[]> {
 export type DirectMessageRow = {
   id: string;
   senderId: string;
-  content: string;
+  content: string | null;
+  mediaPath: string | null;
+  mediaType: "image" | "audio" | null;
+  mediaDuration: number | null;
   createdAt: string;
 };
 
@@ -147,7 +150,7 @@ export async function getConversation(
   if (!isBlockedByMe && !isBlockedByThem) {
     const { data } = await supabase
       .from("direct_messages")
-      .select("id, sender_id, recipient_id, content, created_at")
+      .select("id, sender_id, recipient_id, content, media_path, media_type, media_duration, created_at")
       .or(
         `and(sender_id.eq.${profileId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${profileId})`,
       )
@@ -158,6 +161,9 @@ export async function getConversation(
       id: m.id,
       senderId: m.sender_id,
       content: m.content,
+      mediaPath: m.media_path,
+      mediaType: m.media_type,
+      mediaDuration: m.media_duration,
       createdAt: m.created_at,
     }));
   }

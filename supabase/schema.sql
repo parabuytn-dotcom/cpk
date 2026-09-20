@@ -1751,3 +1751,37 @@ create policy "Teachers read their convocations" on public.urgent_broadcasts for
 drop policy if exists "Teachers read their convocation deliveries" on public.urgent_deliveries;
 create policy "Teachers read their convocation deliveries" on public.urgent_deliveries for select
   using (exists (select 1 from public.urgent_broadcasts b where b.id = broadcast_id and b.created_by = auth.uid()));
+
+-- ----------------------------------------------------------------------------
+-- Messagerie instantanée : photos et messages vocaux, en conversation privée
+-- comme dans les groupes. Le fichier part du navigateur vers le dossier
+-- chat-media ; la ligne du message ne garde que son chemin.
+-- ----------------------------------------------------------------------------
+alter table public.direct_messages add column if not exists media_path text;
+alter table public.direct_messages add column if not exists media_type text;
+alter table public.direct_messages add column if not exists media_duration integer;
+alter table public.direct_messages alter column content drop not null;
+
+alter table public.group_messages add column if not exists media_path text;
+alter table public.group_messages add column if not exists media_type text;
+alter table public.group_messages add column if not exists media_duration integer;
+alter table public.group_messages alter column content drop not null;
+
+insert into storage.buckets (id, name, public)
+  values ('chat-media', 'chat-media', true)
+  on conflict (id) do update set public = true;
+
+-- Realtime : le message apparaît chez l'autre en quelques millisecondes.
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['direct_messages', 'group_messages'] loop
+    begin
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    exception when duplicate_object then
+      null;
+    end;
+  end loop;
+end;
+$$;

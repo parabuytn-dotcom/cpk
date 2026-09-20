@@ -69,7 +69,10 @@ export type GroupMessageRow = {
   authorId: string | null;
   authorName: string;
   authorAvatarUrl: string | null;
-  content: string;
+  content: string | null;
+  mediaPath: string | null;
+  mediaType: "image" | "audio" | null;
+  mediaDuration: number | null;
   createdAt: string;
 };
 
@@ -129,7 +132,7 @@ export async function getGroupDetail(groupId: string, profileId: string): Promis
   if (isMember) {
     const { data: messagesRaw } = await supabase
       .from("group_messages")
-      .select("id, author_id, content, created_at")
+      .select("id, author_id, content, media_path, media_type, media_duration, created_at")
       .eq("group_id", groupId)
       .order("created_at", { ascending: true })
       .limit(300);
@@ -145,6 +148,9 @@ export async function getGroupDetail(groupId: string, profileId: string): Promis
       authorName: m.author_id ? (authorProfiles.get(m.author_id)?.displayName ?? "?") : "?",
       authorAvatarUrl: m.author_id ? (authorProfiles.get(m.author_id)?.avatarUrl ?? null) : null,
       content: m.content,
+      mediaPath: m.media_path,
+      mediaType: m.media_type,
+      mediaDuration: m.media_duration,
       createdAt: m.created_at,
     }));
   }
