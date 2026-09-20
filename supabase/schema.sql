@@ -148,6 +148,10 @@ create table if not exists public.teachers (
   created_at timestamptz not null default now()
 );
 
+-- Linked login account for this teacher (added early: the policies below
+-- reference it, and this file has to run top to bottom on a fresh project).
+alter table public.teachers add column if not exists user_id uuid references public.profiles (id) on delete set null;
+
 alter table public.teachers enable row level security;
 
 drop policy if exists "Anyone authenticated can read teachers" on public.teachers;
