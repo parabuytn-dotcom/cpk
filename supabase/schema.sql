@@ -379,7 +379,8 @@ create table if not exists public.sms_logs (
 -- distinguishable from absence/manual alerts in the logs.
 alter table public.sms_logs drop constraint if exists sms_logs_trigger_check;
 alter table public.sms_logs add constraint sms_logs_trigger_check
-  check (trigger in ('teacher_absence', 'generated_password', 'manual', 'phone_verification'));
+  check (trigger in ('teacher_absence', 'generated_password', 'manual', 'phone_verification',
+                     'makeup_session', 'low_balance_alert'));
 
 -- ----------------------------------------------------------------------------
 -- Phone number verification (OTP by SMS) — gated at registration and at any
