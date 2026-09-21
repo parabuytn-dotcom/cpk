@@ -203,6 +203,10 @@ export type TimetableEntryRow = {
   subject: string;
   teacherName: string | null;
   isCancelled: boolean;
+  /** "all", or "A"/"B" for a fortnightly lesson. */
+  weekParity: string;
+  groupId: string | null;
+  groupName: string | null;
 };
 
 /**
@@ -237,7 +241,7 @@ export async function listTimetableEntries(classId: string): Promise<TimetableEn
   const { data } = await supabase
     .from("timetable_entries")
     .select(
-      "id, class_name, day_of_week, start_time, end_time, subject, teacher_id, teachers(first_name, last_name)",
+      "id, class_name, day_of_week, start_time, end_time, subject, teacher_id, week_parity, class_group_id, teachers(first_name, last_name)",
     )
     .eq("class_id", classId)
     .order("day_of_week")
@@ -256,6 +260,10 @@ export async function listTimetableEntries(classId: string): Promise<TimetableEn
   );
 
   const { monday, weekStart, weekEnd } = displayedWeek();
+
+  const { data: groups } = await supabase.from("class_groups").select("id, name").eq("class_id", classId);
+  const groupNames = new Map((groups ?? []).map((g) => [g.id, g.name]));
+
   let absences: { teacher_id: string; starts_at: string; ends_at: string }[] = [];
   if (teacherIds.length > 0) {
     const { data: rows } = await supabase
@@ -287,6 +295,9 @@ export async function listTimetableEntries(classId: string): Promise<TimetableEn
       subject: row.subject,
       teacherName: teacher ? `${teacher.first_name} ${teacher.last_name}` : null,
       isCancelled,
+      weekParity: row.week_parity ?? "all",
+      groupId: row.class_group_id,
+      groupName: row.class_group_id ? (groupNames.get(row.class_group_id) ?? null) : null,
     };
   });
 }

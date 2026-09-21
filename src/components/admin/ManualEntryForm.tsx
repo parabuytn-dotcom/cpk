@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { upsertTimetableEntry } from "@/lib/admin/actions";
 import type { ClassRow, TeacherRow } from "@/lib/admin/data";
+import type { ClassGroup } from "@/components/admin/ClassGroupsManager";
 
 const DAYS = [
   { value: 1, label: "Lundi" },
@@ -17,9 +18,11 @@ const DAYS = [
 export default function ManualEntryForm({
   classRow,
   teachers,
+  groups,
 }: {
   classRow: ClassRow;
   teachers: TeacherRow[];
+  groups: ClassGroup[];
 }) {
   const [state, action, pending] = useActionState(upsertTimetableEntry, undefined);
 
@@ -72,6 +75,35 @@ export default function ManualEntryForm({
           </option>
         ))}
       </select>
+
+      <label className="flex flex-col gap-1 text-xs font-medium text-foreground/70">
+        Semaine
+        <select
+          name="weekParity"
+          defaultValue="all"
+          className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
+        >
+          <option value="all">Toutes les semaines</option>
+          <option value="A">Semaine A seulement</option>
+          <option value="B">Semaine B seulement</option>
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-xs font-medium text-foreground/70">
+        Groupe
+        <select
+          name="classGroupId"
+          defaultValue=""
+          className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 dark:border-white/10 dark:bg-white/5"
+        >
+          <option value="">Classe entière</option>
+          {groups.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.name}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <button
         type="submit"

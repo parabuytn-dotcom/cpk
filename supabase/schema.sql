@@ -1785,3 +1785,58 @@ begin
   end loop;
 end;
 $$;
+
+-- ----------------------------------------------------------------------------
+-- Cours par groupes et par quinzaine
+--   • class_groups : les demi-groupes d'une classe (Groupe 1 / Groupe 2…).
+--     Pendant qu'un groupe a physique, l'autre a sciences, puis ils échangent.
+--   • class_group_members : qui est dans quel groupe — chacun ne voit que ses
+--     propres cours.
+--   • timetable_entries.week_parity : 'all', ou 'A'/'B' pour les cours à la
+--     quinzaine (semaine A français, semaine B maths).
+--   • timetable_entries.class_group_id : le créneau ne concerne que ce groupe.
+-- ----------------------------------------------------------------------------
+create table if not exists public.class_groups (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references public.classes (id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now(),
+  unique (class_id, name)
+);
+
+create table if not exists public.class_group_members (
+  class_group_id uuid not null references public.class_groups (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  primary key (class_group_id, user_id)
+);
+
+alter table public.timetable_entries add column if not exists week_parity text not null default 'all';
+alter table public.timetable_entries drop constraint if exists timetable_entries_week_parity_check;
+alter table public.timetable_entries add constraint timetable_entries_week_parity_check
+  check (week_parity in ('all', 'A', 'B'));
+alter table public.timetable_entries add column if not exists class_group_id uuid
+  references public.class_groups (id) on delete set null;
+
+-- La date de référence de la semaine A : tout se calcule à partir d'elle
+-- (site_settings.week_a_start, un lundi au format AAAA-MM-JJ).
+create index if not exists idx_timetable_group on public.timetable_entries (class_group_id);
+create index if not exists idx_class_group_members_user on public.class_group_members (user_id);
+
+alter table public.class_groups enable row level security;
+alter table public.class_group_members enable row level security;
+
+drop policy if exists "Anyone authenticated reads class groups" on public.class_groups;
+create policy "Anyone authenticated reads class groups"
+  on public.class_groups for select using (auth.role() = 'authenticated');
+
+drop policy if exists "Admins manage class groups" on public.class_groups;
+create policy "Admins manage class groups"
+  on public.class_groups for all using (public.is_school_staff()) with check (public.is_school_staff());
+
+drop policy if exists "Members read group membership" on public.class_group_members;
+create policy "Members read group membership"
+  on public.class_group_members for select using (auth.role() = 'authenticated');
+
+drop policy if exists "Admins manage group membership" on public.class_group_members;
+create policy "Admins manage group membership"
+  on public.class_group_members for all using (public.is_school_staff()) with check (public.is_school_staff());

@@ -276,7 +276,37 @@ export async function importTimetableCsv(
     end_time: string;
     subject: string;
     teacher_id: string;
+    week_parity: string;
+    class_group_id: string | null;
   }[] = [];
+
+  // Half-group names used in the CSV are created on the fly, so a timetable
+  // can be imported without preparing anything first.
+  const groupIds = new Map<string, string>();
+  async function groupId(name: string): Promise<string | null> {
+    const key = name.trim();
+    if (!key) return null;
+    const known = groupIds.get(key);
+    if (known) return known;
+    const { data: existing } = await supabase
+      .from("class_groups")
+      .select("id")
+      .eq("class_id", classId)
+      .eq("name", key)
+      .maybeSingle();
+    let id = existing?.id as string | undefined;
+    if (!id) {
+      const { data: created, error } = await supabase
+        .from("class_groups")
+        .insert({ class_id: classId, name: key })
+        .select("id")
+        .single();
+      if (error || !created) throw new Error(error?.message ?? "Création du groupe impossible.");
+      id = created.id as string;
+    }
+    groupIds.set(key, id);
+    return id;
+  }
 
   for (const [index, row] of rows.entries()) {
     const validated = csvRowSchema.safeParse(row);
@@ -284,6 +314,10 @@ export async function importTimetableCsv(
       return { message: `Ligne ${index + 2} invalide : vérifie les colonnes Jour/Heure_Début/Heure_Fin/Matière/Professeur.` };
     }
     const teacherId = await findOrCreateTeacherByName(supabase, validated.data.Professeur);
+    const week = (validated.data.Semaine ?? "").trim().toUpperCase();
+    if (week && week !== "A" && week !== "B") {
+      return { message: `Ligne ${index + 2} : la colonne Semaine doit être vide, A ou B.` };
+    }
     entries.push({
       class_id: classId,
       class_name: className,
@@ -292,6 +326,8 @@ export async function importTimetableCsv(
       end_time: validated.data.Heure_Fin,
       subject: validated.data.Matière,
       teacher_id: teacherId,
+      week_parity: week || "all",
+      class_group_id: await groupId(validated.data.Groupe ?? ""),
     });
   }
 
@@ -316,6 +352,8 @@ export async function upsertTimetableEntry(
     endTime: formData.get("endTime"),
     subject: formData.get("subject"),
     teacherId: formData.get("teacherId"),
+    weekParity: formData.get("weekParity") ?? "all",
+    classGroupId: formData.get("classGroupId") ?? "",
   });
 
   if (!validated.success) {
@@ -332,11 +370,14 @@ export async function upsertTimetableEntry(
     end_time: validated.data.endTime,
     subject: validated.data.subject,
     teacher_id: validated.data.teacherId,
+    week_parity: validated.data.weekParity,
+    class_group_id: validated.data.classGroupId || null,
   });
 
   if (error) return { message: error.message };
 
   revalidatePath("/admin/emploi-du-temps");
+  revalidatePath("/emploi-du-temps");
   return { success: "Créneau ajouté." };
 }
 

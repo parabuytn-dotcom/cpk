@@ -83,6 +83,18 @@ export default function TimetableGrid({
                             {entry.teacherName && (
                               <p className="font-normal text-foreground/50">{entry.teacherName}</p>
                             )}
+                            <div className="mt-0.5 flex flex-wrap gap-1">
+                              {entry.weekParity !== "all" && (
+                                <span className="rounded-full bg-accent-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent-600">
+                                  Sem. {entry.weekParity}
+                                </span>
+                              )}
+                              {entry.groupName && (
+                                <span className="rounded-full bg-brand-600/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 dark:text-brand-300">
+                                  {entry.groupName}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           {canDelete && <DeleteTimetableEntryButton entryId={entry.id} />}
                         </div>
