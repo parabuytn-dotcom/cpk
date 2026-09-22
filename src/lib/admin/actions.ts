@@ -16,6 +16,7 @@ import { cancelQueuedSchoolSms, sendOrQueueSchoolSms } from "@/lib/sms/schoolSms
 import { sendEmail } from "@/lib/emailService";
 import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
 import { getSiteSetting } from "@/lib/admin/data";
+import { parseCsv, missingHeaderMessage } from "@/lib/admin/csv";
 import { getCurrentProfile } from "@/lib/auth/session";
 import {
   formatSchoolDateTime,
@@ -205,22 +206,6 @@ export async function createAccount(_state: FormState, formData: FormData): Prom
 // Emploi du temps — import CSV / saisie manuelle
 // ---------------------------------------------------------------------------
 
-function detectDelimiter(headerLine: string) {
-  return (headerLine.match(/;/g)?.length ?? 0) > (headerLine.match(/,/g)?.length ?? 0) ? ";" : ",";
-}
-
-function parseCsv(text: string): Record<string, string>[] {
-  const lines = text.trim().split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return [];
-
-  const delimiter = detectDelimiter(lines[0]);
-  const headers = lines[0].split(delimiter).map((h) => h.trim());
-
-  return lines.slice(1).map((line) => {
-    const cells = line.split(delimiter).map((c) => c.trim());
-    return Object.fromEntries(headers.map((h, i) => [h, cells[i] ?? ""]));
-  });
-}
 
 async function findOrCreateTeacherByName(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -267,6 +252,12 @@ export async function importTimetableCsv(
     return { message: "Le CSV est vide ou mal formaté." };
   }
 
+  // Naming the missing column beats "ligne 2 invalide": the usual cause is a
+  // header that got mangled on the way here, and then nothing in the file is
+  // ever valid — the line number sends you looking in the wrong place.
+  const headerProblem = missingHeaderMessage(rows);
+  if (headerProblem) return { message: headerProblem };
+
   const supabase = await createClient();
   const entries: {
     class_id: string;
@@ -312,7 +303,14 @@ export async function importTimetableCsv(
   for (const [index, row] of rows.entries()) {
     const validated = csvRowSchema.safeParse(row);
     if (!validated.success) {
-      return { message: `Ligne ${index + 2} invalide : vérifie les colonnes Jour/Heure_Début/Heure_Fin/Matière/Professeur.` };
+      const issue = validated.error.issues[0];
+      const column = issue?.path.join(".") || "?";
+      const received = row[column] ?? "";
+      return {
+        message: `Ligne ${index + 2}, colonne « ${column} » : ${issue?.message ?? "valeur invalide"} ${
+          received ? `(reçu : « ${received} »)` : "(vide)"
+        }.`,
+      };
     }
     const teacherName = (validated.data.Professeur ?? "").trim();
     const teacherId = teacherName ? await findOrCreateTeacherByName(supabase, teacherName) : null;

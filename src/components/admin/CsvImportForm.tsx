@@ -22,7 +22,9 @@ export default function CsvImportForm({ classRow }: { classRow: ClassRow }) {
       <textarea
         name="csvText"
         rows={6}
-        placeholder={"Jour,Heure_Début,Heure_Fin,Matière,Professeur\n1,08:00,09:00,Mathématiques,Ali Ben Salah"}
+        placeholder={
+          "Jour,Heure_Début,Heure_Fin,Matière,Salle,Professeur,Semaine,Groupe\n1,08:00,10:00,Maths,10,,,\n4,10:00,12:00,SVT,SN1,,B,Groupe 1"
+        }
         className="w-full rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 font-mono text-xs outline-none focus:border-brand-500 dark:border-white/10 dark:bg-white/5"
       />
       <button
