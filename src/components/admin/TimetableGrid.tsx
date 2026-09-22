@@ -80,8 +80,10 @@ export default function TimetableGrid({
                         >
                           <div>
                             <p className="font-medium">{entry.subject}</p>
-                            {entry.teacherName && (
-                              <p className="font-normal text-foreground/50">{entry.teacherName}</p>
+                            {(entry.room || entry.teacherName) && (
+                              <p className="font-normal text-foreground/50">
+                                {[entry.room, entry.teacherName].filter(Boolean).join(" · ")}
+                              </p>
                             )}
                             <div className="mt-0.5 flex flex-wrap gap-1">
                               {entry.weekParity !== "all" && (

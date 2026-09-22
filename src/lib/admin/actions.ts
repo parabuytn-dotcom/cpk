@@ -275,7 +275,8 @@ export async function importTimetableCsv(
     start_time: string;
     end_time: string;
     subject: string;
-    teacher_id: string;
+    teacher_id: string | null;
+    room: string | null;
     week_parity: string;
     class_group_id: string | null;
   }[] = [];
@@ -313,7 +314,8 @@ export async function importTimetableCsv(
     if (!validated.success) {
       return { message: `Ligne ${index + 2} invalide : vérifie les colonnes Jour/Heure_Début/Heure_Fin/Matière/Professeur.` };
     }
-    const teacherId = await findOrCreateTeacherByName(supabase, validated.data.Professeur);
+    const teacherName = (validated.data.Professeur ?? "").trim();
+    const teacherId = teacherName ? await findOrCreateTeacherByName(supabase, teacherName) : null;
     const week = (validated.data.Semaine ?? "").trim().toUpperCase();
     if (week && week !== "A" && week !== "B") {
       return { message: `Ligne ${index + 2} : la colonne Semaine doit être vide, A ou B.` };
@@ -326,6 +328,7 @@ export async function importTimetableCsv(
       end_time: validated.data.Heure_Fin,
       subject: validated.data.Matière,
       teacher_id: teacherId,
+      room: (validated.data.Salle ?? "").trim() || null,
       week_parity: week || "all",
       class_group_id: await groupId(validated.data.Groupe ?? ""),
     });
@@ -352,6 +355,7 @@ export async function upsertTimetableEntry(
     endTime: formData.get("endTime"),
     subject: formData.get("subject"),
     teacherId: formData.get("teacherId"),
+    room: formData.get("room") ?? "",
     weekParity: formData.get("weekParity") ?? "all",
     classGroupId: formData.get("classGroupId") ?? "",
   });
@@ -370,6 +374,7 @@ export async function upsertTimetableEntry(
     end_time: validated.data.endTime,
     subject: validated.data.subject,
     teacher_id: validated.data.teacherId,
+    room: (validated.data.room ?? "").trim() || null,
     week_parity: validated.data.weekParity,
     class_group_id: validated.data.classGroupId || null,
   });

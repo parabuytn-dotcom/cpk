@@ -202,6 +202,7 @@ export type TimetableEntryRow = {
   endTime: string;
   subject: string;
   teacherName: string | null;
+  room: string | null;
   isCancelled: boolean;
   /** "all", or "A"/"B" for a fortnightly lesson. */
   weekParity: string;
@@ -241,7 +242,7 @@ export async function listTimetableEntries(classId: string): Promise<TimetableEn
   const { data } = await supabase
     .from("timetable_entries")
     .select(
-      "id, class_name, day_of_week, start_time, end_time, subject, teacher_id, week_parity, class_group_id, teachers(first_name, last_name)",
+      "id, class_name, day_of_week, start_time, end_time, subject, teacher_id, room, week_parity, class_group_id, teachers(first_name, last_name)",
     )
     .eq("class_id", classId)
     .order("day_of_week")
@@ -294,6 +295,7 @@ export async function listTimetableEntries(classId: string): Promise<TimetableEn
       endTime: row.end_time,
       subject: row.subject,
       teacherName: teacher ? `${teacher.first_name} ${teacher.last_name}` : null,
+      room: row.room ?? null,
       isCancelled,
       weekParity: row.week_parity ?? "all",
       groupId: row.class_group_id,

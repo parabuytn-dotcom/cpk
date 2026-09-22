@@ -76,6 +76,12 @@ export default function ManualEntryForm({
         ))}
       </select>
 
+      <input
+        name="room"
+        placeholder="Salle (facultatif)"
+        className="rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 sm:col-span-2 dark:border-white/10 dark:bg-white/5"
+      />
+
       <label className="flex flex-col gap-1 text-xs font-medium text-foreground/70">
         Semaine
         <select

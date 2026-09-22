@@ -1841,3 +1841,7 @@ create policy "Members read group membership"
 drop policy if exists "Admins manage group membership" on public.class_group_members;
 create policy "Admins manage group membership"
   on public.class_group_members for all using (public.is_school_staff()) with check (public.is_school_staff());
+
+-- Salle du cours, quand l'emploi du temps la donne (parfois à la place du
+-- professeur). teacher_id est déjà nullable : un créneau peut n'avoir que sa salle.
+alter table public.timetable_entries add column if not exists room text;

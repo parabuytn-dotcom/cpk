@@ -12,10 +12,11 @@ export default function CsvImportForm({ classRow }: { classRow: ClassRow }) {
       <input type="hidden" name="classId" value={classRow.id} />
       <input type="hidden" name="className" value={classRow.name} />
       <label className="text-sm font-medium">
-        CSV — colonnes : Jour, Heure_Début, Heure_Fin, Matière, Professeur, Semaine, Groupe
+        CSV — colonnes : Jour, Heure_Début, Heure_Fin, Matière, Salle, Professeur, Semaine, Groupe
         <span className="mt-1 block text-xs font-normal text-foreground/55">
-          Jour en chiffre (1 = lundi). Semaine : vide pour toutes les semaines, sinon A ou B. Groupe : vide pour la
-          classe entière, sinon le nom du demi-groupe (il est créé tout seul s&apos;il n&apos;existe pas).
+          Jour en chiffre (1 = lundi). Salle et Professeur sont facultatifs. Semaine : vide pour toutes les semaines,
+          sinon A ou B. Groupe : vide pour la classe entière, sinon le nom du demi-groupe (il est créé tout seul
+          s&apos;il n&apos;existe pas).
         </span>
       </label>
       <textarea

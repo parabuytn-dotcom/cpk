@@ -9,6 +9,7 @@ export const timetableEntrySchema = z.object({
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "Format attendu HH:MM"),
   subject: z.string().trim().min(1),
   teacherId: z.string().uuid("Choisis un professeur."),
+  room: z.string().trim().max(20).optional().or(z.literal("")),
   /** "all" for every week, or "A"/"B" for a fortnightly lesson. */
   weekParity: z.enum(["all", "A", "B"]).default("all"),
   /** Empty when the whole class has the lesson, otherwise a class_groups id. */
@@ -49,7 +50,10 @@ export const csvRowSchema = z.object({
   Heure_Début: z.string().regex(/^\d{2}:\d{2}$/),
   Heure_Fin: z.string().regex(/^\d{2}:\d{2}$/),
   Matière: z.string().trim().min(1),
-  Professeur: z.string().trim().min(1),
+  /** Facultatif : certains emplois du temps donnent la salle, pas le prof. */
+  Professeur: z.string().trim().optional(),
+  /** Salle du cours ("SP3", "INF1", "02"…). */
+  Salle: z.string().trim().optional(),
   /** Cours à la quinzaine : "A", "B", ou vide pour toutes les semaines. */
   Semaine: z.string().trim().optional(),
   /** Cours par demi-groupe : le nom du groupe ("Groupe 1"), ou vide pour la classe entière. */
