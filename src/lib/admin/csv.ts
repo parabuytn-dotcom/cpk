@@ -81,5 +81,13 @@ export function missingHeaderMessage(rows: Record<string, string>[]): string | n
   const read = Object.keys(rows[0]);
   const missing = REQUIRED_CSV_HEADERS.filter((header) => !read.includes(header));
   if (missing.length === 0) return null;
+
+  // One single column means the text has no separator at all — almost always
+  // a table copied off a screen rather than the contents of the .csv file.
+  // Listing the "columns read" in that case is just noise.
+  if (read.length === 1) {
+    return "Ce texte n'a qu'une seule colonne : il n'y a ni virgule ni point-virgule. Ce n'est pas le contenu d'un fichier CSV — utilise le bouton « Choisir un fichier » au-dessus, ou ouvre le .csv et copie tout son texte.";
+  }
+
   return `Colonne(s) manquante(s) : ${missing.join(", ")}. Colonnes lues dans ton fichier : ${read.join(", ")}.`;
 }
