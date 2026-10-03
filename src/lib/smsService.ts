@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { countSmsSegments } from "@/lib/smsSegments";
 import { getSmsPlanState } from "@/lib/sms/balance";
 import { RECHARGE_ALERT_COUNT, canSpend, tierOf } from "@/lib/sms/ladder";
+import { isSynapseConfigured, synapseSend, type SynapseSite } from "@/lib/sms/synapse";
 
 export type SmsTrigger =
   | "teacher_absence"
@@ -34,7 +35,10 @@ function toInternational(phone: string) {
 }
 
 /**
- * Sends an SMS through "SMS Gateway for Android" (capcom6) running in Cloud
+ * Sends an SMS. When SYNAPSE_SMS_KEY is set, it goes through Synapse SMS (the
+ * owner's shared SMS service, see lib/sms/synapse.ts); `site` picks whose name
+ * it is sent under ("lpk" for texts relayed by /api/bridge). Otherwise it goes
+ * straight to "SMS Gateway for Android" (capcom6) running in Cloud
  * mode on the school's phone — POST https://api.sms-gate.app/3rdparty/v1/messages
  * with HTTP Basic auth (the Username/Password shown in the app's Settings
  * tab), and logs the attempt in `sms_logs`. The physical phone/SIM is
@@ -45,7 +49,10 @@ export async function sendSms(
   phone: string,
   message: string,
   trigger: SmsTrigger = "manual",
+  /** `category`: the motif shown in Synapse SMS when it differs from `trigger` (texts relayed for LPK). */
+  options: { site?: SynapseSite; category?: string } = {},
 ): Promise<SendSmsResult> {
+  const site = options.site ?? "cpk";
   const gatewayUrl = process.env.SMS_GATEWAY_URL || DEFAULT_GATEWAY_URL;
   const username = process.env.SMS_GATEWAY_USERNAME;
   const password = process.env.SMS_GATEWAY_PASSWORD;
@@ -66,7 +73,10 @@ export async function sendSms(
 
   let result: SendSmsResult;
 
-  if (!username || !password) {
+  if (isSynapseConfigured(site)) {
+    const sent = await synapseSend(site, toInternational(phone), message, options.category ?? trigger);
+    result = sent.success ? { success: true } : { success: false, error: sent.error };
+  } else if (!username || !password) {
     result = { success: false, error: "SMS_GATEWAY_USERNAME/PASSWORD is not configured." };
   } else {
     try {
@@ -101,7 +111,7 @@ export async function sendSms(
   return result;
 }
 
-async function logSmsAttempt(
+export async function logSmsAttempt(
   phone: string,
   message: string,
   trigger: SmsTrigger,

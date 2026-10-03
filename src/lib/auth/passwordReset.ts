@@ -1,8 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createPhoneOtp, verifyPhoneOtp, otpMessage } from "@/lib/phoneVerification";
-import { sendSms } from "@/lib/smsService";
+import { createPhoneOtp, sendPhoneOtp, verifyPhoneOtp } from "@/lib/phoneVerification";
 import { sendEmail } from "@/lib/emailService";
 import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
 import { phoneSchema } from "./schemas";
@@ -71,10 +70,10 @@ export async function requestPasswordReset(phone: string): Promise<RequestResetR
     return { success: false, error: "Aucun compte ne correspond à ce numéro." };
   }
 
-  const created = await createPhoneOtp(account.phone, "password_reset", RESET_OPTIONS);
-  if (!created.success) return { success: false, error: created.error };
-
   if (account.email) {
+    const created = await createPhoneOtp(account.phone, "password_reset", RESET_OPTIONS);
+    if (!created.success) return { success: false, error: created.error };
+
     const result = await sendEmail(
       account.email,
       "Réinitialisation de votre mot de passe CPK Learn",
@@ -91,7 +90,8 @@ export async function requestPasswordReset(phone: string): Promise<RequestResetR
     return { success: true, channel: "email", hint: maskEmail(account.email) };
   }
 
-  const sms = await sendSms(account.phone, otpMessage(created.code), "phone_verification");
+  // By SMS, the code goes through sendPhoneOtp (Synapse SMS writes and checks it when configured).
+  const sms = await sendPhoneOtp(account.phone, "password_reset", RESET_OPTIONS);
   if (!sms.success) return { success: false, error: sms.error };
 
   return { success: true, channel: "sms", hint: maskPhone(account.phone) };

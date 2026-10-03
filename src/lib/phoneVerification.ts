@@ -2,7 +2,8 @@ import "server-only";
 import { randomInt, createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteSetting } from "@/lib/admin/data";
-import { sendSms } from "@/lib/smsService";
+import { logSmsAttempt, sendSms } from "@/lib/smsService";
+import { isSynapseConfigured, synapseCheckVerification, synapseStartVerification } from "@/lib/sms/synapse";
 
 export type OtpPurpose = "register" | "update" | "qr_login" | "password_reset" | "admin_login";
 
@@ -25,6 +26,47 @@ function hashCode(code: string) {
   return createHash("sha256").update(code).digest("hex");
 }
 
+// With Synapse SMS, the code is written, texted and checked by Synapse: the
+// row keeps Synapse's verification id in place of the hash, so the cooldown,
+// "one live code at a time" and attempt rules below stay exactly the same.
+const SYNAPSE_PREFIX = "synapse:";
+const APP_NAME = "CPK Learn";
+
+type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>;
+
+/**
+ * Refuses a new code during the resend cooldown, then retires any still-valid
+ * code for this phone+purpose so only the latest one can ever succeed.
+ * Returns an error message, or null when a new code may be issued.
+ */
+async function openOtpSlot(adminClient: AdminClient, phone: string, purpose: OtpPurpose, cooldownSeconds: number) {
+  const cooldownStart = new Date(Date.now() - cooldownSeconds * 1000).toISOString();
+  const { data: recent } = await adminClient
+    .from("phone_otps")
+    .select("id")
+    .eq("phone", phone)
+    .eq("purpose", purpose)
+    .is("consumed_at", null)
+    .gte("created_at", cooldownStart)
+    .maybeSingle();
+
+  if (recent) {
+    const waitLabel =
+      cooldownSeconds % 60 === 0 ? `${cooldownSeconds / 60} minute(s)` : `${cooldownSeconds} secondes`;
+    return `Patiente ${waitLabel} avant de redemander un code.`;
+  }
+
+  // A resend invalidates whatever code was sent before it, so only the
+  // latest one texted to the user can ever succeed.
+  await adminClient
+    .from("phone_otps")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("phone", phone)
+    .eq("purpose", purpose)
+    .is("consumed_at", null);
+  return null;
+}
+
 /**
  * Generates and stores a 6-digit code, replacing any still-valid one for the
  * same phone+purpose, and returns it <b>in clear</b> so the caller can deliver
@@ -43,30 +85,8 @@ export async function createPhoneOtp(
     return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
   }
 
-  const cooldownStart = new Date(Date.now() - cooldownSeconds * 1000).toISOString();
-  const { data: recent } = await adminClient
-    .from("phone_otps")
-    .select("id")
-    .eq("phone", phone)
-    .eq("purpose", purpose)
-    .is("consumed_at", null)
-    .gte("created_at", cooldownStart)
-    .maybeSingle();
-
-  if (recent) {
-    const waitLabel =
-      cooldownSeconds % 60 === 0 ? `${cooldownSeconds / 60} minute(s)` : `${cooldownSeconds} secondes`;
-    return { success: false, error: `Patiente ${waitLabel} avant de redemander un code.` };
-  }
-
-  // A resend invalidates whatever code was sent before it, so only the
-  // latest one texted to the user can ever succeed.
-  await adminClient
-    .from("phone_otps")
-    .update({ consumed_at: new Date().toISOString() })
-    .eq("phone", phone)
-    .eq("purpose", purpose)
-    .is("consumed_at", null);
+  const blocked = await openOtpSlot(adminClient, phone, purpose, cooldownSeconds);
+  if (blocked) return { success: false, error: blocked };
 
   const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
   const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000).toISOString();
@@ -92,11 +112,44 @@ export async function sendPhoneOtp(
   purpose: OtpPurpose,
   options: OtpOptions = {},
 ): Promise<OtpResult> {
+  if (isSynapseConfigured()) return sendPhoneOtpViaSynapse(phone, purpose, options);
+
   const created = await createPhoneOtp(phone, purpose, options);
   if (!created.success) return created;
 
   const sms = await sendSms(phone, otpMessage(created.code), "phone_verification");
   if (!sms.success) return { success: false, error: sms.error };
+
+  return { success: true };
+}
+
+async function sendPhoneOtpViaSynapse(phone: string, purpose: OtpPurpose, options: OtpOptions): Promise<OtpResult> {
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { success: false, error: "Supabase (clé service_role) n'est pas configuré." };
+  }
+
+  const blocked = await openOtpSlot(adminClient, phone, purpose, options.cooldownSeconds ?? DEFAULT_RESEND_COOLDOWN_SECONDS);
+  if (blocked) return { success: false, error: blocked };
+
+  const started = await synapseStartVerification("cpk", phone, APP_NAME);
+  // Logged like any other text: the shared plan balance is computed from sms_logs.
+  await logSmsAttempt(
+    phone,
+    `${APP_NAME} : code de vérification (écrit et envoyé par Synapse SMS)`,
+    "phone_verification",
+    started.success ? { success: true } : { success: false, error: started.error },
+    1,
+  );
+  if (!started.success) return { success: false, error: started.error };
+
+  const { error: insertError } = await adminClient.from("phone_otps").insert({
+    phone,
+    code_hash: `${SYNAPSE_PREFIX}${started.id}`,
+    purpose,
+    expires_at: new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000).toISOString(),
+  });
+  if (insertError) return { success: false, error: insertError.message };
 
   return { success: true };
 }
@@ -176,7 +229,24 @@ export async function verifyPhoneOtp(
     return { success: false, error: "Trop de tentatives. Redemande un code.", attemptsRemaining: 0 };
   }
 
-  if (hashCode(code) !== otp.code_hash) {
+  if (otp.code_hash.startsWith(SYNAPSE_PREFIX)) {
+    const check = await synapseCheckVerification("cpk", otp.code_hash.slice(SYNAPSE_PREFIX.length), code);
+    // Synapse unreachable: not the user's fault, so no attempt is counted.
+    if (!check.ok) return { success: false, error: check.error };
+    if (!check.valid) {
+      const exhausted = check.status === "failed";
+      const attempts = exhausted ? maxAttempts : otp.attempts + 1;
+      await adminClient.from("phone_otps").update({ attempts }).eq("id", otp.id);
+      if (check.status === "expired") {
+        return { success: false, error: "Code expiré. Redemande un code.", attemptsRemaining: 0 };
+      }
+      return {
+        success: false,
+        error: exhausted ? "Trop de tentatives. Redemande un code." : "Code invalide.",
+        attemptsRemaining: Math.max(0, Math.min(maxAttempts - attempts, check.attemptsLeft)),
+      };
+    }
+  } else if (hashCode(code) !== otp.code_hash) {
     const attempts = otp.attempts + 1;
     await adminClient.from("phone_otps").update({ attempts }).eq("id", otp.id);
     return {

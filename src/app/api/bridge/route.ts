@@ -1,7 +1,8 @@
 import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { sendSms } from "@/lib/smsService";
+import { logSmsAttempt, sendSms, type SmsTrigger } from "@/lib/smsService";
+import { isSynapseConfigured, synapseCheckVerification, synapseStartVerification } from "@/lib/sms/synapse";
 import { sendEmail } from "@/lib/emailService";
 import { renderEmail, plainTextToHtml } from "@/lib/emailTemplate";
 import { getSmsPlanState } from "@/lib/sms/balance";
@@ -35,7 +36,15 @@ const bodySchema = z.discriminatedUnion("action", [
     action: z.literal("sms"),
     phone: z.string().min(8).max(20),
     message: z.string().min(1).max(1000),
+    /** Why it is sent (absence, announcement…), shown as the motif in Synapse SMS. */
+    trigger: z
+      .enum(["teacher_absence", "generated_password", "manual", "makeup_session", "announcement", "low_balance_alert"])
+      .optional(),
   }),
+  // Verification codes written, texted and checked by Synapse SMS under LPK's
+  // name; LPK only keeps the verification id.
+  z.object({ action: z.literal("verify-start"), phone: z.string().min(8).max(20) }),
+  z.object({ action: z.literal("verify-check"), id: z.string().min(4).max(64), code: z.string().min(1).max(12) }),
   z.object({
     action: z.literal("email"),
     to: z.string().email(),
@@ -89,8 +98,28 @@ export async function POST(request: Request) {
     });
   }
 
+  if (payload.action === "verify-start") {
+    if (!isSynapseConfigured("lpk")) return NextResponse.json({ success: false, unsupported: true });
+    const started = await synapseStartVerification("lpk", payload.phone, "LPK Learn");
+    // Counted against the shared plan like every other text.
+    await logSmsAttempt(
+      payload.phone,
+      "LPK Learn : code de vérification (écrit et envoyé par Synapse SMS)",
+      "phone_verification",
+      started.success ? { success: true } : { success: false, error: started.error },
+      1,
+    );
+    return NextResponse.json(started);
+  }
+
+  if (payload.action === "verify-check") {
+    return NextResponse.json(await synapseCheckVerification("lpk", payload.id, payload.code));
+  }
+
   if (payload.action === "sms") {
-    const result = await sendSms(payload.phone, payload.message, "manual");
+    // sms_logs only knows CPK's triggers: LPK's announcements are logged as manual texts.
+    const trigger: SmsTrigger = !payload.trigger || payload.trigger === "announcement" ? "manual" : payload.trigger;
+    const result = await sendSms(payload.phone, payload.message, trigger, { site: "lpk", category: payload.trigger });
     return NextResponse.json({
       ...result,
       segments: countSmsSegments(payload.message),
