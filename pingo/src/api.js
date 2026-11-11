@@ -16,5 +16,10 @@ export const api = {
   me: (token) => rpc('pingo_me', { p_token: token }),
   update: (token, name, avatar) => rpc('pingo_update_profile', { p_token: token, p_name: name, p_avatar: avatar }),
   submit: (token, exam, lesson, score, max) => rpc('pingo_submit', { p_token: token, p_exam: exam, p_lesson: lesson, p_score: score, p_max: max }),
+  notifs: (token) => rpc('pingo_notifs', { p_token: token }),
+  notifsRead: (token) => rpc('pingo_notifs_read', { p_token: token }),
+  pushKey: () => rpc('pingo_push_public_key', {}),
+  pushSub: (token, endpoint, p256dh, auth) => rpc('pingo_push_subscribe', { p_token: token, p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth }),
+  pushUnsub: (token, endpoint) => rpc('pingo_push_unsubscribe', { p_token: token, p_endpoint: endpoint }),
   leaderboard: (exam) => rpc('pingo_leaderboard', { p_exam: exam || null, p_limit: 50 })
 };

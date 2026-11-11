@@ -7,6 +7,7 @@ import { useStore, setState, logout, refresh, markSeen } from '../store.js';
 import { api } from '../api.js';
 import { go, back } from '../router.js';
 import { sfx } from '../sfx.js';
+import { PushCard } from './Notifs.jsx';
 
 export const levelInfo = (xp = 0) => ({ level: 1 + Math.floor(xp / 150), into: xp % 150, need: 150 });
 
@@ -74,6 +75,9 @@ export function Home() {
         <button type="button" class="avatar-btn" onClick={() => go('me')} aria-label="Mon profil"><Avatar av={p.avatar} size={46} /></button>
         <div class="hello"><small>{hello},</small><b>{p.name}</b></div>
         <TopStats p={p} />
+        <button type="button" class="bell-btn" onClick={() => go('notifs')} aria-label={`Notifications${s.notifs.unread ? ` (${s.notifs.unread} non lues)` : ''}`}>
+          <Icon name="bell" size={22} />{s.notifs.unread > 0 && <span class="bell-dot">{s.notifs.unread > 9 ? '9+' : s.notifs.unread}</span>}
+        </button>
       </header>
 
       <section class="resume" style={{ '--c': getSubject(last.subject).color, '--cd': getSubject(last.subject).dark }}>
@@ -88,6 +92,9 @@ export function Home() {
       </section>
 
       <InstallCard compact />
+      {Object.keys(s.results).length > 0 && !s.seen['push-dismissed'] && (
+        <PushCard compact onDismiss={() => markSeen('push-dismissed')} />
+      )}
 
       <h3 class="sec-title">Choisis ta matière</h3>
       <div class="subjects">
@@ -311,6 +318,7 @@ export function Profile() {
       </div>
       <div class="menu">
         <button type="button" onClick={() => go('avatar')}><Icon name="user" />Modifier mon avatar et mon nom</button>
+        <button type="button" onClick={() => go('notifs')}><Icon name="bell" />Notifications{s.notifs.unread > 0 && <span class="menu-badge">{s.notifs.unread}</span>}</button>
         <button type="button" onClick={share}><Icon name="share" />{copied ? 'Lien copié !' : 'Inviter mes potes'}</button>
         <button type="button" onClick={() => setState({ sound: !s.sound })}><Icon name={s.sound ? 'sound' : 'mute'} />Son {s.sound ? 'activé' : 'coupé'}</button>
         <button type="button" onClick={() => setState({ seen: {} })}><Icon name="sparkle" />Revoir les conseils de Pingo</button>

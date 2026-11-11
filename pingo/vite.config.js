@@ -7,7 +7,7 @@ export default defineConfig({
     preact(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png', 'push-sw.js'],
       manifest: {
         name: 'Pingo – Révisions',
         short_name: 'Pingo',
@@ -28,7 +28,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        navigateFallback: '/index.html'
+        navigateFallback: '/index.html',
+        importScripts: ['push-sw.js']
       }
     })
   ],

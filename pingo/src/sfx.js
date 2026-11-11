@@ -17,5 +17,6 @@ export const sfx = {
   ok: () => play(() => { tone(784, 0, 0.12, 'triangle'); tone(1175, 0.09, 0.2, 'triangle'); }, 15),
   bad: () => play(() => { tone(220, 0, 0.18, 'sawtooth', 0.06); tone(165, 0.1, 0.25, 'sawtooth', 0.05); }, [30, 40, 30]),
   done: () => play(() => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.11, 0.3, 'triangle', 0.1)), [20, 30, 20]),
+  levelUp: () => play(() => { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.09, 0.35, 'triangle', 0.09)); [784, 1047, 1568].forEach((f) => tone(f, 0.55, 0.9, 'sine', 0.06)); }, [30, 40, 30, 40, 80]),
   combo: () => play(() => [880, 1175, 1568].forEach((f, i) => tone(f, i * 0.06, 0.15, 'square', 0.04)))
 };
