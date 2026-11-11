@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from './api.js';
 
 const KEY = 'pingo:v1';
-const init = { token: null, player: null, rank: null, results: {}, pending: [], sound: true, seen: {}, lastExam: null, levelUp: null };
+const init = { token: null, player: null, rank: null, results: {}, pending: [], sound: true, seen: {}, lastExam: null, levelUp: null, notifs: { items: [], unread: 0, push: true } };
 
 function load() {
   try { return { ...init, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { ...init }; }
@@ -50,6 +50,21 @@ export async function refresh() {
     if (r.error === 'bad_token') return logout();
     if (r.player) setState((s) => ({ player: r.player, rank: r.rank, results: mergeResults(s.results, r.results) }));
   } catch { /* hors ligne */ }
+  refreshNotifs();
+}
+
+export async function refreshNotifs() {
+  if (!state.token) return;
+  try {
+    const r = await api.notifs(state.token);
+    if (r && Array.isArray(r.items)) setState({ notifs: { items: r.items, unread: r.unread, push: r.push } });
+  } catch { /* hors ligne ou pas encore disponible */ }
+}
+
+export async function markNotifsRead() {
+  if (!state.token || !state.notifs.unread) return;
+  setState((s) => ({ notifs: { ...s.notifs, unread: 0 } }));
+  try { await api.notifsRead(state.token); } catch { /* */ }
 }
 
 let flushing = null;
