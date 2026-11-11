@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Pingo : app de révision séparée (Vite + Preact), avec son propre outillage.
+    "pingo/**",
   ]),
 ]);
 
