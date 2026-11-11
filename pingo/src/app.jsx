@@ -5,6 +5,7 @@ import { Welcome, Signup, Login } from './screens/Auth.jsx';
 import { Home, Exams, Path, Leaderboard, Profile, AvatarEdit, BottomNav } from './screens/Main.jsx';
 import { Lesson } from './screens/Lesson.jsx';
 import { Viewer3D } from './screens/Viewer3D.jsx';
+import { LevelUp } from './components/LevelUp.jsx';
 
 export function App() {
   const s = useStore();
@@ -42,6 +43,7 @@ export function App() {
     <>
       <div class="screen-wrap" key={key}>{screen}</div>
       {nav && <BottomNav active={a} />}
+      <LevelUp />
     </>
   );
 }

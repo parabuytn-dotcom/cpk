@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from './api.js';
 
 const KEY = 'pingo:v1';
-const init = { token: null, player: null, rank: null, results: {}, pending: [], sound: true, seen: {}, lastExam: null };
+const init = { token: null, player: null, rank: null, results: {}, pending: [], sound: true, seen: {}, lastExam: null, levelUp: null };
 
 function load() {
   try { return { ...init, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { ...init }; }
@@ -62,7 +62,12 @@ export function flush() {
       try {
         const r = await api.submit(state.token, p.exam, p.lesson, p.score, p.max);
         if (r.error === 'bad_token') { logout(); return { gain: 0, synced: false }; }
-        if (r.player) { gain += r.gain; setState((s) => ({ player: r.player, rank: r.rank, pending: s.pending.slice(1) })); }
+        if (r.player) {
+          gain += r.gain;
+          const before = state.player && state.player.level ? state.player.level : r.player.level;
+          const up = r.player.level > before ? { levelUp: { from: before, to: r.player.level } } : {};
+          setState((s) => ({ player: r.player, rank: r.rank, pending: s.pending.slice(1), ...up }));
+        }
         else setState((s) => ({ pending: s.pending.slice(1) }));
       } catch { synced = false; break; }
     }

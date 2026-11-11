@@ -527,3 +527,31 @@ a { color: var(--primary); font-weight: 800; }
 @media (min-width: 700px) {
   .subjects { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* passage de niveau */
+.lvl-back { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at 50% 40%, rgba(255, 197, 49, .35), rgba(8, 14, 36, .78) 60%); animation: fadeIn .3s; }
+.lvl { position: relative; width: min(360px, 100%); display: grid; justify-items: center; gap: 10px; text-align: center; background: var(--surface); border-radius: 32px; padding: 26px 20px 20px; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .7), 0 0 0 4px var(--gold); animation: lvlIn .6s cubic-bezier(.2, 1.3, .4, 1); }
+@keyframes lvlIn { from { opacity: 0; transform: scale(.6) translateY(40px); } to { opacity: 1; transform: none; } }
+.lvl h2 { font-size: 1.7rem; color: var(--gold-d); }
+.lvl-stage { position: relative; width: 150px; height: 150px; display: grid; place-items: center; margin-top: -78px; }
+.lvl-rays { position: absolute; inset: -40px; border-radius: 50%; background: repeating-conic-gradient(from 0deg, rgba(255, 197, 49, .55) 0deg 10deg, transparent 10deg 30deg); mask: radial-gradient(circle, #000 35%, transparent 70%); -webkit-mask: radial-gradient(circle, #000 35%, transparent 70%); animation: spinSlow 7s linear infinite; }
+.lvl-badge { position: relative; width: 132px; height: 132px; border-radius: 50%; display: grid; place-content: center; color: #5A3E00; background: radial-gradient(circle at 35% 30%, #FFF1B8, var(--gold) 45%, var(--gold-d)); box-shadow: 0 8px 0 #B88600, inset 0 -8px 0 rgba(0, 0, 0, .12), 0 0 40px rgba(255, 197, 49, .8); animation: badgePop 1.6s cubic-bezier(.2, 1.4, .4, 1) both; overflow: hidden; }
+.lvl-badge::after { content: ''; position: absolute; top: -40%; left: -60%; width: 40%; height: 180%; background: rgba(255, 255, 255, .55); transform: rotate(25deg); animation: shine 2.4s ease-in-out .8s infinite; }
+@keyframes shine { 0% { left: -60%; } 40%, 100% { left: 130%; } }
+@keyframes badgePop { 0% { transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.15) rotate(6deg); } 100% { transform: none; } }
+.lvl-badge small { font-weight: 900; letter-spacing: .14em; font-size: .72rem; }
+.lvl-num { display: block; font-family: var(--f-display); font-weight: 700; font-size: 3.6rem; line-height: 1; animation: numUp .5s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes numUp { from { opacity: 0; transform: translateY(60%) scale(.6); } to { opacity: 1; transform: none; } }
+.lvl-spark { position: absolute; width: 14px; height: 14px; background: var(--gold); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: spark 1.8s ease-in-out infinite; }
+.lvl-spark.s0 { top: 4px; left: 10px; } .lvl-spark.s1 { top: 20px; right: 0; animation-delay: .3s; } .lvl-spark.s2 { bottom: 10px; left: -6px; animation-delay: .6s; }
+.lvl-spark.s3 { bottom: 0; right: 14px; animation-delay: .9s; } .lvl-spark.s4 { top: 60px; left: -18px; animation-delay: 1.2s; } .lvl-spark.s5 { top: 70px; right: -16px; animation-delay: 1.5s; }
+@keyframes spark { 0%, 100% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1.3) rotate(90deg); opacity: 1; } }
+.lvl-unlock { width: 100%; display: grid; gap: 8px; background: var(--surface-2); border: 2px dashed var(--gold); border-radius: 20px; padding: 12px; }
+.lvl-eyebrow { font-weight: 900; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-d); }
+.lvl-items { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.lvl-item { display: grid; justify-items: center; gap: 4px; animation: pop .5s .9s backwards; }
+.lvl-item small { font-weight: 800; }
+.lvl-back { overflow-y: auto; padding: calc(env(safe-area-inset-top, 0px) + 80px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px); }
+.lvl-stage { width: 128px; height: 128px; margin-top: -70px; }
+.lvl-badge { width: 116px; height: 116px; }
+@media (max-height: 760px) { .lvl > .pg { display: none; } .lvl { gap: 8px; } }
