@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from './api.js';
 
 const KEY = 'pingo:v1';
-const init = { token: null, player: null, rank: null, results: {}, pending: [], sound: true, seen: {}, lastExam: null, levelUp: null, notifs: { items: [], unread: 0, push: true } };
+const init = { token: null, player: null, rank: null, results: {}, pending: [], sound: true, seen: {}, lastExam: null, levelUp: null, unreadMsgs: 0, notifs: { items: [], unread: 0, push: true } };
 
 function load() {
   try { return { ...init, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { ...init }; }
@@ -103,3 +103,11 @@ export function recordResult(exam, lesson, score, max) {
 }
 
 export function markSeen(id) { setState((s) => ({ seen: { ...s.seen, [id]: true } })); }
+
+export async function ping() {
+  if (!state.token || document.visibilityState !== 'visible') return;
+  try {
+    const r = await api.ping(state.token);
+    if (r && typeof r.unread_msgs === 'number' && r.unread_msgs !== state.unreadMsgs) setState({ unreadMsgs: r.unread_msgs });
+  } catch { /* hors ligne */ }
+}
