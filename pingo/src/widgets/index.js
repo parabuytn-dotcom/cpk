@@ -2,17 +2,17 @@
 const root = document.documentElement;
 const rand = (a, b) => a + Math.random() * (b - a);
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const $ = (s, el) => el.querySelector(s);
-const $$ = (s, el) => [...el.querySelectorAll(s)];
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const $ = (s, el) => el.querySelector(s);
+export const $$ = (s, el) => [...el.querySelectorAll(s)];
+export const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let cache = {};
-const C = (n) => cache[n] || (cache[n] = getComputedStyle(root).getPropertyValue('--' + n).trim() || '#888');
+export const C = (n) => cache[n] || (cache[n] = getComputedStyle(root).getPropertyValue('--' + n).trim() || '#888');
 const redraws = new Set();
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { cache = {}; redraws.forEach((f) => f()); }); } catch { /* */ }
 
 /* ---------- canvas sim helper ---------- */
-function sim(canvas, W, H, api) {
+export function sim(canvas, W, H, api) {
   const ctx = canvas.getContext('2d');
   let scale = 1, vis = false, last = 0, t = 0, alive = true;
   canvas.style.aspectRatio = W + '/' + H;
@@ -24,7 +24,7 @@ function sim(canvas, W, H, api) {
   redraws.add(draw);
   return () => { alive = false; ro.disconnect(); io.disconnect(); redraws.delete(draw); };
 }
-function label(ctx, txt, x, y, color, align) {
+export function label(ctx, txt, x, y, color, align) {
   ctx.font = '800 15px "Nunito Variable", system-ui, sans-serif'; ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(txt).width; const x0 = align === 'center' ? x - w / 2 : (align === 'right' ? x - w : x);
   ctx.fillStyle = C('card'); ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0 - 5, y - 11, w + 10, 22, 8) : ctx.rect(x0 - 5, y - 11, w + 10, 22); ctx.fill(); ctx.globalAlpha = 1;
@@ -32,7 +32,7 @@ function label(ctx, txt, x, y, color, align) {
 }
 function arrow(ctx, x1, y1, x2, y2, color) { ctx.strokeStyle = color || C('ink-soft'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.fillStyle = color || C('ink-soft'); ctx.beginPath(); ctx.arc(x2, y2, 3, 0, 7); ctx.fill(); }
 
-function frame(el, html) { el.innerHTML = `<div class="w">${html}</div>`; return el.firstChild; }
+export function frame(el, html) { el.innerHTML = `<div class="w">${html}</div>`; return el.firstChild; }
 
 /* ---------- les 4 groupes ---------- */
 function groups(el) {
@@ -228,7 +228,7 @@ function moisissure(el) {
 }
 
 /* ---------- stepper (étapes animées) ---------- */
-function stepper(el, vb, frames) {
+export function stepper(el, vb, frames) {
   const w = frame(el, `<svg class="w-svg" viewBox="${vb}"></svg><p class="w-cap"></p><div class="w-row"><button type="button" class="w-btn" data-a="prev" aria-label="Étape précédente">‹</button><div class="w-dots">${frames.map(() => '<span></span>').join('')}</div><button type="button" class="w-btn primary" data-a="next">Étape suivante</button></div>`);
   const svg = $('svg', w), cap = $('.w-cap', w), dots = $$('.w-dots span', w); let i = 0;
   function show(k) { i = (k + frames.length) % frames.length; svg.innerHTML = frames[i].svg; svg.classList.remove('w-fade'); void svg.getBoundingClientRect(); svg.classList.add('w-fade'); cap.innerHTML = frames[i].cap; dots.forEach((d, j) => d.classList.toggle('on', j === i)); }
@@ -237,7 +237,7 @@ function stepper(el, vb, frames) {
   return () => {};
 }
 const dbl = (shapes, cls) => shapes.map((s) => s.replace('CLS', cls || 'st-line')).join('') + shapes.map((s) => s.replace('CLS', 'st-fill')).join('');
-const T = (x, y, t, c) => `<text class="${c || 'w-t'}" x="${x}" y="${y}" text-anchor="middle">${t}</text>`;
+export const T = (x, y, t, c) => `<text class="${c || 'w-t'}" x="${x}" y="${y}" text-anchor="middle">${t}</text>`;
 
 function levure(el) {
   const y = (mother, bud, nuclei, extra) => { const sh = [`<circle class="CLS" cx="${mother[0]}" cy="${mother[1]}" r="${mother[2]}"/>`]; if (bud) sh.push(`<circle class="CLS" cx="${bud[0]}" cy="${bud[1]}" r="${bud[2]}"/>`); return dbl(sh, 'wall-line') + nuclei.map((n) => `<ellipse fill="var(--nuc)" cx="${n[0]}" cy="${n[1]}" rx="${n[2]}" ry="${n[3]}" ${n[4] ? `transform="rotate(${n[4]} ${n[0]} ${n[1]})"` : ''}/>`).join('') + (extra || ''); };

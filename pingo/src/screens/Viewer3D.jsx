@@ -63,9 +63,9 @@ export function Viewer3D({ model = 'virus', onClose, lockModel = false }) {
           <button type="button" class={'v-tool' + (auto ? ' on' : '')} onClick={() => toggle('auto')}><Icon name="spin" /><span>Rotation</span></button>
           <button type="button" class="v-tool" onClick={() => { sfx.tap(); api.current && api.current.reset(); }}><Icon name="target" /><span>Recentrer</span></button>
         </div>
-        {!lockModel && (
+        {(
           <div class="v-models">
-            {MODELS.map((m) => <button type="button" class={'v-model' + (m.id === cur ? ' on' : '')} onClick={() => pick(m.id)}>{m.name}</button>)}
+            {MODELS.filter((m) => !lockModel || m.group === meta.group).map((m) => <button type="button" class={'v-model' + (m.id === cur ? ' on' : '')} onClick={() => pick(m.id)}>{m.name}</button>)}
           </div>
         )}
       </div>

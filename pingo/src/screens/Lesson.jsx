@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Btn, Bar, Icon, Sheet, Stars, starsFor, confetti } from '../components/ui.jsx';
 import { Pingo, Penguin } from '../components/Penguin.jsx';
-import { widgets } from '../widgets/index.js';
+import { allWidgets as widgets } from '../widgets/all.js';
 import { getExam, findLesson, lessonSteps, lessonStates } from '../content/catalog.js';
 import { recordResult, useStore, markSeen } from '../store.js';
 import { go, back } from '../router.js';
@@ -9,7 +9,10 @@ import { sfx } from '../sfx.js';
 import { Viewer3D } from './Viewer3D.jsx';
 import { MODELS } from '../three/meta.js';
 
-const SCORED = ['qcm', 'tf', 'order', 'pairs', 'sort', 'labels'];
+const SCORED = ['qcm', 'tf', 'order', 'pairs', 'sort', 'labels', 'calc'];
+const SUP = (n) => String(n).replace(/-/g, '⁻').replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+export const fmtSci = ([m, e]) => (e >= -2 && e <= 3 ? String(+(m * 10 ** e).toPrecision(6)) : `${m} × 10${SUP(e)}`).replace('.', ',');
+const calcValue = (v) => { if (!v) return NaN; const m = parseFloat(String(v.m).replace(',', '.').replace(/\s/g, '')); const e = parseInt(v.e || '0', 10) || 0; return m * 10 ** (v.neg ? -e : e); };
 const AUTO = ['pairs', 'sort', 'labels'];
 const PRAISE = ['Bravo !', 'Parfait !', 'Excellent !', 'Trop fort !', 'Exact !', 'Bien joué !'];
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -87,6 +90,29 @@ function Order({ step, value, setValue, fb }) {
       </div>
       {!fb && <div class="pool">{pool.filter((x) => !chosen.includes(x)).map((x) => <button type="button" class="chip-btn" onClick={() => { sfx.tap(); setValue([...chosen, x]); }}>{x}</button>)}</div>}
       {fb && !fb.ok && <ol class="correct-list">{step.items.map((x) => <li>{x}</li>)}</ol>}
+    </div>
+  );
+}
+
+function Calc({ step, value, setValue, fb }) {
+  const v = value || { m: '', e: '', neg: false };
+  const set = (k, x) => setValue({ ...v, [k]: x });
+  return (
+    <div class="step">
+      <span class="step-kind">Calcule</span>
+      <h2 class="step-title">{step.q}</h2>
+      {step.hint && !fb && <p class="note">Indice : {step.hint}</p>}
+      <div class={'calc' + (fb ? (fb.ok ? ' good' : ' badc') : '')}>
+        <input class="calc-m" inputMode="decimal" placeholder="4" value={v.m} disabled={!!fb} onInput={(e) => set('m', e.currentTarget.value.replace(/[^0-9.,]/g, ''))} aria-label="Nombre" />
+        <span class="calc-x">× 10</span>
+        <span class="calc-exp">
+          <button type="button" class={'calc-sign' + (v.neg ? ' on' : '')} disabled={!!fb} onClick={() => { sfx.tap(); set('neg', !v.neg); }} aria-label={v.neg ? 'Exposant négatif' : 'Exposant positif'}>{v.neg ? '−' : '+'}</button>
+          <input class="calc-e" inputMode="numeric" placeholder="0" value={v.e} disabled={!!fb} onInput={(e) => set('e', e.currentTarget.value.replace(/\D/g, '').slice(0, 2))} aria-label="Exposant" />
+        </span>
+        <span class="calc-unit">{step.unit}</span>
+      </div>
+      {!fb && <p class="muted small">Ex : 4 × 10¹³ → tape 4 puis 13. Pour 0,25 → tape 0,25 et laisse 0. Le bouton ± change le signe de l'exposant.</p>}
+      {fb && <div class="correction"><b>Correction</b>{step.steps.map((l) => <p>{l}</p>)}</div>}
     </div>
   );
 }
@@ -206,6 +232,7 @@ export function Lesson({ examId, lessonId }) {
   const check = () => {
     if (step.t === 'qcm') return feedback(value === step.a[0]);
     if (step.t === 'tf') return feedback(value === step.ok);
+    if (step.t === 'calc') { const x = calcValue(value), a = step.a[0] * 10 ** step.a[1]; return feedback(Math.abs(x - a) <= Math.abs(a) * 0.02); }
     if (step.t === 'order') return feedback(value && value.every((x, i) => x === step.items[i]) && value.length === step.items.length);
   };
   const finish = () => {
@@ -223,7 +250,7 @@ export function Lesson({ examId, lessonId }) {
 
   if (res) return <div class="lesson"><Results res={res} lesson={lesson} onAgain={again} onExit={exit} /></div>;
 
-  const ready = step.t === 'qcm' || step.t === 'tf' ? value !== null : step.t === 'order' ? value && value.length === step.items.length : false;
+  const ready = step.t === 'calc' ? !Number.isNaN(calcValue(value)) : step.t === 'qcm' || step.t === 'tf' ? value !== null : step.t === 'order' ? value && value.length === step.items.length : false;
   let body;
   const common = { step, value, setValue, fb, onComplete: feedback, openModel: setViewer };
   if (step.t === 'learn' || step.t === 'model') body = <Learn {...common} />;
@@ -233,6 +260,7 @@ export function Lesson({ examId, lessonId }) {
   else if (step.t === 'pairs') body = <Pairs {...common} />;
   else if (step.t === 'sort') body = <Sort {...common} />;
   else if (step.t === 'labels') body = <Labels {...common} />;
+  else if (step.t === 'calc') body = <Calc {...common} />;
 
   return (
     <div class="lesson">
@@ -251,6 +279,7 @@ export function Lesson({ examId, lessonId }) {
               <b>{fb.ok ? fb.praise : 'Pas tout à fait…'}</b>
               {!fb.ok && step.t === 'qcm' && <p>Bonne réponse : <b>{step.a[0]}</b></p>}
               {!fb.ok && step.t === 'tf' && <p>C'était <b>{step.ok ? 'VRAI' : 'FAUX'}</b>.</p>}
+              {!fb.ok && step.t === 'calc' && <p>Bonne réponse : <b>{fmtSci(step.a)} {step.unit}</b></p>}
               {step.e && <p>{step.e}</p>}
               {!fb.ok && !auto && !step.retry && <p class="small">Cette question reviendra à la fin.</p>}
             </div>

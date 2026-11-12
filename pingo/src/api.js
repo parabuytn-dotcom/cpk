@@ -10,7 +10,18 @@ async function rpc(fn, args) {
   return res.json();
 }
 
+async function fn(name, body) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
 export const api = {
+  photo: (token, image) => fn('pingo-photo', { token, image }),
+  photoRemove: (token) => fn('pingo-photo', { token, remove: true }),
   register: (name, phone, pin, avatar) => rpc('pingo_register', { p_name: name, p_phone: phone, p_pin: pin, p_avatar: avatar }),
   login: (phone, pin) => rpc('pingo_login', { p_phone: phone, p_pin: pin }),
   me: (token) => rpc('pingo_me', { p_token: token }),

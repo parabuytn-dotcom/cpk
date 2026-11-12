@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { useStore, setState } from '../store.js';
 import { go } from '../router.js';
 import { sfx } from '../sfx.js';
-import { Btn, confetti } from './ui.jsx';
+import { Btn, Icon, confetti } from './ui.jsx';
 import { Penguin } from './Penguin.jsx';
 import { Avatar, ACCS } from './Avatar.jsx';
 
@@ -23,6 +23,7 @@ export function LevelUp() {
 
   if (!lu || !show) return null;
   const unlocked = ACCS.filter(([, , lv]) => lv > lu.from && lv <= lu.to);
+  const photo = lu.from < 10 && lu.to >= 10;
   const close = () => { setShow(false); setState({ levelUp: null }); };
 
   return (
@@ -39,18 +40,19 @@ export function LevelUp() {
         <Penguin mood="happy" size={96} class="jump" />
         <h2>Niveau supérieur !</h2>
         <p class="muted">Tu passes du niveau {lu.from} au niveau {lu.to}. Continue comme ça, tu grimpes dans le classement !</p>
-        {unlocked.length > 0 && (
+        {(unlocked.length > 0 || photo) && (
           <div class="lvl-unlock">
             <span class="lvl-eyebrow">Nouveau pour ton avatar</span>
             <div class="lvl-items">
               {unlocked.map(([k, n]) => (
                 <div class="lvl-item"><Avatar av={{ ...((s.player && s.player.avatar) || {}), x: k }} size={66} /><small>{n}</small></div>
               ))}
+              {photo && <div class="lvl-item"><span class="lvl-photo"><Icon name="camera" size={30} /></span><small>Photo de profil</small></div>}
             </div>
           </div>
         )}
         <Btn kind="gold" class="wide" onClick={close}>Trop bien !</Btn>
-        {unlocked.length > 0 && <Btn kind="ghost" class="wide" onClick={() => { close(); go('avatar'); }}>Essayer sur mon avatar</Btn>}
+        {(unlocked.length > 0 || photo) && <Btn kind="ghost" class="wide" onClick={() => { close(); go('avatar'); }}>Essayer sur mon avatar</Btn>}
       </div>
     </div>
   );
