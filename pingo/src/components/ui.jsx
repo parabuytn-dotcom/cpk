@@ -35,6 +35,7 @@ const P = {
   target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
   micro: '<path d="M6 21h12M9 17h6M10 3h4l-1 9h-2zM12 12a5 5 0 0 0 5 5"/>',
   shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
   bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   sparkle: '<path fill="currentColor" stroke="none" d="M12 2l2 7 7 3-7 3-2 7-2-7-7-3 7-3z"/>'
 };

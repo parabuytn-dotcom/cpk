@@ -8,6 +8,7 @@ import { api } from '../api.js';
 import { go, back } from '../router.js';
 import { sfx } from '../sfx.js';
 import { PushCard } from './Notifs.jsx';
+import { PhotoCard } from '../components/PhotoCard.jsx';
 
 export const levelInfo = (xp = 0) => ({ level: 1 + Math.floor(xp / 150), into: xp % 150, need: 150 });
 
@@ -113,7 +114,7 @@ export function Home() {
 
       <button type="button" class="lab-banner" onClick={() => go('3d/virus')}>
         <span class="lab-orb"><Icon name="cube" size={34} stroke={1.8} /></span>
-        <span><b>Labo 3D</b><small>Virus, bactérie, levure, paramécie en 3D</small></span>
+        <span><b>Labo 3D</b><small>Microbes, molécules, états de la matière</small></span>
         <Icon name="play" />
       </button>
 
@@ -209,7 +210,7 @@ export function Path({ examId }) {
         </section>
       ))}
       <div class="path-end"><Penguin mood="happy" size={90} /><p>Termine le grand défi pour être prêt(e) le jour J !</p></div>
-      <button type="button" class="fab" onClick={() => go('3d/virus')} aria-label="Labo 3D"><Icon name="cube" size={26} /></button>
+      <button type="button" class="fab" onClick={() => go('3d/' + (exam.data.lab || 'virus'))} aria-label="Labo 3D"><Icon name="cube" size={26} /></button>
       <Sheet open={!!sel} onClose={() => setOpen(null)}>
         {sel && (
           <div class="lesson-sheet" style={{ '--c': sel.unit.color, '--cd': sel.unit.dark }}>
@@ -338,7 +339,7 @@ export function Profile() {
 
 export function AvatarEdit() {
   const s = useStore(); const p = s.player || {};
-  const [av, setAv] = useState({ ...DEFAULT_AVATAR, ...(p.avatar || {}) });
+  const [av, setAv] = useState(() => { const a = { ...DEFAULT_AVATAR, ...(p.avatar || {}) }; delete a.photo; return a; });
   const [name, setName] = useState(p.name || '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -355,6 +356,7 @@ export function AvatarEdit() {
     <div class="screen">
       <header class="page-head"><button type="button" class="icon-btn" onClick={() => back('me')} aria-label="Retour"><Icon name="back" /></button><h1>Mon avatar</h1><span class="icon-btn ghost" /></header>
       <input class="field center" value={name} maxLength={24} onInput={(e) => setName(e.currentTarget.value)} aria-label="Ton prénom" />
+      <PhotoCard />
       <AvatarBuilder value={av} onChange={setAv} level={levelInfo(p.xp).level} />
       <p class="muted center small">Gagne des niveaux pour débloquer de nouveaux accessoires !</p>
       {err && <p class="err">{err}</p>}

@@ -156,7 +156,115 @@ function paramecie() {
   };
 }
 
-const BUILDERS = { virus, bacille, levure, paramecie };
+/* ---------------- chimie : molécules et états ---------------- */
+function atom(r, mat) { return new THREE.Mesh(new THREE.SphereGeometry(r, 48, 32), mat); }
+function bond(a, b, r, mat) {
+  const d = b.clone().sub(a), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 20), mat);
+  m.position.copy(a.clone().add(b).multiplyScalar(0.5)); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); return m;
+}
+
+function eau() {
+  const g = new THREE.Group();
+  const oMat = phys('#FF4D4D', { roughness: 0.3, clearcoat: 1 }), hMat = phys('#F4F7FF', { roughness: 0.3, clearcoat: 1 }), bMat = phys('#B8C0D8');
+  const O = V(0, 0.2, 0);
+  g.scale.setScalar(0.8);
+  g.add(atom(0.62, oMat).translateY(0.2));
+  const hs = [-1, 1].map((sx) => { const h = atom(0.38, hMat); g.add(h); return { h, sx }; });
+  const bonds = [];
+  const place = (t) => {
+    const half = (52.25 + Math.sin(t * 3) * 4) * Math.PI / 180;
+    bonds.forEach((b) => { g.remove(b); b.geometry.dispose(); }); bonds.length = 0;
+    hs.forEach(({ h, sx }) => { const p = O.clone().add(V(sx * Math.sin(half), -Math.cos(half), 0).multiplyScalar(0.98)); h.position.copy(p); const b = bond(O, p, 0.1, bMat); g.add(b); bonds.push(b); });
+  };
+  place(0);
+  return {
+    group: g,
+    parts: [
+      { id: 'o', label: "Atome d'oxygène", color: '#FF4D4D', anchor: V(0, 0.85, 0.2), surface: true, mats: [oMat], info: "Le gros atome rouge : l'oxygène (O). La molécule d'eau H₂O en contient un." },
+      { id: 'h', label: "Atomes d'hydrogène", color: '#9AA8D6', anchor: V(-0.95, -0.55, 0.2), surface: true, mats: [hMat], info: "Les deux petits atomes blancs : l'hydrogène (H). D'où le « H₂ » de H₂O." },
+      { id: 'l', label: 'Liaisons', color: '#B8C0D8', anchor: V(0.35, -0.12, 0.1), surface: false, mats: [bMat], info: 'Elles relient les atomes entre eux. Toute la molécule mesure environ 3 Å (3 × 10⁻¹⁰ m).' }
+    ],
+    update(t) { place(t); }
+  };
+}
+
+function co2() {
+  const g = new THREE.Group();
+  const cMat = phys('#3A3F4B', { roughness: 0.3, clearcoat: 1 }), oMat = phys('#FF4D4D', { roughness: 0.3, clearcoat: 1 }), bMat = phys('#B8C0D8');
+  g.scale.setScalar(0.85);
+  g.add(atom(0.5, cMat));
+  for (const sx of [-1, 1]) {
+    const o = atom(0.55, oMat); o.position.x = sx * 1.25; g.add(o);
+    for (const dy of [-0.1, 0.1]) g.add(bond(V(0, dy, 0), V(sx * 1.25, dy, 0), 0.06, bMat));
+  }
+  return {
+    group: g,
+    parts: [
+      { id: 'c', label: 'Atome de carbone', color: '#6B7280', anchor: V(0, 0.55, 0.2), surface: true, mats: [cMat], info: 'Le carbone (C) est au centre. Piège du cours : CO₂ contient du carbone mais il est classé inorganique.' },
+      { id: 'o', label: "Atomes d'oxygène", color: '#FF4D4D', anchor: V(1.25, 0.6, 0.2), surface: true, mats: [oMat], info: "Deux atomes d'oxygène (O), un de chaque côté : CO₂." },
+      { id: 'l', label: 'Doubles liaisons', color: '#B8C0D8', anchor: V(-0.62, 0.1, 0.1), surface: false, mats: [bMat], info: "Chaque oxygène est relié au carbone par une double liaison. La molécule est en ligne droite." }
+    ],
+    update(t) { g.children.forEach((c, i) => { if (i) c.position.z = Math.sin(t * 2 + i) * 0.015; }); }
+  };
+}
+
+function diatomiques() {
+  const g = new THREE.Group();
+  const hMat = phys('#F4F7FF', { roughness: 0.3, clearcoat: 1 }), clMat = phys('#3DDC84', { roughness: 0.3, clearcoat: 1 }), bMat = phys('#B8C0D8');
+  const h2 = new THREE.Group(); h2.position.y = 1.05; g.add(h2);
+  for (const sx of [-1, 1]) { const a = atom(0.3, hMat); a.position.x = sx * 0.23; h2.add(a); }
+  h2.add(bond(V(-0.23, 0, 0), V(0.23, 0, 0), 0.08, bMat));
+  const cl2 = new THREE.Group(); cl2.position.y = -0.55; g.add(cl2);
+  for (const sx of [-1, 1]) { const a = atom(0.72, clMat); a.position.x = sx * 0.55; cl2.add(a); }
+  return {
+    group: g,
+    parts: [
+      { id: 'h2', label: 'Dihydrogène H₂', color: '#9AA8D6', anchor: V(0, 1.45, 0.2), surface: true, mats: [hMat], info: 'Deux atomes d\'hydrogène. Longueur ℓ ≈ 0,75 Å : il en faut 1,64 × 10⁸ bout à bout pour 1,23 cm !' },
+      { id: 'cl2', label: 'Dichlore Cl₂', color: '#3DDC84', anchor: V(0, 0.2, 0.3), surface: true, mats: [clMat], info: 'Deux atomes de chlore. Longueur ℓ ≈ 2 Å = 2 × 10⁻¹⁰ m.' }
+    ],
+    update(t) { h2.rotation.y = t * 0.6; cl2.rotation.y = -t * 0.4; }
+  };
+}
+
+function etats() {
+  const g = new THREE.Group(), S = 1.3, R = 0.085;
+  g.scale.setScalar(0.72);
+  const sphere = new THREE.SphereGeometry(R, 14, 10), m4 = new THREE.Matrix4();
+  const mk = (pos, color, n) => {
+    const box = new THREE.Group(); box.position.copy(pos); g.add(box);
+    const lineMat = new THREE.LineBasicMaterial({ color: '#9AA8D6' });
+    box.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(S, S, S)), lineMat));
+    const mat = phys(color, { roughness: 0.3, clearcoat: 1 });
+    const inst = new THREE.InstancedMesh(sphere, mat, n); box.add(inst);
+    return { box, inst, mat };
+  };
+  const sol = mk(V(-0.95, 1.2, 0), '#4B4BD6', 64), liq = mk(V(0.95, 0, 0), '#2F6BFF', 48), gaz = mk(V(-0.95, -1.2, 0), '#3FA9FF', 14);
+  const lat = []; for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) lat.push(V(-0.39 + i * 0.26, -0.39 + j * 0.26, -0.39 + k * 0.26));
+  const liqBase = Array.from({ length: 48 }, () => V(rnd(-0.5, 0.5), rnd(-0.55, 0.05), rnd(-0.5, 0.5)));
+  const gas = Array.from({ length: 14 }, () => ({ p: V(rnd(-0.5, 0.5), rnd(-0.5, 0.5), rnd(-0.5, 0.5)), v: V(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize().multiplyScalar(0.9) }));
+  let last = 0;
+  return {
+    group: g,
+    parts: [
+      { id: 'sol', label: 'Solide', color: '#4B4BD6', anchor: V(-0.95, 1.95, 0), surface: false, mats: [sol.mat], info: 'Structure condensée et ordonnée : les molécules sont serrées et bien rangées. Elles vibrent sur place.' },
+      { id: 'liq', label: 'Liquide', color: '#2F6BFF', anchor: V(0.95, 0.75, 0), surface: false, mats: [liq.mat], info: 'Structure condensée et désordonnée : serrées, mais sans ordre. Elles glissent les unes sur les autres.' },
+      { id: 'gaz', label: 'Gaz', color: '#3FA9FF', anchor: V(-0.95, -0.45, 0), surface: false, mats: [gaz.mat], info: 'Structure non condensée et désordonnée : les molécules sont éloignées et bougent dans tous les sens.' }
+    ],
+    update(t) {
+      const dt = Math.min(0.05, t - last); last = t;
+      lat.forEach((p, i) => { m4.makeTranslation(p.x + Math.sin(t * 9 + i) * 0.012, p.y + Math.cos(t * 11 + i * 2) * 0.012, p.z + Math.sin(t * 7 + i * 3) * 0.012); sol.inst.setMatrixAt(i, m4); });
+      liqBase.forEach((p, i) => { m4.makeTranslation(p.x + Math.sin(t * 1.3 + i) * 0.07, p.y + Math.sin(t * 1.7 + i * 2) * 0.03, p.z + Math.cos(t * 1.1 + i * 3) * 0.07); liq.inst.setMatrixAt(i, m4); });
+      gas.forEach((o, i) => {
+        o.p.addScaledVector(o.v, dt);
+        for (const k of ['x', 'y', 'z']) if (Math.abs(o.p[k]) > S / 2 - R) { o.p[k] = Math.sign(o.p[k]) * (S / 2 - R); o.v[k] *= -1; }
+        m4.makeTranslation(o.p.x, o.p.y, o.p.z); gaz.inst.setMatrixAt(i, m4);
+      });
+      sol.inst.instanceMatrix.needsUpdate = liq.inst.instanceMatrix.needsUpdate = gaz.inst.instanceMatrix.needsUpdate = true;
+    }
+  };
+}
+
+const BUILDERS = { virus, bacille, levure, paramecie, eau, co2, diatomiques, etats };
 
 /* ---------------- viewer ---------------- */
 export function createViewer(container, { onSelect } = {}) {

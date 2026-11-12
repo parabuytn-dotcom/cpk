@@ -68,6 +68,7 @@ export function avatarSVG(av) {
 }
 
 export function Avatar({ av, size = 48, class: cls = '' }) {
+  if (av && av.photo) return <img class={'avatar photo ' + cls} src={av.photo} width={size} height={size} style={{ width: size + 'px', height: size + 'px' }} alt="" loading="lazy" decoding="async" />;
   return <svg class={'avatar ' + cls} width={size} height={size} viewBox="0 0 120 120" aria-hidden="true" dangerouslySetInnerHTML={{ __html: avatarSVG(av) }} />;
 }
 
@@ -75,7 +76,7 @@ const TABS = [['s', 'Perso'], ['c', 'Couleur'], ['e', 'Yeux'], ['m', 'Bouche'], 
 
 export function AvatarBuilder({ value, onChange, level = 1 }) {
   const [tab, setTab] = useState('s');
-  const av = { ...DEFAULT_AVATAR, ...value };
+  const av = { ...DEFAULT_AVATAR, ...value, photo: undefined };
   const set = (k, v) => { sfx.tap(); onChange({ ...av, [k]: v }); };
   let opts = [];
   if (tab === 's') opts = SPECIES.map(([k, n]) => ({ v: k, n, prev: { ...av, s: k } }));
