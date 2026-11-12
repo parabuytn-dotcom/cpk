@@ -216,7 +216,7 @@ export const bank = [
   ['c', 'L\'unité de l\'intensité du courant est…', ['L\'ampère (A)', 'Le coulomb (C)', 'Le volt (V)', 'L\'ohm (Ω)']],
   ['c', '1 mA vaut…', ['10⁻³ A', '10⁻⁶ A', '10³ A', '10⁻⁹ A']],
   ['c', 'Le calibre d\'un ampèremètre, c\'est…', ['La plus grande intensité qu\'il peut mesurer', 'Le nombre de divisions', 'La lecture de l\'aiguille', 'La plus petite intensité mesurable']],
-  ['c', 'Lequel n\'est PAS un effet du courant électrique ?', ['L\'effet sonore', 'L\'effet thermique', 'L\'effet chimique', 'L\'effet magnétique']]
+  ['c', 'Lequel n\'est PAS un effet du courant électrique ?', ['L\'effet sonore', 'L\'effet thermique', 'L\'effet chimique', 'L\'effet magnétique']],
   ['a', 'Un atome qui gagne des électrons devient…', ['Un anion', 'Un cation', 'Un noyau', 'Un atome neutre']],
   ['a', "L'électron a une masse de…", ['9 × 10⁻³¹ kg', '10⁻²⁶ kg', '1,6 × 10⁻¹⁹ kg', '1 g']],
   ['a', "L'ion potassium a pour symbole…", ['K⁺', 'P⁺', 'Po²⁺', 'K⁻']],
