@@ -9,6 +9,7 @@ import { go, back } from '../router.js';
 import { sfx } from '../sfx.js';
 import { PushCard } from './Notifs.jsx';
 import { PhotoCard } from '../components/PhotoCard.jsx';
+import { seenText } from './Social.jsx';
 
 export const levelInfo = (xp = 0) => ({ level: 1 + Math.floor(xp / 150), into: xp % 150, need: 150 });
 
@@ -239,15 +240,15 @@ export function Leaderboard() {
   const [rows, setRows] = useState(null);
   const [err, setErr] = useState(false);
   const exam = getExam(s.lastExam || 'svt-dc1');
-  const load = () => { setErr(false); setRows(null); api.leaderboard(tab === 'exam' ? exam.id : null).then((r) => setRows(Array.isArray(r) ? r : [])).catch(() => setErr(true)); };
-  useEffect(load, [tab]);
+  const load = (quiet) => { setErr(false); if (quiet !== true) setRows(null); api.leaderboard(tab === 'exam' ? exam.id : null).then((r) => setRows(Array.isArray(r) ? r : [])).catch(() => setErr(true)); };
+  useEffect(() => { load(); const t = setInterval(() => load(true), 30000); return () => clearInterval(t); }, [tab]);
   useEffect(() => { refresh(); }, []);
   const me = s.player && s.player.id;
   const top = rows ? rows.slice(0, 3) : [];
   const unit = tab === 'exam' ? 'pts' : 'XP';
   return (
     <div class="screen">
-      <header class="page-head"><span class="icon-btn ghost" /><h1>Classement</h1><button type="button" class="icon-btn" onClick={load} aria-label="Actualiser"><Icon name="refresh" /></button></header>
+      <header class="page-head"><span class="icon-btn ghost" /><h1>Classement</h1><button type="button" class="icon-btn" onClick={() => load()} aria-label="Actualiser"><Icon name="refresh" /></button></header>
       <div class="seg">
         <button type="button" class={tab === 'exam' ? 'on' : ''} onClick={() => setTab('exam')}>{getSubject(exam.subject).name} · {exam.short}</button>
         <button type="button" class={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>Général (XP)</button>
@@ -261,20 +262,23 @@ export function Leaderboard() {
             {[1, 0, 2].map((i) => top[i] && (
               <div class={'pod pod' + (i + 1) + (top[i].id === me ? ' me' : '')}>
                 {i === 0 && <Icon name="crown" size={26} class="crown" />}
-                <Avatar av={top[i].avatar} size={i === 0 ? 76 : 60} />
+                <button type="button" class="pod-av" onClick={() => go('u/' + top[i].id)} aria-label={'Profil de ' + top[i].name}><Avatar av={top[i].avatar} size={i === 0 ? 76 : 60} />{top[i].online && <i class="online-dot" />}</button>
                 <b>{top[i].name}</b>
                 <small>{top[i].score} {unit}</small>
                 <div class="pod-block">{i + 1}</div>
               </div>
             ))}
           </div>
+          <p class="online-count"><i class="online-dot static" />{rows.filter((r) => r.online).length} en ligne · touche un joueur pour voir son profil</p>
           <ol class="ranks">
             {rows.map((r, i) => (
               <li class={r.id === me ? 'me' : ''}>
-                <span class="rk">{i + 1}</span>
-                <Avatar av={r.avatar} size={40} />
-                <span class="rn"><b>{r.name}{r.id === me ? ' (toi)' : ''}</b><small>Niveau {r.level}</small></span>
-                <span class="rs">{r.score} <small>{unit}</small></span>
+                <button type="button" class="rank-row" onClick={() => go('u/' + r.id)} aria-label={'Profil de ' + r.name}>
+                  <span class="rk">{i + 1}</span>
+                  <span class="av-wrap"><Avatar av={r.avatar} size={40} />{r.online && <i class="online-dot" />}</span>
+                  <span class="rn"><b>{r.name}{r.id === me ? ' (toi)' : ''}</b><small>{r.online ? <span class="on-txt">En ligne</span> : seenText(r.seen)} · Niv. {r.level}</small></span>
+                  <span class="rs">{r.score} <small>{unit}</small></span>
+                </button>
               </li>
             ))}
           </ol>
@@ -366,13 +370,14 @@ export function AvatarEdit() {
 }
 
 export function BottomNav({ active }) {
-  const items = [['', 'home', 'Apprendre'], ['rank', 'trophy', 'Classement'], ['me', 'user', 'Profil']];
-  const cur = active === 'rank' ? 'rank' : active === 'me' ? 'me' : '';
+  const s = useStore();
+  const items = [['', 'home', 'Apprendre'], ['rank', 'trophy', 'Classement'], ['inbox', 'chat', 'Messages'], ['me', 'user', 'Profil']];
+  const cur = active === 'rank' || active === 'u' ? 'rank' : active === 'me' ? 'me' : active === 'inbox' ? 'inbox' : '';
   return (
     <nav class="bottom-nav">
       {items.map(([path, ic, label]) => (
         <button type="button" class={cur === path ? 'on' : ''} onClick={() => { sfx.tap(); go(path, true); }} aria-current={cur === path ? 'page' : undefined}>
-          <Icon name={ic} size={24} /><span>{label}</span>
+          <span class="nav-ic"><Icon name={ic} size={24} />{path === 'inbox' && s.unreadMsgs > 0 && <i class="nav-badge">{s.unreadMsgs > 9 ? '9+' : s.unreadMsgs}</i>}</span><span>{label}</span>
         </button>
       ))}
     </nav>

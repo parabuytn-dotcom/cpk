@@ -6,7 +6,7 @@ import { back } from '../router.js';
 import { pushStatus, enablePush, disablePush } from '../push.js';
 import { sfx } from '../sfx.js';
 
-const KIND = { streak: ['flame', 'var(--orange)'], rank: ['trophy', 'var(--purple)'], welcome: ['sparkle', 'var(--primary)'], comeback: ['user', 'var(--ok)'], level: ['star', 'var(--gold-d)'] };
+const KIND = { streak: ['flame', 'var(--orange)'], rank: ['trophy', 'var(--purple)'], welcome: ['sparkle', 'var(--primary)'], comeback: ['user', 'var(--ok)'], level: ['star', 'var(--gold-d)'], message: ['chat', 'var(--primary)'] };
 
 export function ago(iso) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);

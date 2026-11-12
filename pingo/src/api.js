@@ -32,5 +32,11 @@ export const api = {
   pushKey: () => rpc('pingo_push_public_key', {}),
   pushSub: (token, endpoint, p256dh, auth) => rpc('pingo_push_subscribe', { p_token: token, p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth }),
   pushUnsub: (token, endpoint) => rpc('pingo_push_unsubscribe', { p_token: token, p_endpoint: endpoint }),
+  ping: (token) => rpc('pingo_ping', { p_token: token }),
+  player: (token, id) => rpc('pingo_player', { p_token: token, p_id: id }),
+  conversations: (token) => rpc('pingo_conversations', { p_token: token }),
+  messages: (token, other, before) => rpc('pingo_messages', { p_token: token, p_other: other, p_before: before || null }),
+  send: (token, to, body) => rpc('pingo_send', { p_token: token, p_to: to, p_body: body }),
+  block: (token, id, on) => rpc('pingo_block', { p_token: token, p_id: id, p_on: on }),
   leaderboard: (exam) => rpc('pingo_leaderboard', { p_exam: exam || null, p_limit: 50 })
 };
