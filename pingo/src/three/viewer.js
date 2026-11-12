@@ -264,7 +264,38 @@ function etats() {
   };
 }
 
-const BUILDERS = { virus, bacille, levure, paramecie, eau, co2, diatomiques, etats };
+function atome() {
+  const g = new THREE.Group();
+  const pMat = phys('#FF4D5E', { roughness: 0.3, clearcoat: 1, emissive: '#5a0010', emissiveIntensity: 0.25 });
+  const eMat = phys('#3FA9FF', { roughness: 0.2, clearcoat: 1, emissive: '#1d6fd6', emissiveIntensity: 0.9 });
+  const ringMat = new THREE.MeshBasicMaterial({ color: '#9AA8D6', transparent: true, opacity: 0.35 });
+  const nucleus = new THREE.Group(); g.add(nucleus);
+  for (let i = 0; i < 7; i++) { const d = fib(7, i).multiplyScalar(i ? 0.2 : 0); const m = atom(0.15, pMat); m.position.copy(d); nucleus.add(m); }
+  const orbits = [
+    { r: 0.85, n: 2, tilt: [0.3, 0, 0], speed: 1.6 },
+    { r: 1.55, n: 3, tilt: [1.1, 0.4, 0], speed: 1.0 },
+    { r: 1.55, n: 2, tilt: [-0.9, -0.6, 0.3], speed: 1.15 }
+  ].map((o) => {
+    const holder = new THREE.Group(); holder.rotation.set(...o.tilt); g.add(holder);
+    holder.add(new THREE.Mesh(new THREE.TorusGeometry(o.r, 0.008, 6, 120), ringMat));
+    const es = Array.from({ length: o.n }, (_, k) => { const e = atom(0.075, eMat); holder.add(e); return { e, ph: k / o.n * Math.PI * 2 }; });
+    return { ...o, es };
+  });
+  return {
+    group: g,
+    parts: [
+      { id: 'noyau', label: 'Noyau (+)', color: '#FF4D5E', anchor: V(0, 0.3, 0.1), surface: false, mats: [pMat], info: "Le noyau est chargé positivement. Pour l'azote : 7 charges positives, soit +7 × 1,6 × 10⁻¹⁹ = +11,2 × 10⁻¹⁹ C." },
+      { id: 'electrons', label: 'Électrons (−)', color: '#3FA9FF', anchor: V(1.2, 1.0, 0.3), surface: false, mats: [eMat], info: "7 électrons gravitent autour du noyau : c'est le nuage électronique. Leur charge totale, −11,2 × 10⁻¹⁹ C, compense celle du noyau : l'atome est neutre." },
+      { id: 'nuage', label: 'Nuage électronique', color: '#9AA8D6', anchor: V(-1.4, -0.6, 0.3), surface: false, mats: [ringMat], info: "L'espace où gravitent les électrons. L'atome est surtout fait de vide : le noyau est minuscule par rapport à lui." }
+    ],
+    update(t) {
+      nucleus.rotation.y = t * 0.5; nucleus.rotation.x = t * 0.3;
+      for (const o of orbits) for (const { e, ph } of o.es) { const a = ph + t * o.speed; e.position.set(Math.cos(a) * o.r, Math.sin(a) * o.r, 0); }
+    }
+  };
+}
+
+const BUILDERS = { virus, bacille, levure, paramecie, eau, co2, diatomiques, etats, atome };
 
 /* ---------------- viewer ---------------- */
 export function createViewer(container, { onSelect } = {}) {

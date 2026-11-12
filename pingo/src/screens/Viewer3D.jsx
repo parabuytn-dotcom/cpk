@@ -65,7 +65,8 @@ export function Viewer3D({ model = 'virus', onClose, lockModel = false }) {
         </div>
         {(
           <div class="v-models">
-            {MODELS.filter((m) => !lockModel || m.group === meta.group).map((m) => <button type="button" class={'v-model' + (m.id === cur ? ' on' : '')} onClick={() => pick(m.id)}>{m.name}</button>)}
+            {!lockModel && <button type="button" class="v-model swap" onClick={() => pick(MODELS.find((m) => m.group !== meta.group).id)}>{meta.group === 'svt' ? '⇄ Physique-Chimie' : '⇄ SVT'}</button>}
+            {MODELS.filter((m) => m.group === meta.group).map((m) => <button type="button" class={'v-model' + (m.id === cur ? ' on' : '')} onClick={() => pick(m.id)}>{m.name}</button>)}
           </div>
         )}
       </div>

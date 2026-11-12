@@ -6,5 +6,6 @@ export const MODELS = [
   { id: 'eau', group: 'pc', name: 'Eau', full: "Molécule d'eau H₂O", size: '≈ 3 Å', desc: "1 atome d'oxygène et 2 atomes d'hydrogène. Masse ≈ 3 × 10⁻²⁶ kg." },
   { id: 'co2', group: 'pc', name: 'CO₂', full: 'Dioxyde de carbone CO₂', size: '≈ 3 Å', desc: 'Contient du carbone, mais classé parmi les corps inorganiques.' },
   { id: 'diatomiques', group: 'pc', name: 'H₂ et Cl₂', full: 'Dihydrogène et dichlore', size: '0,75 Å et 2 Å', desc: 'Deux molécules formées de deux atomes identiques.' },
-  { id: 'etats', group: 'pc', name: 'États', full: 'Solide, liquide, gaz', size: 'molécules ≈ quelques Å', desc: 'La même matière dans ses trois états : regarde comment les molécules sont rangées.' }
+  { id: 'etats', group: 'pc', name: 'États', full: 'Solide, liquide, gaz', size: 'molécules ≈ quelques Å', desc: 'La même matière dans ses trois états : regarde comment les molécules sont rangées.' },
+  { id: 'atome', group: 'pc', name: 'Atome', full: "Atome d'azote", size: '≈ 1 Å', desc: "Un noyau chargé positivement et 7 électrons qui gravitent autour : l'atome est neutre." }
 ];

@@ -127,13 +127,76 @@ export const units = [
           CALC('Q = 120 C traverse la lampe. Combien d\'électrons cela représente-t-il ?', [7.5, 20], 'électrons', ['n = Q / e = 120 / 1,6 × 10⁻¹⁹', 'n = 7,5 × 10²⁰ électrons'])
         ]
       },
-      { id: 'c3', title: 'Défi : le courant', icon: 'trophy', boss: true, desc: 'Circuits, calibres et calculs.', from: ['c1', 'c2'], bank: 'c', n: 9 }
+      {
+        id: 'c4', title: 'Le grand circuit', icon: 'target', desc: "L'exercice n°5 pas à pas : 8 lampes, 6 nœuds.",
+        steps: [
+          L('Un circuit à 8 lampes', '<p>Le générateur débite <b>I = 1 A</b>. On connaît aussi <b>I1 = 0,7 A</b>, <b>I5 = 0,4 A</b> et <b>I6 = 0,6 A</b>.</p><p>Touche un nœud (A, E ou B) pour écrire la loi des nœuds à cet endroit. Les points rouges montrent le sens du courant : il sort par la borne <b>+</b>.</p>', { w: 'grandcircuit', pingo: 'La méthode : on choisit un nœud où il ne manque qu\'UNE seule intensité.' }),
+          Q('Dans quel sens circule le courant dans la branche de L1 ?', ['De A vers B', 'De B vers A', 'Il ne circule pas', 'Dans les deux sens'], 'Le courant sort par la borne + du générateur, arrive en A, puis part vers B.'),
+          CALC('Au nœud A : I = I1 + I2. Calcule I2.', [3, -1], 'A', ['I2 = I − I1', 'I2 = 1 − 0,7', 'I2 = 0,3 A']),
+          CALC('Au nœud E : I3 + I5 = I6. Calcule I3.', [2, -1], 'A', ['I3 = I6 − I5', 'I3 = 0,6 − 0,4', 'I3 = 0,2 A']),
+          CALC('Au nœud B : I1 = I3 + I4 + I5. Calcule I4.', [1, -1], 'A', ['I4 = I1 − I3 − I5', 'I4 = 0,7 − 0,2 − 0,4', 'I4 = 0,1 A']),
+          Q('Pour mesurer I3 = 0,2 A, quel calibre choisir parmi 0,3 A, 0,4 A et 0,5 A ?', ['0,3 A', '0,4 A', '0,5 A', 'Aucun'], 'Le plus proche de I3 en valeur supérieure.'),
+          CALC('Avec le calibre 0,3 A et un cadran de 150 divisions, quelle lecture L pour I3 = 0,2 A ?', [1, 2], 'divisions', ['L = I3 × E / C', 'L = 0,2 × 150 / 0,3', 'L = 100 divisions']),
+          Q("À quel point faut-il relier la borne + de l'ampèremètre qui mesure I3 ?", ['B', 'C', 'Indifféremment', 'Au générateur'], 'Le courant va de B vers C : il doit entrer par la borne + (A), donc côté B.'),
+          CALC('Quantité d\'électricité qui traverse L1 pendant Δt = 80 ms ?', [5.6, -2], 'C', ['Δt = 80 ms = 80 × 10⁻³ s', 'Q = I1 × Δt = 0,7 × 80 × 10⁻³', 'Q = 0,056 C']),
+          CALC('Combien d\'électrons traversent L1 pendant ces 80 ms ?', [3.5, 17], 'électrons', ['n = Q / e = 0,056 / 1,6 × 10⁻¹⁹', 'n = 3,5 × 10¹⁷ électrons'])
+        ]
+      },
+      { id: 'c3', title: 'Défi : le courant', icon: 'trophy', boss: true, desc: 'Circuits, calibres et calculs.', from: ['c1', 'c2', 'c4'], bank: 'c', n: 9 }
+    ]
+  },
+  {
+    id: 'atomes', title: 'Atomes et ions simples', sub: 'Série 4 · Au cœur de la matière', color: '#FF4D5E', dark: '#D93445',
+    lessons: [
+      {
+        id: 'a1', title: "L'atome", icon: 'atom', desc: 'Noyau, électrons, atome neutre.',
+        steps: [
+          L('La plus petite particule', '<p>L\'<b class="r">atome</b> est la plus petite particule qui constitue la matière.</p><ul><li>Taille : de l\'ordre de l\'<b>angström</b>. Ex : diamètre de l\'atome de fer = 2,3 Å = 2,3 × 10⁻¹⁰ m.</li><li>Masse : de l\'ordre de <b>10⁻²⁶ kg</b>. Il faut 10 000 milliards de milliards d\'atomes de zinc pour faire 1 g !</li></ul>'),
+          { t: 'model', title: "L'atome en 3D", html: '<p>L\'atome d\'azote : son noyau et ses <b>7 électrons</b> qui gravitent autour. Touche les étiquettes.</p>', model: 'atome' },
+          L('De quoi est fait un atome ?', '<ul><li>Un <b class="r">noyau</b> chargé <b>positivement</b>, formé de particules chargées positivement.</li><li>Des <b class="r">électrons</b> chargés <b>négativement</b> qui gravitent autour : c\'est le <b>nuage électronique</b>.</li></ul><p>Un électron : charge <span class="mono">−1,6 × 10⁻¹⁹ C</span>, masse <span class="mono">9 × 10⁻³¹ kg</span>. Chaque atome a un nombre d\'électrons bien déterminé.</p>'),
+          L("L'atome est neutre", '<p>La charge totale des électrons est égale à l\'<b>opposé</b> de la charge du noyau :</p><p class="formula">Q noyau = − Q électrons</p><p>Choisis un atome et regarde ses charges.</p>', { w: 'atome', pingo: 'Pour l\'instant, ne touche pas aux électrons : regarde juste que la charge totale vaut 0.' }),
+          Q('Le noyau d\'un atome est chargé…', ['Positivement', 'Négativement', 'Il est neutre', 'Ça dépend de l\'atome'], 'Il est formé de particules chargées positivement.'),
+          TF('Un atome est électriquement neutre.', true, 'La charge de ses électrons compense exactement celle de son noyau.'),
+          CALC("L'atome de plomb a 82 électrons. Valeur absolue de la charge totale de ses électrons ?", [1.312, -17], 'C', ['|Qé| = n × e = 82 × 1,6 × 10⁻¹⁹', '|Qé| = 131,2 × 10⁻¹⁹ C', 'Qé = −131,2 × 10⁻¹⁹ C (négative)']),
+          Q("Quelle est alors la charge du noyau de l'atome de plomb ?", ['+131,2 × 10⁻¹⁹ C', '−131,2 × 10⁻¹⁹ C', '0 C', '+1,6 × 10⁻¹⁹ C'], "L'opposé de la charge des électrons."),
+          CALC("La charge totale des électrons de l'atome de chlore est −27,2 × 10⁻¹⁹ C. Combien a-t-il d'électrons ?", [1.7, 1], 'électrons', ['n = |Qé| / e = 27,2 × 10⁻¹⁹ / 1,6 × 10⁻¹⁹', 'n = 17 électrons'])
+        ]
+      },
+      {
+        id: 'a2', title: 'Les ions simples', icon: 'bolt', desc: 'Cations, anions et leurs symboles.',
+        steps: [
+          L('Gagner ou perdre des électrons', '<p>Un atome peut <b>perdre</b> ou <b>gagner</b> un ou plusieurs électrons : il devient un <b class="r">ion simple</b>.</p><ul><li>Il <b>perd</b> des électrons → <b class="r">ion positif</b> = <b>cation</b>. Ex : Na⁺, Cu²⁺, Al³⁺.</li><li>Il <b>gagne</b> des électrons → <b class="r">ion négatif</b> = <b>anion</b>. Ex : Cl⁻, O²⁻, S²⁻.</li></ul><p>Le <b>noyau ne change pas</b> : seuls les électrons bougent.</p>'),
+          L("Fabrique des ions", '<p>Choisis un atome puis <b>enlève</b> ou <b>ajoute</b> des électrons. Essaie de fabriquer Na⁺, Cl⁻, O²⁻ et Al³⁺.</p>', { w: 'atome', pingo: 'Le chiffre en haut à droite du symbole = nombre d\'électrons perdus (+) ou gagnés (−).' }),
+          Q('Un atome qui perd des électrons devient…', ['Un cation (ion positif)', 'Un anion (ion négatif)', 'Un atome neutre', 'Une molécule'], 'Il a moins d\'électrons que de charges positives dans le noyau.'),
+          Q("L'ion sulfure S²⁻ provient d'un atome de soufre qui a…", ['Gagné 2 électrons', 'Perdu 2 électrons', 'Gagné 2 protons', 'Perdu 2 noyaux'], 'Charge 2− : deux électrons en plus.'),
+          Q("L'ion cuivre Cu²⁺ provient d'un atome de cuivre qui a…", ['Perdu 2 électrons', 'Gagné 2 électrons', 'Perdu 2 noyaux', 'Gagné 2 atomes'], 'Charge 2+ : deux électrons en moins.'),
+          TF("La charge du noyau de l'ion est égale à celle du noyau de l'atome.", true, 'Le noyau ne change pas quand l\'atome devient un ion.'),
+          { t: 'pairs', q: 'Associe chaque ion à son symbole', pairs: [['Ion sodium', 'Na⁺'], ['Ion chlorure', 'Cl⁻'], ['Ion aluminium', 'Al³⁺'], ['Ion oxygène', 'O²⁻'], ['Ion fer III', 'Fe³⁺']] },
+          { t: 'sort', q: 'Cation ou anion ?', groups: { cat: 'Cation (+)', an: 'Anion (−)' }, items: [['Na⁺', 'cat'], ['K⁺', 'cat'], ['Ca²⁺', 'cat'], ['Zn²⁺', 'cat'], ['Al³⁺', 'cat'], ['Cl⁻', 'an'], ['F⁻', 'an'], ['Br⁻', 'an'], ['O²⁻', 'an'], ['S²⁻', 'an']] },
+          { t: 'pairs', q: 'Associe chaque nom à son symbole (attention au fer !)', pairs: [['Ion fer II', 'Fe²⁺'], ['Ion cuivre II', 'Cu²⁺'], ['Ion magnésium', 'Mg²⁺'], ['Ion iodure', 'I⁻'], ['Ion hydrogène', 'H⁺']] }
+        ]
+      },
+      {
+        id: 'a3', title: 'Calculs sur les ions', icon: 'pi', desc: 'Charge du noyau, charge de l\'ion, nombre d\'électrons.',
+        steps: [
+          L('Les 3 formules à connaître', '<ul><li>Charge des électrons : <b>Qé = n × (−e)</b></li><li>Charge du noyau : <b>Qnoyau = Z × e</b> (Z = nombre de charges positives = nombre d\'électrons de l\'atome)</li><li>Charge de l\'ion : <b>Qion = Qnoyau + Qé</b></li></ul><p>Et si l\'ion a perdu ou gagné n électrons : <b>|Qion| = n × e</b>.</p>', { pingo: 'Le noyau de l\'ion = le noyau de l\'atome. C\'est la clé de tous les exercices !' }),
+          CALC("Charge du noyau de l'ion sodium : 17,6 × 10⁻¹⁹ C ; charge de ses électrons : −16 × 10⁻¹⁹ C. Calcule Qion.", [1.6, -19], 'C', ['Qion = Qnoyau + Qé', 'Qion = 17,6 × 10⁻¹⁹ − 16 × 10⁻¹⁹', 'Qion = 1,6 × 10⁻¹⁹ C : il a perdu 1 électron → Na⁺']),
+          CALC("L'ion aluminium porte 4,8 × 10⁻¹⁹ C. Combien d'électrons l'atome a-t-il perdus ?", [3, 0], 'électrons', ['n = Qion / e = 4,8 × 10⁻¹⁹ / 1,6 × 10⁻¹⁹', 'n = 3 électrons perdus → Al³⁺']),
+          CALC("Le noyau de l'aluminium porte 2,08 × 10⁻¹⁸ C. Combien de charges positives contient-il ?", [1.3, 1], 'charges', ['n = Qnoyau / e = 2,08 × 10⁻¹⁸ / 1,6 × 10⁻¹⁹', 'n = 13 : l\'atome a 13 électrons, l\'ion Al³⁺ en a 10']),
+          CALC("L'ion sulfure S²⁻ a 18 électrons. Charge du noyau de l'atome de soufre ?", [2.56, -18], 'C', ["S²⁻ a gagné 2 électrons : l'atome en a 18 − 2 = 16", 'Qnoyau = 16 × 1,6 × 10⁻¹⁹', 'Qnoyau = 25,6 × 10⁻¹⁹ C']),
+          CALC("L'ion cuivre Cu²⁺ a 27 électrons. Charge du noyau de l'atome de cuivre ?", [4.64, -18], 'C', ["Cu²⁺ a perdu 2 électrons : l'atome en a 27 + 2 = 29", 'Qnoyau = 29 × 1,6 × 10⁻¹⁹', 'Qnoyau = 46,4 × 10⁻¹⁹ C']),
+          CALC("Le nuage électronique de l'ion sulfure porte −2,88 × 10⁻¹⁸ C. Combien d'électrons a cet ion ?", [1.8, 1], 'électrons', ['n = |Qé| / e = 2,88 × 10⁻¹⁸ / 1,6 × 10⁻¹⁹', 'n = 18 électrons']),
+          CALC("L'ion calcium (cation) a 18 électrons et porte 3,2 × 10⁻¹⁹ C. Charge du noyau de l'atome de calcium ?", [3.2, -18], 'C', ['Électrons perdus : 3,2 × 10⁻¹⁹ / 1,6 × 10⁻¹⁹ = 2', "L'atome a 18 + 2 = 20 électrons, donc 20 charges positives", 'Qnoyau = 20 × 1,6 × 10⁻¹⁹ = 3,2 × 10⁻¹⁸ C']),
+          Q("L'ion oxygène porte −3,2 × 10⁻¹⁹ C. Son symbole est…", ['O²⁻', 'O⁻', 'O²⁺', 'O⁺'], '3,2 × 10⁻¹⁹ / 1,6 × 10⁻¹⁹ = 2 électrons gagnés.')
+        ]
+      },
+      { id: 'a4', title: 'Défi : atomes et ions', icon: 'trophy', boss: true, desc: 'Tout le chapitre, avec des calculs.', from: ['a1', 'a2', 'a3'], bank: 'a', n: 9 }
     ]
   },
   {
     id: 'final', title: 'Le grand défi', sub: 'Tout le devoir en un seul quiz', color: '#2F6BFF', dark: '#1E4FD6',
     lessons: [
-      { id: 'f1', title: 'Le grand défi du devoir', icon: 'crown', boss: true, final: true, desc: '15 questions sur les trois chapitres. Vise 3 étoiles !', from: ['e1', 'e2', 'e3', 'p1', 'p2', 'c1', 'c2'], bank: 'all', n: 15, sort: true }
+      { id: 'f1', title: 'Le grand défi du devoir', icon: 'crown', boss: true, final: true, desc: '15 questions sur les quatre chapitres. Vise 3 étoiles !', from: ['e1', 'e2', 'e3', 'p1', 'p2', 'c1', 'c2', 'c4', 'a1', 'a2', 'a3'], bank: 'all', n: 15, sort: true }
     ]
   }
 ];
@@ -154,6 +217,11 @@ export const bank = [
   ['c', '1 mA vaut…', ['10⁻³ A', '10⁻⁶ A', '10³ A', '10⁻⁹ A']],
   ['c', 'Le calibre d\'un ampèremètre, c\'est…', ['La plus grande intensité qu\'il peut mesurer', 'Le nombre de divisions', 'La lecture de l\'aiguille', 'La plus petite intensité mesurable']],
   ['c', 'Lequel n\'est PAS un effet du courant électrique ?', ['L\'effet sonore', 'L\'effet thermique', 'L\'effet chimique', 'L\'effet magnétique']]
+  ['a', 'Un atome qui gagne des électrons devient…', ['Un anion', 'Un cation', 'Un noyau', 'Un atome neutre']],
+  ['a', "L'électron a une masse de…", ['9 × 10⁻³¹ kg', '10⁻²⁶ kg', '1,6 × 10⁻¹⁹ kg', '1 g']],
+  ['a', "L'ion potassium a pour symbole…", ['K⁺', 'P⁺', 'Po²⁺', 'K⁻']],
+  ['a', "L'ion chlorure Cl⁻ porte une charge de…", ['−1,6 × 10⁻¹⁹ C', '+1,6 × 10⁻¹⁹ C', '−3,2 × 10⁻¹⁹ C', '0 C']],
+  ['a', "Le nuage électronique, c'est…", ["L'ensemble des électrons qui gravitent autour du noyau", 'Le noyau', 'Un gaz', 'Une molécule d\'eau']],
 ];
 
 export const sortGame = {

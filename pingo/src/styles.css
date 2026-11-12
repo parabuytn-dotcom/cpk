@@ -628,3 +628,6 @@ a { color: var(--primary); font-weight: 800; }
 .calc-unit { font-weight: 900; color: var(--ink-2); }
 .correction { display: grid; gap: 4px; border-left: 4px solid var(--ok); background: var(--surface); border-radius: 0 14px 14px 0; padding: 10px 14px; font-weight: 700; }
 .correction b { color: var(--ok-d); font-family: var(--f-display); }
+
+.w-elems button { min-width: 44px; }
+.v-model.swap { background: rgba(255,197,49,.25); border-color: #FFC531; }
