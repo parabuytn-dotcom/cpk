@@ -117,7 +117,7 @@ function charges(el) {
         <text x="${bx}" y="${by + 9}" text-anchor="middle" style="fill:#fff;font:900 28px var(--f-display)">${names[sg]}</text></g>`;
     }).join('') + `<text x="200" y="250" text-anchor="middle" class="w-t">Touche une boule pour changer sa charge</text>`;
   }
-  svg.addEventListener('click', (e) => { const g = e.target.closest('.w-ball'); if (!g) return; const i = +g.dataset.i; st[i] = st[i] === -1 ? 1 : st[i] === 1 ? 0 : -1; cap.innerHTML = text(); });
+  svg.addEventListener('pointerdown', (e) => { const g = e.target.closest('.w-ball'); if (!g) return; const i = +g.dataset.i; st[i] = st[i] === -1 ? 1 : st[i] === 1 ? 0 : -1; cap.innerHTML = text(); });
   (function loop() {
     if (!alive) return;
     const t = target(); ang = ang.map((a, i) => a + (t[i] - a) * (reduced() ? 1 : 0.08));
@@ -420,4 +420,131 @@ function symboles(el) {
   return () => {};
 }
 
-export const physWidgets = { frottement, charges, pendule, electroscope, qcalc, melange, etats, zoom, circuit, amperemetre, noeuds, symboles };
+/* ---------- grand circuit (exercice n°5) ---------- */
+function grandcircuit(el) {
+  const w = frame(el, `<svg class="w-svg" viewBox="0 0 440 290"></svg>
+    <div class="w-chips"><button type="button" data-n="A">Nœud A</button><button type="button" data-n="E">Nœud E</button><button type="button" data-n="B">Nœud B</button><button type="button" data-n="F">Nœud F (vérif)</button></div>
+    <div class="w-result"><p>Touche un nœud.</p></div>`);
+  const svg = $('svg', w), out = $('.w-result', w);
+  const P = { Gb: [40, 250], Gt: [40, 50], A: [140, 50], B: [300, 50], C: [410, 50], D: [410, 250], E: [300, 250], F: [140, 250] };
+  // branches : [de, vers, intensité, nom, lampe, connue]
+  const BR = [
+    [['Gb', 'Gt', 'A'], 1, 'I', null, true],
+    [['A', 'B'], 0.7, 'I1', 'L1', true],
+    [['A', 'F'], 0.3, 'I2', 'L2', false],
+    [['B', 'F'], 0.1, 'I4', 'L4', false],
+    [['B', 'E'], 0.4, 'I5', 'L5', true],
+    [['B', 'C', 'D', 'E'], 0.2, 'I3', 'L3', false],
+    [['E', 'F'], 0.6, 'I6', 'L8', true],
+    [['F', 'Gb'], 1, 'I', null, true]
+  ];
+  const EQ = {
+    A: { hi: ['I', 'I1', 'I2'], html: 'Entre : <b>I</b> · Sortent : <b>I1</b> et <b>I2</b><p class="mono">I = I1 + I2 ⇒ I2 = 1 − 0,7 = <b>0,3 A</b></p>' },
+    E: { hi: ['I3', 'I5', 'I6'], html: 'Entrent : <b>I3</b> et <b>I5</b> · Sort : <b>I6</b><p class="mono">I3 + I5 = I6 ⇒ I3 = 0,6 − 0,4 = <b>0,2 A</b></p>' },
+    B: { hi: ['I1', 'I3', 'I4', 'I5'], html: 'Entre : <b>I1</b> · Sortent : <b>I3</b>, <b>I4</b>, <b>I5</b><p class="mono">I1 = I3 + I4 + I5 ⇒ I4 = 0,7 − 0,2 − 0,4 = <b>0,1 A</b></p>' },
+    F: { hi: ['I2', 'I4', 'I6', 'I'], html: 'Entrent : <b>I2</b>, <b>I4</b>, <b>I6</b> · Sort : <b>I</b><p class="mono">0,3 + 0,1 + 0,6 = <b>1 A</b> = I ✔</p>' }
+  };
+  let node = null, found = new Set(['I', 'I1', 'I5', 'I6']), t = 0, alive = true, last = performance.now();
+  const pts = (names) => names.map((n) => P[n]);
+  const lenOf = (ps) => ps.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - ps[i][0], p[1] - ps[i][1]), 0);
+  const at = (ps, d) => { for (let i = 1; i < ps.length; i++) { const L = Math.hypot(ps[i][0] - ps[i - 1][0], ps[i][1] - ps[i - 1][1]); if (d <= L) { const k = d / L; return [ps[i - 1][0] + (ps[i][0] - ps[i - 1][0]) * k, ps[i - 1][1] + (ps[i][1] - ps[i - 1][1]) * k]; } d -= L; } return ps[ps.length - 1]; };
+  function draw() {
+    const hi = node ? EQ[node].hi : [];
+    let s = '';
+    for (const [names, I, nm, lamp] of BR) {
+      const ps = pts(names), on = hi.includes(nm);
+      s += `<polyline points="${ps.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${on ? 'var(--orange)' : 'var(--ink-soft)'}" stroke-width="${on ? 5 : 3}"/>`;
+      const L = lenOf(ps), n = Math.max(2, Math.round(L / 34));
+      for (let k = 0; k < n; k++) { const [x, y] = at(ps, ((k * L / n) + t * I * 70) % L); s += `<circle cx="${x}" cy="${y}" r="3.4" fill="var(--red)"/>`; }
+      if (lamp) {
+        const [x, y] = names.length > 2 ? at(ps, L * (lamp === 'L3' ? 0.12 : 0.5)) : at(ps, L / 2);
+        const lit = I > 0;
+        s += `<circle cx="${x}" cy="${y}" r="13" fill="${lit ? '#FFE680' : 'var(--surface)'}" stroke="var(--ink)" stroke-width="2"/><path d="M${x - 8} ${y - 8} L${x + 8} ${y + 8} M${x + 8} ${y - 8} L${x - 8} ${y + 8}" stroke="var(--ink)" stroke-width="2"/>`;
+        const lbl = found.has(nm) ? `${nm} = ${String(I).replace('.', ',')} A` : `${nm} = ?`;
+        const off = { L1: [-30, -18], L2: [-92, 24], L4: [16, 22], L5: [8, -18], L3: [-20, -18], L8: [-40, -18] }[lamp] || [6, -18];
+        s += `<text x="${x + off[0]}" y="${y + off[1]}" style="fill:${found.has(nm) ? 'var(--ink)' : 'var(--orange)'};font:800 11.5px var(--f-body)">${lamp} · ${lbl}</text>`;
+      }
+    }
+    // L6 et L7 sur la branche I3
+    for (const [x, y, n] of [[410, 150, 'L6'], [355, 250, 'L7']]) s += `<circle cx="${x}" cy="${y}" r="12" fill="#FFE680" stroke="var(--ink)" stroke-width="2"/><path d="M${x - 7} ${y - 7} L${x + 7} ${y + 7} M${x + 7} ${y - 7} L${x - 7} ${y + 7}" stroke="var(--ink)" stroke-width="2"/><text x="${x + (n === 'L6' ? -32 : -8)}" y="${y + (n === 'L6' ? 4 : 28)}" style="fill:var(--ink);font:800 11px var(--f-body)">${n}</text>`;
+    s += `<rect x="28" y="140" width="24" height="22" fill="var(--bg)"/><line x1="26" y1="144" x2="54" y2="144" stroke="var(--ink)" stroke-width="3"/><line x1="33" y1="156" x2="47" y2="156" stroke="var(--ink)" stroke-width="6"/><text x="14" y="142" style="fill:var(--red);font:900 14px var(--f-display)">+</text><text x="14" y="166" style="fill:var(--nuc);font:900 14px var(--f-display)">−</text>`;
+    s += `<text x="56" y="110" style="fill:var(--ink);font:800 12px var(--f-body)">I = 1 A</text>`;
+    for (const [n, [x, y]] of Object.entries(P)) if (!n.startsWith('G')) s += `<g class="w-node" data-n="${n}" style="cursor:pointer"><circle cx="${x}" cy="${y}" r="${node === n ? 9 : 6}" fill="${node === n ? 'var(--orange)' : 'var(--ink)'}"/><text x="${x - 4}" y="${y + (y < 100 ? -12 : 22)}" style="fill:var(--ink);font:900 13px var(--f-display)">${n}</text></g>`;
+    svg.innerHTML = s;
+  }
+  function pick(n) {
+    if (!EQ[n]) return; node = n; EQ[n].hi.forEach((x) => found.add(x));
+    $$('.w-chips button', w).forEach((b) => b.classList.toggle('on', b.dataset.n === n));
+    out.innerHTML = `<p><b>Nœud ${n}</b> : somme des courants qui entrent = somme des courants qui sortent.</p><p>${EQ[n].html}</p>`;
+  }
+  w.addEventListener('click', (e) => { const b = e.target.closest('button[data-n]'); if (b) pick(b.dataset.n); });
+  svg.addEventListener('pointerdown', (e) => { const g = e.target.closest('[data-n]'); if (g) pick(g.dataset.n); });
+  (function loop(now) { if (!alive) return; t += Math.min(0.05, (now - last) / 1000) * (reduced() ? 0 : 1); last = now; draw(); requestAnimationFrame(loop); })(performance.now());
+  return () => { alive = false; };
+}
+
+/* ---------- fabrique d'atomes et d'ions ---------- */
+const ELEMS = [
+  ['H', 'Hydrogène', 1, 'hydrogène', 1], ['N', 'Azote', 7, null, 0], ['O', 'Oxygène', 8, 'oxygène', -2], ['F', 'Fluor', 9, 'fluorure', -1],
+  ['Na', 'Sodium', 11, 'sodium', 1], ['Mg', 'Magnésium', 12, 'magnésium', 2], ['Al', 'Aluminium', 13, 'aluminium', 3], ['S', 'Soufre', 16, 'sulfure', -2],
+  ['Cl', 'Chlore', 17, 'chlorure', -1], ['K', 'Potassium', 19, 'potassium', 1], ['Ca', 'Calcium', 20, 'calcium', 2], ['Cu', 'Cuivre', 29, 'cuivre II', 2]
+];
+function atome(el) {
+  const w = frame(el, `<div class="w-chips w-elems">${ELEMS.map((e, i) => `<button type="button" data-e="${i}" class="${i === 4 ? 'on' : ''}">${e[0]}</button>`).join('')}</div>
+    <canvas class="w-canvas"></canvas>
+    <div class="w-row"><button type="button" class="w-btn" data-a="-">− Enlever un électron</button><button type="button" class="w-btn" data-a="+">+ Ajouter un électron</button><button type="button" class="w-btn" data-a="0">Neutre</button></div>
+    <div class="w-result"></div>`);
+  let ei = 4, ne = ELEMS[4][2], alive = true;
+  const out = $('.w-result', w);
+  const sup = (k) => k === 0 ? '' : (Math.abs(k) > 1 ? String(Math.abs(k)).replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]) : '') + (k > 0 ? '⁺' : '⁻');
+  const f = (x) => (Math.round(x * 10) / 10).toString().replace('.', ',');
+  function info() {
+    const [sym, name, Z, ion, usual] = ELEMS[ei]; const k = Z - ne;
+    const what = k === 0 ? `<b>Atome de ${name.toLowerCase()}</b> : neutre` : `<b>${k > 0 ? 'Cation' : 'Anion'} ${sym}${sup(k)}</b> : il a ${k > 0 ? 'perdu' : 'gagné'} ${Math.abs(k)} électron${Math.abs(k) > 1 ? 's' : ''}`;
+    const real = k !== 0 && k === usual && ion ? ` — c'est l'<b class="g">ion ${ion}</b> du tableau !` : k !== 0 && ion ? ` <span class="muted">(l'ion qu'on rencontre dans le cours est ${sym}${sup(usual)})</span>` : '';
+    out.innerHTML = `<p class="w-big">${sym}${sup(k)}</p><p>${what}${real}</p>
+      <p class="mono">Noyau : ${Z} × e = +${f(Z * 1.6)} × 10⁻¹⁹ C</p>
+      <p class="mono">Électrons : ${ne} × (−e) = −${f(ne * 1.6)} × 10⁻¹⁹ C</p>
+      <p class="mono">Total : ${k === 0 ? '0 C (neutre)' : `${k > 0 ? '+' : '−'}${f(Math.abs(k) * 1.6)} × 10⁻¹⁹ C`}</p>`;
+  }
+  const shells = (n) => { const r = []; for (const cap of [2, 8, 8, 18]) { if (n <= 0) break; r.push(Math.min(cap, n)); n -= cap; } return r; };
+  const stop = sim($('canvas', w), 600, 320, {
+    step() {},
+    draw(ctx, t) {
+      const cx = 300, cy = 160, Z = ELEMS[ei][2];
+      const sh = shells(ne);
+      sh.forEach((n, i) => {
+        const R = 58 + i * 36;
+        ctx.strokeStyle = C('line'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+        for (let k = 0; k < n; k++) {
+          const a = k / n * Math.PI * 2 + t * (0.9 - i * 0.2) * (reduced() ? 0 : 1);
+          const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+          ctx.fillStyle = C('sweat'); ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.fill();
+          ctx.fillStyle = '#fff'; ctx.font = '900 12px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('−', x, y + 1);
+        }
+      });
+      const nr = Math.min(Z, 30), rr = Z > 12 ? 7 : 9;
+      for (let k = 0; k < nr; k++) {
+        const a = k * 2.4, d = Math.sqrt(k) * rr * 1.05;
+        const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+        ctx.fillStyle = C('red'); ctx.beginPath(); ctx.arc(x, y, rr, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = `900 ${rr + 3}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', x, y + 1);
+      }
+      label(ctx, `noyau : ${Z} charges +`, 20, 22, C('red'), 'left');
+      label(ctx, `${ne} électrons`, 580, 22, C('sweat'), 'right');
+    }
+  });
+  w.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.e) { ei = +b.dataset.e; ne = ELEMS[ei][2]; $$('.w-elems button', w).forEach((x) => x.classList.toggle('on', x === b)); }
+    const Z = ELEMS[ei][2];
+    if (b.dataset.a === '-') ne = Math.max(Math.max(0, Z - 3), ne - 1);
+    if (b.dataset.a === '+') ne = Math.min(Z + 3, ne + 1);
+    if (b.dataset.a === '0') ne = Z;
+    info();
+  });
+  info();
+  return () => { alive = false; stop(); };
+}
+
+export const physWidgets = { frottement, charges, pendule, electroscope, qcalc, melange, etats, zoom, circuit, amperemetre, noeuds, symboles, grandcircuit, atome };
