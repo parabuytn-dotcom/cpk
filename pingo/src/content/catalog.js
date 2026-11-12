@@ -68,9 +68,14 @@ export function lessonSteps(exam, lesson) {
   const pool = [];
   for (const id of lesson.from) {
     const l = all.find((x) => x.id === id);
+    if (!l || !l.steps) continue;
     for (const s of l.steps) if (s.t === 'qcm' || s.t === 'tf' || s.t === 'calc') pool.push(s);
   }
-  for (const [tag, q, a] of exam.data.bank) if (lesson.bank === 'all' || lesson.bank === tag) pool.push({ t: 'qcm', q, a });
+  for (const item of exam.data.bank || []) {
+    if (!Array.isArray(item) || !Array.isArray(item[2])) continue;
+    const [tag, q, a] = item;
+    if (lesson.bank === 'all' || lesson.bank === tag) pool.push({ t: 'qcm', q, a });
+  }
   const picked = shuffle(pool).slice(0, lesson.n);
   if (lesson.sort) picked.splice(Math.floor(picked.length / 2), 0, { t: 'sort', ...exam.data.sortGame });
   return picked;
