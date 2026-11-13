@@ -1,0 +1,22 @@
+{
+  "name": "all-in-academy",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node scripts/test-engine.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/outfit": "^5.3.0",
+    "@fontsource/bebas-neue": "^5.3.0",
+    "preact": "^10.29.8",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "vite": "^7.3.8"
+  }
+}
