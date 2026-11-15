@@ -1,3 +1,6 @@
 node_modules
 dist
 dev-dist
+promo/src/frames
+promo/src/*.wav
+promo/src/*.png

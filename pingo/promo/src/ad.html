@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Fredoka; src: url('../../node_modules/@fontsource-variable/fredoka/files/fredoka-latin-wght-normal.woff2') format('woff2'); font-weight: 300 700; }
+@font-face { font-family: Nunito; src: url('../../node_modules/@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2') format('woff2'); font-weight: 200 1000; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #fff; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: Nunito, sans-serif; color: #13214A;
+  background: radial-gradient(circle at 50% 30%, #F4F8FF, #E6EEFF); }
+#stage::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(#C9D7F5 2.2px, transparent 2.4px); background-size: 46px 46px; opacity: .55; }
+.abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.word { font-family: Fredoka, sans-serif; font-weight: 700; white-space: nowrap; transform-origin: center; }
+.wipe { position: absolute; left: 50%; top: 50%; border-radius: 50%; }
+.big { font-family: Fredoka; font-weight: 700; color: #fff; font-size: 150px; display: flex; align-items: center; gap: 30px; white-space: nowrap; }
+.phone { width: 600px; height: 1000px; border-radius: 78px; background: #0E1633; padding: 22px; box-shadow: 0 60px 120px -40px rgba(14,22,51,.6), inset 0 0 0 4px #2A3768; }
+.screen { width: 100%; height: 100%; border-radius: 58px; overflow: hidden; position: relative; background: #EEF4FF; }
+.screen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.notch { position: absolute; left: 50%; top: 34px; width: 170px; height: 44px; margin-left: -85px; border-radius: 30px; background: #0E1633; z-index: 3; }
+.tag { font-family: Fredoka; font-weight: 650; font-size: 52px; padding: 18px 34px; border-radius: 30px; background: #fff; box-shadow: 0 14px 0 rgba(19,33,74,.12), 0 30px 60px -30px rgba(19,33,74,.45); white-space: nowrap; display: flex; align-items: center; gap: 16px; }
+.tag i { width: 26px; height: 26px; border-radius: 50%; display: inline-block; }
+.icon { width: 300px; height: 300px; border-radius: 76px; background: linear-gradient(160deg, #4D82FF, #1E4FD6); box-shadow: 0 22px 0 #163C9E, 0 50px 90px -30px rgba(30,79,214,.7); display: grid; place-items: center; }
+.card { width: 860px; border-radius: 48px; background: #fff; padding: 34px; box-shadow: 0 30px 0 rgba(19,33,74,.08), 0 60px 120px -40px rgba(19,33,74,.55); }
+.notif { width: 960px; border-radius: 44px; background: rgba(255,255,255,.96); padding: 30px 34px; display: flex; gap: 26px; align-items: center; box-shadow: 0 40px 90px -30px rgba(14,22,51,.55); }
+.notif .ic { width: 110px; height: 110px; border-radius: 30px; flex: none; background: linear-gradient(160deg, #4D82FF, #1E4FD6); display: grid; place-items: center; }
+.notif b { font-family: Fredoka; font-weight: 650; font-size: 44px; display: block; }
+.notif small { font-size: 34px; color: #5B6890; font-weight: 700; }
+.notif p { font-size: 38px; font-weight: 700; line-height: 1.3; margin-top: 4px; }
+.pill { font-family: Fredoka; font-weight: 650; font-size: 54px; color: #fff; background: #13214A; border-radius: 999px; padding: 22px 46px; white-space: nowrap; }
+.bubble { font-family: Fredoka; font-weight: 650; font-size: 58px; background: #fff; border: 5px solid #13214A; border-radius: 44px; padding: 20px 38px; white-space: nowrap; box-shadow: 0 12px 0 #13214A; }
+.spark { width: 60px; height: 60px; }
+</style></head>
+<body><div id="stage"></div>
+<script>
+const PENG = `<svg viewBox="0 0 120 138" width="100%" height="100%"><g id="P">
+  <g class="feet"><ellipse cx="45" cy="127" rx="11" ry="5" fill="#FF9A2E"/><ellipse cx="75" cy="127" rx="11" ry="5" fill="#FF9A2E"/></g>
+  <g class="wl"><ellipse cx="20" cy="86" rx="9" ry="24" fill="#1B2A55" transform="rotate(18 20 86)"/></g>
+  <g class="wr"><ellipse cx="100" cy="86" rx="9" ry="24" fill="#1B2A55" transform="rotate(-18 100 86)"/></g>
+  <ellipse cx="60" cy="78" rx="41" ry="50" fill="#1B2A55"/><ellipse cx="60" cy="88" rx="29" ry="37" fill="#fff"/>
+  <path d="M30 70 Q60 84 90 70 L90 79 Q60 93 30 79 Z" fill="#FF4D5E"/><path d="M78 80 l9 22 l-10 -2 z" fill="#E43A4C"/>
+  <g class="eyes"><circle cx="47" cy="49" r="10" fill="#fff"/><circle cx="73" cy="49" r="10" fill="#fff"/><circle cx="48" cy="50" r="5.5" fill="#0E1633"/><circle cx="74" cy="50" r="5.5" fill="#0E1633"/><circle cx="50" cy="47" r="1.8" fill="#fff"/><circle cx="76" cy="47" r="1.8" fill="#fff"/></g>
+  <ellipse cx="34" cy="62" rx="6" ry="4" fill="#FF8FA3" opacity=".6"/><ellipse cx="86" cy="62" rx="6" ry="4" fill="#FF8FA3" opacity=".6"/>
+  <path d="M51 58 L69 58 L60 68 Z" fill="#FF9A2E"/><path class="beak" d="M53 63 L67 63 L60 71 Z" fill="#E07A12"/></g></svg>`;
+const ICON_SVG = (s) => `<svg viewBox="0 0 120 138" width="${s}" height="${s * 1.15}"><ellipse cx="60" cy="78" rx="41" ry="50" fill="#1B2A55"/><ellipse cx="60" cy="88" rx="29" ry="37" fill="#fff"/><path d="M30 70 Q60 84 90 70 L90 79 Q60 93 30 79 Z" fill="#FF4D5E"/><circle cx="47" cy="49" r="10" fill="#fff"/><circle cx="73" cy="49" r="10" fill="#fff"/><circle cx="48" cy="50" r="5.5" fill="#0E1633"/><circle cx="74" cy="50" r="5.5" fill="#0E1633"/><path d="M51 58 L69 58 L60 68 Z" fill="#FF9A2E"/></svg>`;
+const STAR = (c) => `<svg viewBox="0 0 24 24" width="100%" height="100%"><path fill="${c}" d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/></svg>`;
+const I = {
+  book: '<svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24" width="130" height="130"><path fill="#fff" d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" width="130" height="130" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>'
+};
+
+/* ---------- helpers ---------- */
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const k = (t, a, b) => clamp((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);
+const eio = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const back = (x) => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const elastic = (x) => (x === 0 || x === 1 ? x : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * (2 * Math.PI / 3)) + 1);
+const lerp = (a, b, x) => a + (b - a) * x;
+const stage = document.getElementById('stage');
+const el = (html, cls = '') => { const d = document.createElement('div'); d.className = 'abs ' + cls; d.innerHTML = html; stage.appendChild(d); return d; };
+const put = (d, { x = 0, y = 0, s = 1, r = 0, o = 1, sx, sy, ry = 0 } = {}) => {
+  d.style.opacity = o; d.style.display = o <= 0.001 ? 'none' : 'block';
+  d.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) perspective(1600px) rotateY(${ry}deg) rotate(${r}deg) scale(${sx ?? s}, ${sy ?? s})`;
+};
+
+/* ---------- éléments ---------- */
+const wipeA = el('', ''); wipeA.style.cssText += 'width:10px;height:10px;border-radius:50%;';
+const wipeB = el(''); wipeB.style.cssText += 'width:10px;height:10px;border-radius:50%;';
+const wipeC = el(''); wipeC.style.cssText += 'width:10px;height:10px;border-radius:50%;';
+const wipeD = el(''); wipeD.style.cssText += 'width:10px;height:10px;border-radius:50%;';
+const flash = el('<div style="width:1080px;height:1920px"></div>');
+const pengBig = el(`<div style="width:420px;height:483px">${PENG}</div>`);
+const sparks = [0, 1, 2, 3].map((i) => el(`<div class="spark">${STAR(['#FFC531', '#2F6BFF', '#FF8A1F', '#1FBF75'][i])}</div>`));
+const w1 = el('<span class="word" style="font-size:150px">Un devoir</span>');
+const w2 = el('<span class="word" style="font-size:210px;color:#2F6BFF">demain</span>');
+const w3 = el('<span class="word" style="font-size:260px;color:#FF8A1F">?</span>');
+const pengPeek = el(`<div style="width:380px;height:437px">${PENG}</div>`);
+const bubble = el('<div class="bubble">T\'inquiète, je gère !</div>');
+const t1 = el(`<div class="big">Révise ${I.book}</div>`);
+const t2 = el(`<div class="big">Joue ${I.bolt}</div>`);
+const t3 = el(`<div class="big">Gagne ${I.trophy}</div>`);
+const icon = el(`<div class="icon">${ICON_SVG(190)}</div>`);
+const swoosh = el(`<svg width="1080" height="1920" viewBox="0 0 1080 1920"><path id="sw" d="M-60 1500 C 250 1700, 300 1150, 560 1080 S 980 520, 1160 420" fill="none" stroke="#1FBF75" stroke-width="120" stroke-linecap="round"/></svg>`);
+const phone = el(`<div class="phone"><div class="notch"></div><div class="screen"><img id="s0" src="app-home.jpg"><img id="s1" src="app-lesson.jpg"><img id="s2" src="app-3d.jpg"></div></div>`);
+const tags = [['Leçons guidées', '#2F6BFF'], ['Animations', '#FF8A1F'], ['Modèles 3D', '#8B5CF6']].map(([t, c]) => el(`<div class="tag"><i style="background:${c}"></i>${t}</div>`));
+const count = el('<div style="text-align:center;color:#fff"><div id="cnt" style="font-family:Fredoka;font-weight:700;font-size:260px;line-height:1">+29</div><div style="font-family:Fredoka;font-weight:650;font-size:92px">leçons interactives</div><div style="font-size:52px;font-weight:800;opacity:.92;margin-top:26px">SVT · Physique-Chimie · Français</div></div>');
+const card = el('<div class="card"><img src="app-rank.jpg" style="width:100%;height:740px;object-fit:cover;object-position:top;border-radius:30px;display:block"></div>');
+const rankTitle = el('<span class="word" style="font-size:118px">Deviens <span style="color:#FF8A1F">n°1</span></span>');
+const rankTitle2 = el('<span class="word" style="font-size:118px">de ta classe</span>');
+const xp = el('<div class="tag" style="font-size:66px;color:#E0A300"><svg viewBox="0 0 24 24" width="62" height="62"><path fill="#FFC531" d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><span id="xp">0</span>&nbsp;XP</div>');
+const notif = el(`<div class="notif"><div class="ic">${ICON_SVG(74)}</div><div><b>Pingo <small>· maintenant</small></b><p>Adam t'a dépassé ! Fais une leçon pour reprendre ta place.</p></div></div>`);
+const notif2 = el(`<div class="notif"><div class="ic" style="background:linear-gradient(160deg,#FF9A2E,#E06D00)"><svg viewBox="0 0 24 24" width="62" height="62"><path fill="#fff" d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-4-1-6 1-9.5z"/></svg></div><div><b>Série de 12 jours</b><p>Ne la casse pas ce soir !</p></div></div>`);
+const notifTitle = el('<span class="word" style="font-size:104px">Pingo te <span style="color:#2F6BFF">rappelle</span></span>');
+const notifTitle2 = el('<span class="word" style="font-size:104px">de réviser</span>');
+const endIcon = el(`<div class="icon" style="width:380px;height:380px;border-radius:96px">${ICON_SVG(240)}</div>`);
+const logo = el('<span class="word" style="font-size:230px;color:#2F6BFF;text-shadow:0 14px 0 rgba(30,79,214,.25)">Pingo</span>');
+const tagline = el('<span class="word" style="font-size:76px;color:#13214A">Révise. Joue. Deviens n°1.</span>');
+const url = el('<div class="pill">pingo-revisions.vercel.app</div>');
+const free = el('<span style="font-size:48px;font-weight:800;color:#5B6890;white-space:nowrap">Gratuit · iPhone &amp; Android</span>');
+const pengEnd = el(`<div style="width:300px;height:345px">${PENG}</div>`);
+
+const W = 1080, H = 1920, CX = W / 2, CY = H / 2;
+function pengPose(node, t, { wave = 0, talk = 0, blink = true } = {}) {
+  const wr = node.querySelector('.wr'), wl = node.querySelector('.wl'), beak = node.querySelector('.beak'), eyes = node.querySelector('.eyes');
+  wr.setAttribute('transform', `rotate(${-wave * (20 + 22 * Math.sin(t * 14))} 96 68)`);
+  wl.setAttribute('transform', `rotate(${wave * 0.4 * (10 + 10 * Math.sin(t * 14 + 1))} 24 68)`);
+  beak.setAttribute('transform', `translate(0 ${talk ? 3 * Math.abs(Math.sin(t * 22)) : 0})`);
+  const bl = blink && (t % 2.3) > 2.18 ? 0.1 : 1;
+  eyes.setAttribute('transform', `translate(0 ${49 * (1 - bl)}) scale(1 ${bl})`);
+}
+function circle(d, t, a, b, color, cx = CX, cy = CY, out = null) {
+  const g = eio(k(t, a, b)), R = g * 2300;
+  let o = t >= a ? 1 : 0;
+  if (out && t > out) o = 0;
+  d.style.background = color; d.style.width = d.style.height = R + 'px';
+  put(d, { x: cx, y: cy, o });
+}
+
+function render(t) {
+  /* --- S1 : arrivée de Pingo (0 → 1.1) --- */
+  {
+    const drop = k(t, 0.05, 0.55), land = k(t, 0.55, 0.95);
+    const y = t < 0.55 ? lerp(-400, CY - 60, eio(drop) * eio(drop)) : CY - 60;
+    const squash = t < 0.55 ? 1 : 1 + 0.18 * Math.sin(land * Math.PI) * (1 - land) * 2.2;
+    const leave = k(t, 1.05, 1.35);
+    put(pengBig, { x: CX, y: y + 240 * squash - 240 + leave * 1400, sx: (2 - squash), sy: squash, o: t < 1.4 ? 1 : 0, r: leave * 25 });
+    pengPose(pengBig, t, { wave: t > 0.6 ? 1 : 0 });
+    sparks.forEach((s, i) => {
+      const a = k(t, 0.55, 1.05), ang = -Math.PI / 2 + (i - 1.5) * 0.7;
+      put(s, { x: CX + Math.cos(ang) * (220 + a * 160), y: CY - 60 + Math.sin(ang) * (260 + a * 200), s: Math.sin(a * Math.PI) * 1.6, r: a * 180, o: a > 0 && a < 1 ? 1 : 0 });
+    });
+  }
+  /* --- S2 : texte cinétique (1.1 → 2.6) --- */
+  {
+    const out = k(t, 2.55, 2.75);
+    const pop = (d, a, x, y, r = 0) => { const q = k(t, a, a + 0.35); put(d, { x, y: y - (1 - eo(q)) * 80 - out * 120, s: back(q) * (1 - out * 0.4), r: (1 - q) * r, o: q > 0 ? 1 - out : 0 }); };
+    pop(w1, 1.15, CX - 40, 660, -10);
+    pop(w2, 1.42, CX - 40, 860, 8);
+    pop(w3, 1.68, 900, 800, 30);
+    if (t > 2.0) { w3.style.transform += ` rotate(${Math.sin(t * 10) * 8}deg)`; }
+    const pk = k(t, 1.95, 2.3), pkOut = k(t, 2.55, 2.75);
+    put(pengPeek, { x: 250, y: 1700 - eo(pk) * 330 + pkOut * 500, r: 14 - pk * 10, o: t > 1.95 && t < 2.8 ? 1 : 0 });
+    pengPose(pengPeek, t, { wave: 1, talk: t > 2.1 && t < 2.5 });
+    const bb = k(t, 2.1, 2.35);
+    put(bubble, { x: 640, y: 1260 + out * 60, s: back(bb), o: bb > 0 ? 1 - out : 0 });
+  }
+  /* --- S3 : Révise / Joue / Gagne (2.6 → 4.4) --- */
+  circle(wipeA, t, 2.6, 2.95, '#2F6BFF', 250, 1450, 4.75);
+  circle(wipeB, t, 3.2, 3.5, '#FF8A1F', 900, 400, 4.75);
+  circle(wipeC, t, 3.8, 4.1, '#8B5CF6', 200, 600, 4.75);
+  const word = (d, a, b) => { const q = k(t, a, a + 0.3), o2 = k(t, b - 0.1, b); put(d, { x: CX + (1 - eo(q)) * 500 - o2 * 600, y: CY, s: 0.9 + 0.1 * eo(q), o: q > 0 && o2 < 1 ? 1 : 0 }); };
+  word(t1, 2.72, 3.25); word(t2, 3.3, 3.85); word(t3, 3.9, 4.45);
+  /* --- S4 : rétrécit en icône (4.4 → 5.0) --- */
+  {
+    circle(wipeD, t, 4.4, 4.75, '#EEF4FF', CX, CY, 4.8);
+    const q = k(t, 4.55, 4.95), o2 = k(t, 5.0, 5.2);
+    put(icon, { x: CX, y: CY - o2 * 300, s: elastic(q) * (1 - o2 * 0.6), r: (1 - q) * -30, o: q > 0 && o2 < 1 ? 1 - o2 : 0 });
+  }
+  /* --- S5 : téléphone + captures (5.0 → 8.4) --- */
+  {
+    const inn = k(t, 5.0, 5.55), out = k(t, 8.1, 8.38);
+    const path = swoosh.querySelector('#sw'); const len = 2200;
+    path.style.strokeDasharray = len; path.style.strokeDashoffset = len * (1 - eio(k(t, 5.0, 5.7)));
+    swoosh.style.opacity = t > 5 && t < 8.4 ? 1 - out : 0; swoosh.style.display = t > 5 && t < 8.4 ? 'block' : 'none';
+    swoosh.style.transform = 'none';
+    put(phone, { x: CX + (1 - eo(inn)) * 700, y: CY + 40 + Math.sin(t * 2) * 10, ry: (1 - eo(inn)) * -50 + Math.sin(t * 1.4) * 5, r: (1 - eo(inn)) * 14 + 3 * Math.sin(t), s: 1 - out * 0.3, o: t > 5 && out < 1 ? 1 - out : 0 });
+    const sc = [k(t, 5.0, 5.01), k(t, 6.15, 6.45), k(t, 7.3, 7.6)];
+    phone.querySelector('#s1').style.transform = `translateX(${(1 - eio(sc[1])) * 100}%)`;
+    phone.querySelector('#s2').style.transform = `translateX(${(1 - eio(sc[2])) * 100}%)`;
+    const tagPos = [[260, 470, 5.3, -6], [830, 1370, 6.3, 5], [300, 1560, 7.4, -4]];
+    tags.forEach((d, i) => { const [x, y, a, r] = tagPos[i]; const q = k(t, a, a + 0.3); put(d, { x, y: y + Math.sin(t * 3 + i) * 8, s: back(q), r, o: q > 0 && out < 1 ? 1 - out : 0 }); });
+  }
+  /* --- S6 : +29 leçons (8.4 → 9.6) --- */
+  {
+    const q = k(t, 8.4, 8.55), out = k(t, 9.55, 9.7);
+    flash.firstChild.style.background = '#1FBF75';
+    put(flash, { x: CX, y: CY, o: q > 0 && out < 1 ? 1 : 0, s: 1 });
+    const c = k(t, 8.5, 9.1);
+    count.querySelector('#cnt').textContent = '+' + Math.round(eo(c) * 29);
+    put(count, { x: CX, y: CY, s: back(k(t, 8.45, 8.8)), o: q > 0 && out < 1 ? 1 : 0 });
+  }
+  /* --- S7 : classement (9.6 → 11.6) --- */
+  {
+    const q = k(t, 9.65, 10.1), out = k(t, 11.5, 11.7);
+    put(card, { x: CX + (1 - eo(q)) * -900, y: 1150, r: lerp(-14, -4, eo(q)) + Math.sin(t * 2) * 1.2, ry: (1 - eo(q)) * 40, o: q > 0 && out < 1 ? 1 - out : 0 });
+    const a = k(t, 9.8, 10.1), b2 = k(t, 9.95, 10.25);
+    put(rankTitle, { x: CX, y: 330 - (1 - eo(a)) * 60, s: back(a), o: a > 0 && out < 1 ? 1 - out : 0 });
+    put(rankTitle2, { x: CX, y: 470 - (1 - eo(b2)) * 60, s: back(b2), o: b2 > 0 && out < 1 ? 1 - out : 0 });
+    const x2 = k(t, 10.2, 10.5), xc = k(t, 10.3, 11.1);
+    xp.querySelector('#xp').textContent = Math.round(eo(xc) * 1340).toLocaleString('fr-FR');
+    put(xp, { x: 790, y: 1700, s: back(x2), r: 6, o: x2 > 0 && out < 1 ? 1 - out : 0 });
+  }
+  /* --- S8 : notifications (11.6 → 12.8) --- */
+  {
+    const a = k(t, 11.65, 12.0), b2 = k(t, 11.95, 12.3), out = k(t, 12.7, 12.9);
+    put(notif, { x: CX, y: lerp(-200, 760, back(a)) - out * 900, o: a > 0 && out < 1 ? 1 : 0 });
+    put(notif2, { x: CX, y: lerp(-200, 1010, back(b2)) - out * 900, o: b2 > 0 && out < 1 ? 1 : 0 });
+    const nt = k(t, 11.6, 11.9);
+    put(notifTitle, { x: CX, y: 420, s: back(nt), o: nt > 0 && out < 1 ? 1 - out : 0 });
+    put(notifTitle2, { x: CX, y: 545, s: back(k(t, 11.7, 12.0)), o: nt > 0 && out < 1 ? 1 - out : 0 });
+  }
+  /* --- S9 : fin (12.8 → 15) --- */
+  {
+    const a = k(t, 12.85, 13.35), lg = k(t, 13.15, 13.5), tg = k(t, 13.4, 13.75), ul = k(t, 13.65, 14.0), pg = k(t, 13.3, 13.8);
+    put(endIcon, { x: CX, y: 640, s: elastic(a), r: (1 - a) * 20, o: a > 0 ? 1 : 0 });
+    put(logo, { x: CX, y: 1010 - (1 - eo(lg)) * 50, s: back(lg), o: lg > 0 ? 1 : 0 });
+    put(tagline, { x: CX, y: 1170, s: back(tg), o: tg > 0 ? 1 : 0 });
+    put(url, { x: CX, y: 1420, s: back(ul) * (1 + 0.03 * Math.sin(t * 6) * (t > 14 ? 1 : 0)), o: ul > 0 ? 1 : 0 });
+    put(free, { x: CX, y: 1540, o: ul });
+    put(pengEnd, { x: 870, y: 1820 - eo(pg) * 160, r: -8, o: pg > 0 ? 1 : 0 });
+    pengPose(pengEnd, t, { wave: 1 });
+  }
+}
+window.render = render;
+window.ready = Promise.all([document.fonts.load('700 50px Fredoka'), document.fonts.load('800 50px Nunito'), ...[...document.images].map((im) => im.decode().catch(() => {}))]);
+render(0);
+</script></body></html>
