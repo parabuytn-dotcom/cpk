@@ -211,7 +211,7 @@ export function Path({ examId }) {
         </section>
       ))}
       <div class="path-end"><Penguin mood="happy" size={90} /><p>Termine le grand défi pour être prêt(e) le jour J !</p></div>
-      <button type="button" class="fab" onClick={() => go('3d/' + (exam.data.lab || 'virus'))} aria-label="Labo 3D"><Icon name="cube" size={26} /></button>
+      {exam.data.lab !== null && <button type="button" class="fab" onClick={() => go('3d/' + (exam.data.lab || 'virus'))} aria-label="Labo 3D"><Icon name="cube" size={26} /></button>}
       <Sheet open={!!sel} onClose={() => setOpen(null)}>
         {sel && (
           <div class="lesson-sheet" style={{ '--c': sel.unit.color, '--cd': sel.unit.dark }}>

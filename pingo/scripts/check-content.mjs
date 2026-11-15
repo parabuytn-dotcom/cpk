@@ -3,7 +3,7 @@ import { exams, allLessons, lessonSteps } from '../src/content/catalog.js';
 
 const errors = [];
 const err = (where, msg) => errors.push(`${where} : ${msg}`);
-const KINDS = ['learn', 'model', 'qcm', 'tf', 'order', 'pairs', 'sort', 'labels', 'calc'];
+const KINDS = ['learn', 'model', 'qcm', 'tf', 'order', 'pairs', 'sort', 'labels', 'calc', 'fill', 'flash'];
 
 for (const exam of exams.filter((e) => e.data)) {
   const d = exam.data, ids = new Set();
@@ -30,6 +30,8 @@ for (const exam of exams.filter((e) => e.data)) {
       if (s.t === 'order' && (!Array.isArray(s.items) || s.items.length < 2)) err(ws, 'ordre : items manquants');
       if (s.t === 'pairs' && (!Array.isArray(s.pairs) || s.pairs.some((p) => !Array.isArray(p) || p.length !== 2))) err(ws, 'paires invalides');
       if (s.t === 'sort' && (!s.groups || s.items.some(([, g]) => !s.groups[g]))) err(ws, 'tri : groupe inconnu');
+      if (s.t === 'fill' && (typeof s.q !== 'string' || !s.q.includes('___') || !Array.isArray(s.a) || !s.a.length || s.a.some((x) => typeof x !== 'string' || !x.trim()))) err(ws, 'texte à trous : « ___ » ou réponses manquants');
+      if (s.t === 'flash' && (!s.front || !s.back)) err(ws, 'carte mémo : recto ou verso manquant');
       if (s.t === 'calc' && (!Array.isArray(s.a) || s.a.length !== 2 || !Number.isFinite(s.a[0] * 10 ** s.a[1]) || !Array.isArray(s.steps))) err(ws, 'calcul : réponse [mantisse, exposant] ou correction invalide');
     }
   }

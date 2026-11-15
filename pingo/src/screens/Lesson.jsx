@@ -9,7 +9,9 @@ import { sfx } from '../sfx.js';
 import { Viewer3D } from './Viewer3D.jsx';
 import { MODELS } from '../three/meta.js';
 
-const SCORED = ['qcm', 'tf', 'order', 'pairs', 'sort', 'labels', 'calc'];
+const SCORED = ['qcm', 'tf', 'order', 'pairs', 'sort', 'labels', 'calc', 'fill'];
+const normTxt = (x) => String(x || '').toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, ' ').replace(/\s*'\s*/g, "'").trim();
+const noAccent = (x) => normTxt(x).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const SUP = (n) => String(n).replace(/-/g, '⁻').replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
 export const fmtSci = ([m, e]) => (e >= -2 && e <= 3 ? String(+(m * 10 ** e).toPrecision(6)) : `${m} × 10${SUP(e)}`).replace('.', ',');
 const calcValue = (v) => { if (!v) return NaN; const m = parseFloat(String(v.m).replace(',', '.').replace(/\s/g, '')); const e = parseInt(v.e || '0', 10) || 0; return m * 10 ** (v.neg ? -e : e); };
@@ -90,6 +92,36 @@ function Order({ step, value, setValue, fb }) {
       </div>
       {!fb && <div class="pool">{pool.filter((x) => !chosen.includes(x)).map((x) => <button type="button" class="chip-btn" onClick={() => { sfx.tap(); setValue([...chosen, x]); }}>{x}</button>)}</div>}
       {fb && !fb.ok && <ol class="correct-list">{step.items.map((x) => <li>{x}</li>)}</ol>}
+    </div>
+  );
+}
+
+function Fill({ step, value, setValue, fb }) {
+  const parts = step.q.split('___');
+  return (
+    <div class="step">
+      <span class="step-kind">Écris la bonne forme</span>
+      {step.hint && <p class="fill-hint">{step.hint}</p>}
+      <p class="fill-q">{parts[0]}<span class={'fill-blank' + (fb ? (fb.ok ? ' good' : ' badc') : '')}>{value || '…'}</span>{parts[1]}</p>
+      <input class={'field fill-in' + (fb ? (fb.ok ? ' good' : ' badc') : '')} value={value || ''} disabled={!!fb} autoFocus autoCapitalize="none" autoCorrect="off" spellcheck={false}
+        placeholder="Tape ta réponse" onInput={(e) => setValue(e.currentTarget.value)} aria-label="Ta réponse" />
+      {!fb && <div class="accents">{['é', 'è', 'ê', 'â', 'î', 'û', 'ç', 'ï'].map((c) => <button type="button" onClick={() => setValue((value || '') + c)}>{c}</button>)}</div>}
+    </div>
+  );
+}
+
+function Flash({ step }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div class="step">
+      <span class="step-kind">Carte mémo · touche pour retourner</span>
+      <button type="button" class={'flashcard' + (open ? ' open' : '')} onClick={() => { sfx.tap(); setOpen(!open); }}>
+        <span class="fc-in">
+          <span class="fc-face fc-front"><span class="fc-txt" dangerouslySetInnerHTML={{ __html: step.front }} /></span>
+          <span class="fc-face fc-back"><span class="fc-txt" dangerouslySetInnerHTML={{ __html: step.back }} /></span>
+        </span>
+      </button>
+      <p class="muted center small">{open ? 'Redis-le dans ta tête, puis continue.' : 'Essaie de répondre de tête avant de retourner la carte.'}</p>
     </div>
   );
 }
@@ -224,14 +256,19 @@ export function Lesson({ examId, lessonId }) {
   const scored = step && SCORED.includes(step.t);
   const auto = step && AUTO.includes(step.t);
 
-  const feedback = (ok) => {
+  const feedback = (ok, note) => {
     if (ok) { sfx.ok(); const c = combo + 1; setCombo(c); if (c >= 3 && c % 3 === 0) setTimeout(sfx.combo, 250); if (!step.retry) setScore((x) => x + 1); }
     else { sfx.bad(); setCombo(0); if (!step.retry && !auto) setQueue((q) => [...q, { ...step, retry: true, key: q.length + 100 }]); }
-    setFb({ ok, praise: PRAISE[Math.floor(Math.random() * PRAISE.length)] });
+    setFb({ ok, note, praise: PRAISE[Math.floor(Math.random() * PRAISE.length)] });
   };
   const check = () => {
     if (step.t === 'qcm') return feedback(value === step.a[0]);
     if (step.t === 'tf') return feedback(value === step.ok);
+    if (step.t === 'fill') {
+      const v = normTxt(value), ok = step.a.some((a) => normTxt(a) === v);
+      const near = !ok && step.a.some((a) => noAccent(a) === noAccent(value));
+      return feedback(ok, near ? 'accent' : null);
+    }
     if (step.t === 'calc') { const x = calcValue(value), a = step.a[0] * 10 ** step.a[1]; return feedback(Math.abs(x - a) <= Math.abs(a) * 0.02); }
     if (step.t === 'order') return feedback(value && value.every((x, i) => x === step.items[i]) && value.length === step.items.length);
   };
@@ -250,7 +287,7 @@ export function Lesson({ examId, lessonId }) {
 
   if (res) return <div class="lesson"><Results res={res} lesson={lesson} onAgain={again} onExit={exit} /></div>;
 
-  const ready = step.t === 'calc' ? !Number.isNaN(calcValue(value)) : step.t === 'qcm' || step.t === 'tf' ? value !== null : step.t === 'order' ? value && value.length === step.items.length : false;
+  const ready = step.t === 'fill' ? normTxt(value).length > 0 : step.t === 'calc' ? !Number.isNaN(calcValue(value)) : step.t === 'qcm' || step.t === 'tf' ? value !== null : step.t === 'order' ? value && value.length === step.items.length : false;
   let body;
   const common = { step, value, setValue, fb, onComplete: feedback, openModel: setViewer };
   if (step.t === 'learn' || step.t === 'model') body = <Learn {...common} />;
@@ -261,6 +298,8 @@ export function Lesson({ examId, lessonId }) {
   else if (step.t === 'sort') body = <Sort {...common} />;
   else if (step.t === 'labels') body = <Labels {...common} />;
   else if (step.t === 'calc') body = <Calc {...common} />;
+  else if (step.t === 'fill') body = <Fill {...common} />;
+  else if (step.t === 'flash') body = <Flash {...common} key={step.key} />;
 
   return (
     <div class="lesson">
@@ -280,6 +319,7 @@ export function Lesson({ examId, lessonId }) {
               {!fb.ok && step.t === 'qcm' && <p>Bonne réponse : <b>{step.a[0]}</b></p>}
               {!fb.ok && step.t === 'tf' && <p>C'était <b>{step.ok ? 'VRAI' : 'FAUX'}</b>.</p>}
               {!fb.ok && step.t === 'calc' && <p>Bonne réponse : <b>{fmtSci(step.a)} {step.unit}</b></p>}
+              {!fb.ok && step.t === 'fill' && <p>{fb.note === 'accent' ? 'Presque ! Attention à l\'accent : ' : 'Bonne réponse : '}<b>{step.a[0]}</b></p>}
               {step.e && <p>{step.e}</p>}
               {!fb.ok && !auto && !step.retry && <p class="small">Cette question reviendra à la fin.</p>}
             </div>
